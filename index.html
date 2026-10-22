@@ -53,7 +53,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .bar{display:flex;gap:8px;height:66px}
 .bar .btn{height:100%}
 #bRecruit{flex:1.15;white-space:nowrap;padding:0 6px;min-width:0;background:#8a5526;flex-direction:column;gap:2px;line-height:1}
-#bRecruit .cost{display:flex;align-items:center;gap:5px;font-size:17px;color:#ffe6a6}
+#bRecruit .cost{display:flex;align-items:center;gap:4px;font-size:15px;color:#ffe6a6;white-space:nowrap}
 #bRecruit.poor .cost{color:#e9a092}
 #bWave{flex:1;background:#3f6a2f;flex-direction:column;gap:2px;line-height:1;white-space:nowrap;padding:0 6px;min-width:0}
 #bWave small{font-size:14px;font-weight:600;color:#cfe3b9}
@@ -102,7 +102,11 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .win .stack .btn{height:56px;justify-content:flex-start;padding:0 16px;font-size:20px}
 .win .stack .btn.main{background:#3f6a2f;justify-content:center}
 .win .stack .btn.danger{background:#6e2a20}
-.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;margin:0 -4px;padding:0 4px}
+.scroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;margin:0 -4px;padding:0 4px}
+.win{overflow:hidden;min-width:0}
+.win *{max-width:100%}
+.pstats div,.ach-row,.title-chips,.av-grid{min-width:0}
+.pstats b,.ach-row b{overflow-wrap:anywhere}
 .help p{font-size:17px;line-height:1.4;margin:0 0 12px}
 .help b{color:var(--gold)}
 .close-row{margin-top:12px}
@@ -248,9 +252,9 @@ html{background:#1c1610}
 #app,.ov{bottom:auto;height:100vh}
 @supports (height:100lvh){ #app,.ov{height:100lvh} body{min-height:100lvh} }
 #achToast{position:fixed;left:50%;top:calc(var(--st) + 10px);z-index:30;display:flex;gap:10px;align-items:center;
-  padding:8px 14px 8px 8px;min-width:250px;max-width:92vw;transform:translate(-50%,-160%);transition:transform .25s ease-out;pointer-events:none;
+  padding:8px 14px 8px 8px;min-width:250px;max-width:92vw;transform:translate(-50%,calc(-100% - var(--st) - 40px));visibility:hidden;transition:transform .25s ease-out,visibility 0s .25s;pointer-events:none;
   box-shadow:inset 0 3px 0 var(--wood-hi),inset 0 -3px 0 var(--wood-lo),0 0 0 3px #f2c14e}
-#achToast.show{transform:translate(-50%,0)}
+#achToast.show{transform:translate(-50%,0);visibility:visible;transition:transform .25s ease-out}
 #achToast img{width:44px;height:44px;flex:none;background:#1c1610;border:2px solid var(--edge)}
 #achToast em{display:block;font-style:normal;font-size:12px;font-weight:800;color:#f2c14e;text-transform:uppercase;letter-spacing:.06em}
 #achToast b{display:block;font-size:18px;line-height:1.1}
@@ -396,6 +400,7 @@ html{background:#1c1610}
   <div class="scroll help">
     <p><b>Recruter</b> envoie un soldat au hasard dans ta réserve, en bas, derrière le mur.</p>
     <p>Fais-le <b>glisser sur l’herbe</b> pour le poster. Seuls les soldats sur le terrain se battent.</p>
+    <p>Tes recrues s’aguerrissent : elles arrivent au niveau 2 dès la vague 6, puis 3, 4 et 5 aux vagues 14, 24 et 36. Elles coûtent un peu plus cher, mais bien moins que les fusions qu’elles t’épargnent.</p>
     <p>Lâche un soldat sur un <b>soldat identique</b> (même type, même niveau) : ils fusionnent en un soldat du niveau suivant. Huit niveaux par type : après le niveau 5 viennent le mythril, l’obsidienne et le céleste.</p>
     <p>Le mode <b>Histoire</b> traverse huit mondes, de la Forêt sombre au Trône noir. Chacun a ses monstres, son décor et son boss final. Gagne pour ouvrir le suivant, et rejoue les autres pour décrocher trois étoiles.</p>
     <p>Toutes les 5 vagues, un <b>boss</b> attaque, chacun avec son pouvoir. Le Bestiaire du Recueil détaille chaque monstre.</p>
@@ -1516,7 +1521,7 @@ const EN = {
   skeleton:{ name:'Squelette',     hp:.8,  spd:1.15,gold:2,  dmg:1,  col:'#e8e2d0', desc:'Un soldat d’os qui ne sait plus mourir. Plus rapide qu’un gluant.' },
   spider:  { name:'Araignée',      hp:.35, spd:1.8, gold:1,  dmg:1,  col:'#3a2a4a', desc:'Petite, rapide, et jamais seule.' },
   bat:     { name:'Chauve-souris', hp:.4,  spd:2.1, gold:2,  dmg:1,  col:'#4a3a5a', fly:true, desc:'Elle vole : ni pièges, ni marais, ni goudron ne l’arrêtent.' },
-  orc:     { name:'Orc à bouclier',hp:2.6, spd:.8,  gold:4,  dmg:2,  col:'#6a8a3a', armor:.5, desc:'Son bouclier divise par deux les flèches, les coups et les sorts. Les explosions et la foudre passent.' },
+  orc:     { name:'Orc à bouclier',hp:1.7, spd:.8,  gold:4,  dmg:2,  col:'#6a8a3a', armor:.6, desc:'Son bouclier réduit de 40 % les flèches, les coups et les sorts. Les explosions et la foudre passent.' },
   shaman:  { name:'Chaman gobelin',hp:1.2, spd:.9,  gold:4,  dmg:1,  col:'#7fae4a', heal:.05, desc:'Soigne les monstres autour de lui. À abattre en premier.' },
   ghost:   { name:'Fantôme',       hp:.9,  spd:1.1, gold:3,  dmg:1,  col:'#dfe8f4', phase:[3,1.2], desc:'Devient intouchable par moments.' },
   beetle:  { name:'Scarabée',      hp:2,   spd:.9,  gold:3,  dmg:1,  col:'#2f6a5a', noSlow:true, desc:'Sa carapace l’immunise contre le ralentissement et l’étourdissement.' },
@@ -1567,7 +1572,7 @@ const WORLDS = [
 ];
 const maxWaves = () => S.mode === 'siege' ? SIEGE_WAVES : S.mode === 'story' ? WORLDS[S.world|0].waves : Infinity;
 const finiteMode = () => S.mode === 'siege' || S.mode === 'story';
-const MONSTER_UNLOCK = [['wolf',4],['golem',6],['bigslime',7],['skeleton',8],['bat',9],['spider',10],['orc',11],['beetle',13],['shaman',14],['ghost',16],['imp',18]];
+const MONSTER_UNLOCK = [['wolf',4],['golem',6],['bigslime',7],['skeleton',8],['bat',9],['spider',10],['orc',12],['beetle',13],['shaman',14],['ghost',16],['imp',18]];
 
 const TER = { GRASS:0, ROCK:1, HILL:2, MARSH:3, RUNE:4, TREE:5 };
 const WALK  = [1,0,0,1,0,0];
@@ -2537,11 +2542,11 @@ function makeWave(w){
   const q = [], siege = S.mode === 'siege';
   const n = Math.min(8 + Math.floor(w*1.4), 40);
   const avail = MONSTER_UNLOCK.filter(([k, from]) => w >= (siege ? Math.ceil(from*.7) : from)).map(a => a[0]);
-  const theme = shuffle(avail.slice()).slice(0, 2);
+  const theme = shuffle(avail.slice()).slice(0, 2), thS = Math.min(.5, .2 + w*.012);
   for (let i=0;i<n;i++){
     const r = Math.random(); let k = 'slime';
-    if (theme.length && r < .5) k = theme[Math.random()*theme.length|0];
-    else if (avail.length && r < .72) k = avail[Math.random()*avail.length|0];
+    if (theme.length && r < thS) k = theme[Math.random()*theme.length|0];
+    else if (avail.length && r < thS + .2) k = avail[Math.random()*avail.length|0];
     q.push(k);
     if (k === 'spider' && i < n-1){ q.push('spider'); i++; }
   }
@@ -2563,6 +2568,7 @@ function startWave(){
   queue = makeWave(S.wave); spawnT = .3; pendingSpawn = [];
   spawnGap = Math.max(.42, .95 - S.wave*.015);
   inWave = true; autoT = 0; waveTime = 0; herseUsed = false; waveLeaks = 0; legKills = 0;
+  if (typeof recruitLevel === 'function' && recruitLevel() > (S.recLvl || 1)){ S.recLvl = recruitLevel(); setTimeout(() => toast('Tes recrues arrivent désormais au niveau ' + S.recLvl), 2400); }
   for (const tw of S.board) if (tw) tw.ab = 0;
   renderBG();
   const siege = S.mode === 'siege';
@@ -2580,6 +2586,7 @@ function spawn(k, d = 0, hpOver){
   const base = EN[k];
   let hp = hpOver || waveHP(S.wave) * base.hp * MODS.hpMul;
   if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
+  if (!hpOver && base.boss){ const ew = S.wave + (S.mode === 'story' ? WORLDS[S.world].off : 0); hp *= Math.min(1, .3 + ew*.045); }
   const spdScale = Math.min(1.3, 1 + S.wave*.006);
   let gold = base.gold + Math.floor(S.wave/6) + MODS.goldKill;
   if (k === 'mini') gold = 1 + MODS.goldKill;
@@ -3505,8 +3512,9 @@ function hud(){
   setTxt('vGold', String(Math.floor(S.gold)));
   const wn = (inWave || over) ? S.wave : Math.min(S.wave + 1, siege ? MW : 1e9);
   setTxt('vWave', siege ? wn + '/' + MW : String(wn));
-  setTxt('vCost', String(Math.round(S.cost)));
-  $('bRecruit').classList.toggle('poor', S.gold < Math.round(S.cost));
+  const rl = recruitLevel(), rp = recruitPrice();
+  setTxt('vCost', rl > 1 ? rp + ' · niv. ' + rl : String(rp));
+  $('bRecruit').classList.toggle('poor', S.gold < rp);
   if (over){
     setTxt('vWaveBtn', 'Terminée');
     setTxt('vWaveSub', 'vague ' + S.wave);
@@ -3851,12 +3859,21 @@ function pickLegend(id){
 }
 
 /* ---------- boutons ---------- */
+/* Recrues aguerries : à partir de la vague at[i], les recrues arrivent au niveau i+2.
+   price[n] multiplie le prix du recrutement pour une recrue de niveau n+1. */
+let RECRUIT = { at:[6,14,24,36], price:[1,1.6,2.6,4.2,6.8] };
+function recruitLevel(){
+  const w = nextWaveN() + (S.mode === 'story' ? WORLDS[S.world].off : 0);
+  let l = 1; RECRUIT.at.forEach((v,i) => { if (w >= v) l = i + 2; });
+  return l;
+}
+const recruitPrice = () => Math.round(S.cost * RECRUIT.price[recruitLevel() - 1]);
 function recruit(){
   audio();
   if (over || !hasGame) return;
   const i = S.bench.findIndex(x => !x);
   if (i < 0){ toast('Réserve pleine : poste ou fusionne un soldat'); sfx('bad'); return; }
-  const price = Math.round(S.cost);
+  const price = recruitPrice(), base = recruitLevel();
   if (S.gold < price){ toast('Il te manque ' + (price - Math.floor(S.gold)) + ' or'); sfx('bad'); return; }
   S.gold -= price; S.cost += MODS.costInc;
   if (!S.legend && !S.legendOffer && nextWaveN() >= 5){
@@ -3871,10 +3888,10 @@ function recruit(){
   const w = [0,1,2,3,4].map(t => 1 + MODS.school[t]);
   let r = Math.random() * w.reduce((a,b) => a+b, 0), t = 0;
   for (; t<4; t++){ r -= w[t]; if (r <= 0) break; }
-  const lvl = MODS.vet && Math.random() < MODS.vet ? 2 : 1;
+  const vet = MODS.vet && Math.random() < MODS.vet, lvl = base + (vet ? 1 : 0);
   S.bench[i] = mk(t, lvl); markSeen(t, lvl);
   burst(i + .5, BENCH_Y/T + .5, TYPES[t].col, lvl > 1 ? 18 : 10, 2.5);
-  if (lvl > 1) toast('Un vétéran rejoint tes rangs');
+  if (vet) toast('Un vétéran rejoint tes rangs');
   sfx('recruit');
   save();
 }
