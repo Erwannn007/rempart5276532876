@@ -240,6 +240,10 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .av.lock{opacity:.6}
 .av.on{box-shadow:0 0 0 3px #f2c14e}
 .av:active{transform:translateY(2px)}
+/* iOS en mode application : on prend toute la hauteur de l'écran, barre d'accueil comprise */
+html{background:#1c1610}
+#app,.ov{bottom:auto;height:100vh}
+@supports (height:100lvh){ #app,.ov{height:100lvh} body{min-height:100lvh} }
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -1425,7 +1429,7 @@ function load(){
   if (d.profile) Object.assign(profile, d.profile);
   if (d.stats) Object.assign(pstat, d.stats);
   if (!pstat.legPick) pstat.legPick = {};
-  if (![1,2,3].includes(prefs.speed)) prefs.speed = 1;
+  if (![1,2,3,4,5].includes(prefs.speed)) prefs.speed = 1;
   const g = d.game;
   if (g && Array.isArray(g.board) && g.board.length === COLS*ROWS && (g.lives|0) > 0){
     S.mode = g.mode === 'siege' ? 'siege' : 'endless';
@@ -3240,7 +3244,7 @@ $('bAuto').addEventListener('click', () => {
   toast(prefs.auto ? 'Les vagues s’enchaînent' : 'Tu lances chaque vague');
   if (prefs.auto && !inWave && !over) autoT = 1.2;
 });
-$('bSpeed').addEventListener('click', () => { prefs.speed = prefs.speed % 3 + 1; persist(); });
+$('bSpeed').addEventListener('click', () => { prefs.speed = prefs.speed % 5 + 1; persist(); });
 $('bMenu').addEventListener('click', () => { closeSheet(); openMenu(); });
 
 function openMenu(){
