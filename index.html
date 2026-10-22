@@ -52,13 +52,15 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 
 .bar{display:flex;gap:8px;height:66px}
 .bar .btn{height:100%}
-#bRecruit{flex:1.25;background:#8a5526;flex-direction:column;gap:2px;line-height:1}
+#bRecruit{flex:1.15;white-space:nowrap;padding:0 6px;min-width:0;background:#8a5526;flex-direction:column;gap:2px;line-height:1}
 #bRecruit .cost{display:flex;align-items:center;gap:5px;font-size:17px;color:#ffe6a6}
 #bRecruit.poor .cost{color:#e9a092}
-#bWave{flex:1;background:#3f6a2f;flex-direction:column;gap:2px;line-height:1}
+#bWave{flex:1;background:#3f6a2f;flex-direction:column;gap:2px;line-height:1;white-space:nowrap;padding:0 6px;min-width:0}
 #bWave small{font-size:14px;font-weight:600;color:#cfe3b9}
 #bWave.busy{background:#3a3128;color:var(--dim)}
-#bAuto{width:66px;flex-direction:column;gap:3px;font-size:14px;line-height:1}
+#bShop{width:62px;flex-direction:column;gap:3px;font-size:14px;line-height:1;padding:0;background:#5a4630}
+#bShop img{width:22px;height:22px}
+#bAuto{width:62px;flex-direction:column;gap:3px;font-size:14px;line-height:1}
 #bAuto i{display:block;width:22px;height:8px;background:#20170f;border:2px solid var(--edge)}
 #bAuto.on i{background:#8fd35a;box-shadow:0 0 8px #8fd35a}
 
@@ -160,6 +162,27 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .stars{display:flex;justify-content:center;gap:10px;margin:14px 0 8px}
 .stars img{width:60px;height:60px}
 .stars img.off{opacity:.22;filter:grayscale(1)}
+#placeBar{position:fixed;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 8px);z-index:6;
+  display:flex;gap:10px;align-items:center;padding:8px 8px 8px 10px;min-height:66px;transform:translateY(140%);transition:transform .16s ease-out}
+#placeBar.show{transform:none}
+#placeBar img{width:44px;height:44px;flex:none}
+#placeBar div{flex:1;min-width:0}
+#placeBar b{display:block;font-size:18px;line-height:1.1}
+#placeBar span{display:block;font-size:14px;color:var(--dim);line-height:1.25}
+#placeBar .btn{height:50px;background:#3f6a2f}
+.shop-item{display:flex;gap:10px;align-items:center;text-align:left;width:100%;padding:8px 10px;margin-bottom:6px;
+  background:#2a1e14;border:3px solid var(--edge);box-shadow:inset 0 3px 0 rgba(255,236,200,.08),inset 0 -4px 0 rgba(0,0,0,.3)}
+.shop-item:active{transform:translateY(2px)}
+.shop-item>img{width:52px;height:52px;flex:none;background:#1c1610;border:2px solid var(--edge);padding:3px}
+.shop-item div{flex:1;min-width:0}
+.shop-item b{display:block;font-size:18px;line-height:1.1}
+.shop-item span{display:block;font-size:14px;line-height:1.25;color:var(--dim);margin-top:2px}
+.shop-item small{display:block;font-size:13px;color:#e9a092;margin-top:2px}
+.shop-item em{font-style:normal;font-weight:800;font-size:18px;display:flex;align-items:center;gap:4px;color:#ffe6a6;flex:none}
+.shop-item em img{width:18px;height:18px}
+.shop-item.off{opacity:.55}
+.shop-item.off em{color:#e9a092}
+#shopLead b{color:var(--gold)}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -176,11 +199,13 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
   <div class="bar">
     <button class="btn" id="bRecruit"><span>Recruter</span><span class="cost"><img class="px" id="icCoin2" alt=""><span id="vCost">10</span></span></button>
     <button class="btn" id="bWave"><span id="vWaveBtn">Lancer</span><small id="vWaveSub">vague 1</small></button>
+    <button class="btn" id="bShop" aria-label="Atelier"><img class="px" id="icHammer" alt="">Atelier</button>
     <button class="btn" id="bAuto" aria-label="Enchaîner les vagues"><i></i>Auto</button>
   </div>
 </div>
 
 <div id="sheet" class="plank" aria-live="polite"></div>
+<div id="placeBar" class="plank"><img class="px" id="pbIcon" alt=""><div><b id="pbName"></b><span id="pbHint"></span></div><button class="btn" id="pbDone">Terminer</button></div>
 
 <div class="ov" id="ovMenu"><div class="win plank">
   <h2 class="title">Rempart</h2>
@@ -211,6 +236,13 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
   <div class="stack scroll" id="blessCards"></div>
 </div></div>
 
+<div class="ov" id="ovShop"><div class="win plank">
+  <h2>Atelier</h2>
+  <p class="lead" id="shopLead"></p>
+  <div class="scroll" id="shopBody"></div>
+  <div class="close-row"><button class="btn" data-close>Fermer</button></div>
+</div></div>
+
 <div class="ov" id="ovBlessList"><div class="win plank">
   <h2>Tes bénédictions</h2>
   <div class="scroll" id="blBody"></div>
@@ -228,6 +260,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
     <p>Les points qui défilent montrent le <b>chemin de la prochaine vague</b>. Une fois tracé, il ne bouge plus : on ne peut pas poser de soldat dessus.</p>
     <p>Régulièrement, tu choisis une <b>bénédiction</b> parmi trois. Elle dure toute la partie.</p>
+    <p>L’<b>Atelier</b> transforme ton or : des pièges à poser sur le chemin, qui durent une vague, et des aménagements de terrain permanents (dynamite, colline, marais, pierre runique).</p>
     <p>Glisse un soldat sur la <b>pièce</b> pour le revendre. Chaque ennemi qui passe le rempart te coûte des vies.</p>
   </div>
   <div class="close-row"><button class="btn" data-close>J’ai compris</button></div>
@@ -630,44 +663,44 @@ const FORMATION = .08;
 const synKey = (a,b) => a < b ? a+'-'+b : b+'-'+a;
 
 /* ---------- bénédictions ---------- */
-const RAR = { c:{ name:'Commune', col:'#b9a684', w:65 }, r:{ name:'Rare', col:'#5ea0e0', w:27 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
+const RAR = { c:{ name:'Commune', col:'#b9a684', w:62 }, r:{ name:'Rare', col:'#5ea0e0', w:30 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
 const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre'];
 const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs'];
 const BLESS = [
-  { id:'lames', rar:'c', icon:'sword', stack:true, name:'Lames affûtées', desc:'Épéistes : +30 % de dégâts.', mod:M => { M.dmgType[0] *= 1.3; } },
-  { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 80 % de leurs dégâts.', mod:M => { M.whirl = true; } },
-  { id:'carquois', rar:'c', icon:'arrow', stack:true, name:'Carquois profond', desc:'Archères : +25 % de cadence.', mod:M => { M.rateType[1] += .25; } },
-  { id:'perforant', rar:'r', icon:'arrow', name:'Flèches perforantes', desc:'Chaque flèche touche aussi l’ennemi le plus proche de sa cible, à 60 %.', mod:M => { M.pierce = true; } },
-  { id:'poudre', rar:'c', icon:'bomb', stack:true, name:'Poudre noire', desc:'Artificiers : +35 % de dégâts.', mod:M => { M.dmgType[2] *= 1.35; } },
-  { id:'fragment', rar:'r', icon:'bomb', name:'Fragmentation', desc:'Chaque bombe projette trois éclats qui explosent autour, à 35 %.', mod:M => { M.frag = true; } },
-  { id:'hiver', rar:'c', icon:'snow', stack:true, name:'Hiver précoce', desc:'Mages de givre : +12 % de ralentissement, qui dure 1 s de plus.', mod:M => { M.slowAdd += .12; M.slowDur += 1; } },
-  { id:'gel', rar:'r', icon:'snow', name:'Gel', desc:'Les éclats de givre ont 12 % de chances de figer l’ennemi un instant.', mod:M => { M.freeze = .12; } },
-  { id:'conducteur', rar:'c', icon:'bolt', stack:true, name:'Conducteur', desc:'L’éclair des foudroyeurs rebondit sur 2 ennemis de plus.', mod:M => { M.chainAdd += 2; } },
-  { id:'surcharge', rar:'r', icon:'bolt', name:'Surcharge', desc:'Les éclairs ne faiblissent plus en rebondissant.', mod:M => { M.noDecay = true; } },
-  { id:'ecole', rar:'c', icon:'troop', stack:true, name:p => 'École ' + SCHOOL[p], desc:p => 'Les recrues sont bien plus souvent des ' + PLUR[p] + '.', mod:(M,p) => { M.school[p] += 1.7; } },
-  { id:'recruteur', rar:'c', icon:'scroll', name:'Sergent recruteur', desc:'Le prix du recrutement monte de 1 or au lieu de 2.', mod:M => { M.costInc = 1; } },
+  { id:'lames', rar:'c', icon:'sword', max:3, name:'Lames affûtées', desc:'Épéistes : +25 % de dégâts.', mod:M => { M.dmgType[0] *= 1.25; } },
+  { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 60 % de leurs dégâts.', mod:M => { M.whirl = true; } },
+  { id:'carquois', rar:'c', icon:'arrow', max:3, name:'Carquois profond', desc:'Archères : +20 % de cadence.', mod:M => { M.rateType[1] += .2; } },
+  { id:'perforant', rar:'r', icon:'arrow', name:'Flèches perforantes', desc:'Chaque flèche touche aussi l’ennemi le plus proche de sa cible, à 50 %.', mod:M => { M.pierce = true; } },
+  { id:'poudre', rar:'c', icon:'bomb', max:3, name:'Poudre noire', desc:'Artificiers : +25 % de dégâts.', mod:M => { M.dmgType[2] *= 1.25; } },
+  { id:'fragment', rar:'r', icon:'bomb', name:'Fragmentation', desc:'Chaque bombe projette trois éclats qui explosent autour, à 25 %.', mod:M => { M.frag = true; } },
+  { id:'hiver', rar:'c', icon:'snow', max:2, name:'Hiver précoce', desc:'Mages de givre : +8 % de ralentissement, qui dure 0,5 s de plus.', mod:M => { M.slowAdd += .08; M.slowDur += .5; } },
+  { id:'gel', rar:'r', icon:'snow', name:'Gel', desc:'Les éclats de givre ont 10 % de chances de figer l’ennemi un instant. Les boss y résistent.', mod:M => { M.freeze = .1; } },
+  { id:'conducteur', rar:'c', icon:'bolt', max:3, name:'Conducteur', desc:'L’éclair des foudroyeurs rebondit sur 1 ennemi de plus.', mod:M => { M.chainAdd += 1; } },
+  { id:'surcharge', rar:'r', icon:'bolt', name:'Surcharge', desc:'Les éclairs ne perdent plus que 8 % à chaque rebond, au lieu de 20 %.', mod:M => { M.decay = .92; } },
+  { id:'ecole', rar:'c', icon:'troop', max:3, name:p => 'École ' + SCHOOL[p], desc:p => 'Les recrues sont bien plus souvent des ' + PLUR[p] + '.', mod:(M,p) => { M.school[p] += 1.7; } },
+  { id:'recruteur', rar:'r', icon:'scroll', name:'Sergent recruteur', desc:'Le prix du recrutement monte de 1,5 or au lieu de 2.', mod:M => { M.costInc = 1.5; } },
   { id:'veterans', rar:'r', icon:'helm', name:'Vétérans', desc:'Une recrue sur cinq arrive directement au niveau 2.', mod:M => { M.vet = .2; } },
-  { id:'fusion', rar:'l', icon:'merge', name:'Fusion parfaite', desc:'Une fusion sur six saute un niveau.', mod:M => { M.skip = 1/6; } },
-  { id:'butin', rar:'c', icon:'coin', stack:true, name:'Butin', desc:'Chaque ennemi rapporte 1 or de plus.', mod:M => { M.goldKill += 1; } },
-  { id:'tresorier', rar:'c', icon:'coins', stack:true, name:'Trésorier', desc:'Bonus de fin de vague : +50 %.', mod:M => { M.waveBonus += .5; } },
+  { id:'fusion', rar:'l', icon:'merge', name:'Fusion parfaite', desc:'Une fusion sur cinq saute un niveau (jusqu’au niveau 5).', mod:M => { M.skip = .2; } },
+  { id:'butin', rar:'c', icon:'coin', max:3, name:'Butin', desc:'Chaque ennemi rapporte 1 or de plus.', mod:M => { M.goldKill += 1; } },
+  { id:'tresorier', rar:'c', icon:'coins', max:3, name:'Trésorier', desc:'Bonus de fin de vague : +50 %.', mod:M => { M.waveBonus += .5; } },
   { id:'interets', rar:'r', icon:'coins', name:'Intérêts', desc:'À la fin de chaque vague, gagne 10 % de ton or (25 au plus).', mod:M => { M.interest = true; } },
-  { id:'coffre', rar:'c', icon:'chest', stack:true, name:'Coffre de guerre', desc:'Reçois 80 or tout de suite.', pick:() => { S.gold += 80; } },
+  { id:'coffre', rar:'c', icon:'chest', max:3, name:'Coffre de guerre', desc:() => 'Reçois ' + (50 + 5*S.wave) + ' or tout de suite.', pick:() => { S.gold += 50 + 5*S.wave; } },
   { id:'primes', rar:'r', icon:'goblin', name:'Chasseur de primes', desc:'Les gobelins d’or viennent trois fois plus souvent et rapportent 50 % de plus.', mod:M => { M.bounty = true; } },
   { id:'brocanteur', rar:'c', icon:'coin', name:'Brocanteur', desc:'Revendre un soldat rapporte le double.', mod:M => { M.sellMul = 2; } },
-  { id:'murailles', rar:'c', icon:'wall', stack:true, name:'Murailles renforcées', desc:'+5 vies.', pick:() => { S.lives += 5; } },
+  { id:'murailles', rar:'c', icon:'wall', max:3, name:'Murailles renforcées', desc:'+5 vies.', pick:() => { S.lives += 5; } },
   { id:'herse', rar:'r', icon:'gate', name:'Herse', desc:'À chaque vague, le premier ennemi qui atteint le rempart ne te coûte aucune vie.', mod:M => { M.herse = true; } },
   { id:'remedes', rar:'r', icon:'potion', name:'Remèdes', desc:'Chaque vague terminée sans perdre de vie t’en rend une.', mod:M => { M.regen = true; } },
-  { id:'cor', rar:'c', icon:'horn', stack:true, name:'Cor de guerre', desc:'Tous les soldats : +12 % de dégâts.', mod:M => { M.dmgAll *= 1.12; } },
-  { id:'longuevue', rar:'c', icon:'spyglass', stack:true, name:'Longue-vue', desc:'Tous les soldats : +0,3 de portée.', mod:M => { M.range += .3; } },
-  { id:'frenesie', rar:'r', icon:'hourglass', name:'Frénésie', desc:'Pendant les 10 premières secondes de chaque vague, tous les soldats frappent 30 % plus vite.', mod:M => { M.frenzy = true; } },
-  { id:'fraternite', rar:'r', icon:'chain', name:'Fraternité', desc:'Les bonus de synergie sont doublés.', mod:M => { M.synMul = 2; } },
-  { id:'geomancie', rar:'c', icon:'hill', stack:true, name:'Géomancie', desc:'Deux collines surgissent sur le terrain. Un soldat posté dessus gagne +0,6 de portée.', pick:() => addTerrain(TER.HILL, 2), req:() => terrainSpots().length >= 2 },
+  { id:'cor', rar:'c', icon:'horn', max:3, name:'Cor de guerre', desc:'Tous les soldats : +10 % de dégâts.', mod:M => { M.dmgAll *= 1.1; } },
+  { id:'longuevue', rar:'c', icon:'spyglass', max:2, name:'Longue-vue', desc:'Tous les soldats : +0,2 de portée.', mod:M => { M.range += .2; } },
+  { id:'frenesie', rar:'r', icon:'hourglass', name:'Frénésie', desc:'Pendant les 6 premières secondes de chaque vague, tous les soldats frappent 25 % plus vite. Ensuite, 10 % plus lentement.', mod:M => { M.frenzy = true; } },
+  { id:'fraternite', rar:'r', icon:'chain', name:'Fraternité', desc:'Les bonus de synergie sont augmentés de moitié.', mod:M => { M.synMul = 1.5; } },
+  { id:'geomancie', rar:'c', icon:'hill', max:2, name:'Géomancie', desc:'Deux collines surgissent sur le terrain. Un soldat posté dessus gagne +0,6 de portée.', pick:() => addTerrain(TER.HILL, 2), req:() => terrainSpots().length >= 2 },
   { id:'runes', rar:'r', icon:'rune', name:'Runes anciennes', desc:'Une pierre runique apparaît, et le bonus de toutes les pierres double (+60 % de dégâts).', mod:M => { M.runeMul = 2; }, pick:() => addTerrain(TER.RUNE, 1), req:() => terrainSpots().length >= 1 },
-  { id:'elite', rar:'l', icon:'star', name:'Élite', desc:'Les soldats de niveau 5 font +50 % de dégâts.', mod:M => { M.elite = 1.5; } },
+  { id:'elite', rar:'l', icon:'star', name:'Élite', desc:'Les soldats de niveau 5 font +40 % de dégâts.', mod:M => { M.elite = 1.4; } },
   { id:'pacte', rar:'l', icon:'drop', name:'Pacte de sang', desc:'Tous les soldats : +35 % de dégâts. En échange, tu perds 5 vies.', mod:M => { M.dmgAll *= 1.35; }, pick:() => { S.lives -= 5; }, req:() => S.lives > 8 },
   { id:'avarice', rar:'r', icon:'chest', name:'Avarice', desc:'Chaque ennemi rapporte 2 or de plus, mais tous ont 15 % de vie en plus.', mod:M => { M.goldKill += 2; M.hpMul *= 1.15; } },
-  { id:'commandement', rar:'c', icon:'banner', name:'Commandement', desc:'Les soldats de niveau 1 et 2 font +60 % de dégâts.', mod:M => { M.low = 1.6; } },
-  { id:'faucon', rar:'r', icon:'crit', name:'Œil du faucon', desc:'Chaque attaque a 12 % de chances d’infliger le double de dégâts.', mod:M => { M.crit = .12; } }
+  { id:'commandement', rar:'c', icon:'banner', name:'Commandement', desc:'Les soldats de niveau 1 et 2 font +50 % de dégâts.', mod:M => { M.low = 1.5; } },
+  { id:'faucon', rar:'r', icon:'crit', name:'Œil du faucon', desc:'Chaque attaque a 15 % de chances d’infliger deux fois et demie ses dégâts.', mod:M => { M.crit = .15; } }
 ];
 const BLESS_BY = Object.fromEntries(BLESS.map(b => [b.id, b]));
 function blessInfo(key){ const [id, p] = String(key).split(':'); return { b: BLESS_BY[id], p: p != null ? +p : null }; }
@@ -676,7 +709,7 @@ const blessDesc = key => { const { b, p } = blessInfo(key); return typeof b.desc
 
 function baseMods(){
   return { dmgAll:1, dmgType:[1,1,1,1,1], rateType:[0,0,0,0,0], range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
-    noDecay:false, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0], goldKill:0,
+    decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0], goldKill:0,
     waveBonus:1, interest:false, bounty:false, sellMul:1, herse:false, regen:false, frenzy:false, synMul:1,
     elite:1, low:1, crit:0, hpMul:1, runeMul:1 };
 }
@@ -772,6 +805,66 @@ function blessIcon(key){
   return BI[b.icon];
 }
 
+/* ---------- pièges et atelier : sprites ---------- */
+function trapPics(){
+  const s = new Spr(), m = '#c3cbd3', w = '#eef4f8', b = '#5a3d26';
+  s.r(3,13,15,3,b); s.hl(4,16,13,'#7a5434',1);
+  for (const x0 of [3,7,11,15]){
+    if (x0 + 2 > 17) continue;
+    s.p(x0+1,7,w,1); s.p(x0+1,8,m); s.hl(x0,x0+2,9,m); s.r(x0,10,3,3,m); s.p(x0,10,w,1);
+  }
+  return s.pixels();
+}
+function trapTar(){
+  const s = new Spr(), k = '#1e1a22', sh = '#4a4458';
+  s.hl(6,13,7,k); s.hl(4,15,8,k); s.r(3,9,14,5,k); s.hl(4,15,14,k); s.hl(6,12,15,k); s.p(16,15,k);
+  s.hl(6,8,9,sh,1); s.p(5,10,sh,1); s.p(12,12,'#3a3446',1); s.p(14,10,'#3a3446',1);
+  return s.pixels();
+}
+function trapBarrel(){
+  const s = new Spr(), wd = '#8a5a32', dk = '#6b4422', hp = '#8e99a4';
+  s.hl(7,12,5,'#a8742a'); s.r(6,6,8,10,wd); s.hl(7,12,16,wd);
+  s.v(8,7,15,dk,1); s.v(11,7,15,dk,1);
+  s.hl(6,13,8,hp); s.hl(6,13,14,hp);
+  s.r(7,10,6,3,'#b8202a'); s.p(8,11,'#ffffff',1); s.p(10,11,'#ffffff',1); s.p(12,11,'#ffffff',1);
+  s.p(10,4,dk); s.p(11,3,dk);
+  return s.pixels();
+}
+function trapFrost(){
+  const s = new Spr();
+  for (let y=0;y<T;y++) for (let x=0;x<T;x++){
+    const dx = (x-9.5)/7.5, dy = (y-11)/5.8, q = dx*dx+dy*dy;
+    if (q < 1) s.p(x, y, q > .7 ? '#3f5a78' : '#5a7a96', q <= .7 ? 1 : 0);
+  }
+  for (const [x,y] of FROST_GLYPH) s.p(x, y, '#aeeeff', 1);
+  return s.pixels();
+}
+const FROST_GLYPH = [[9,7],[9,8],[9,9],[9,10],[9,11],[9,12],[9,13],[9,14],[10,7],[10,14],[6,10],[7,10],[8,10],[11,10],[12,10],[13,10],[7,8],[12,8],[7,13],[12,13],[8,9],[11,9],[8,12],[11,12]];
+
+const TRAPS = {
+  pics:   { name:'Pics',            base:20, per:2, desc:'Blessent chaque ennemi qui passe dessus, à 60 % de la vie d’un gluant de la vague.' },
+  goudron:{ name:'Goudron',         base:15, per:2, desc:'Les ennemis y avancent deux fois moins vite.' },
+  baril:  { name:'Baril de poudre', base:30, per:3, desc:'Explose au passage du premier ennemi et souffle tout le groupe autour.' },
+  givre:  { name:'Rune de givre',   base:35, per:3, desc:'Fige les ennemis proches dès qu’on marche dessus. Se recharge en 6 s.' }
+};
+const TRAP_ORDER = ['pics','goudron','baril','givre'];
+const TRAPC = { pics:pxCanvas(trapPics()), goudron:pxCanvas(trapTar()), baril:pxCanvas(trapBarrel()), givre:pxCanvas(trapFrost()) };
+const TRAP_URL = {}; for (const k in TRAPC) TRAP_URL[k] = TRAPC[k].toDataURL();
+const LAND = {
+  dyn:   { name:'Dynamiter',                 base:50,  step:30, desc:'Fait sauter un rocher ou un arbre. La case redevient de l’herbe.' },
+  hill:  { name:'Élever une colline',        base:80,  step:50, desc:'Sur l’herbe, même sous un soldat : il gagne +0,6 de portée.' },
+  marsh: { name:'Creuser un marais',         base:60,  step:40, desc:'Sur une case d’herbe libre, chemin compris. Les ennemis y avancent 30 % moins vite.' },
+  rune:  { name:'Graver une pierre runique', base:140, step:90, desc:'Sur l’herbe, même sous un soldat : il gagne +30 % de dégâts.' }
+};
+const LAND_ORDER = ['dyn','hill','marsh','rune'];
+const SHOP_IC = {
+  dynamite: pxCanvas(patt(['......YO','.....B..','....B...','RRRRRRR.','RWRRWRR.','RRRRRRR.','KKKKKKK.','RRRRRRR.','RWRRWRR.','RRRRRRR.'], Object.assign({}, IC, { R:'#c8473d', K:'#3a2a1a' }), true)).toDataURL(),
+  marsh:    pxCanvas(patt(['...V.......','...V..V....','.B.V..V....','CCCCCCCCCC.','CWCCCCCWCC.','CCCCCCCCCC.','.CCCCCCCC..'], Object.assign({}, IC, { C:'#4c8186', W:'#7fb3b0', V:'#6b8a3a', B:'#6b4428' }), true)).toDataURL(),
+  hammer:   pxCanvas(patt(['.LLLLL...','LMMMMML..','LMWMMML..','.LLLBLL..','....B....','....B....','....B....','....B....','....B....'], Object.assign({}, IC, { B:'#8a5a32' }), true)).toDataURL()
+};
+const LAND_URL = { dyn:SHOP_IC.dynamite, hill:BI.hill, marsh:SHOP_IC.marsh, rune:BI.rune };
+document.getElementById('icHammer').src = SHOP_IC.hammer;
+
 /* =========================================================
    État
    ========================================================= */
@@ -782,21 +875,23 @@ let inWave = false, over = false, paused = false, waveTime = 0, herseUsed = fals
 let path = null, pathSet = new Set(), WP = null;
 let preview = null, previewSet = new Set(), WPprev = null;
 let autoT = 0, shake = 0, gateFlash = 0, banner = null, clock = 0;
-let drag = null, sel = null, quiet = true;
+let drag = null, sel = null, quiet = true, placing = null, trapMap = new Map(), trapSeq = 0;
 
 const mk = (t,l) => ({ t, l, cd:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
 
 function freshGame(mode = 'endless'){
   S = { mode, wave:0, gold: mode==='siege' ? 50 : 40, lives:20, cost:10,
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
-    terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null };
+    terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
+    traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 } };
 }
 
 /* ---------- sauvegarde (une seule clé) ---------- */
 function snap(){
   if (inWave || over || !hasGame) return;
   snapshot = { mode:S.mode, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
-    bless:S.bless, pending:S.pending,
+    bless:S.bless, pending:S.pending, preview: preview || null,
+    traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
     board:S.board.map(t => t ? [t.t,t.l] : 0), bench:S.bench.map(t => t ? [t.t,t.l] : 0) };
 }
 function persist(){
@@ -817,11 +912,15 @@ function load(){
   const g = d.game;
   if (g && Array.isArray(g.board) && g.board.length === COLS*ROWS && (g.lives|0) > 0){
     S.mode = g.mode === 'siege' ? 'siege' : 'endless';
-    Object.assign(S, { wave:g.wave|0, gold:g.gold|0, lives:g.lives|0, cost:g.cost|0 });
+    Object.assign(S, { wave:g.wave|0, gold:g.gold|0, lives:g.lives|0, cost:+g.cost || 10 });
     S.terrain = (Array.isArray(g.terrain) && g.terrain.length === COLS*ROWS) ? g.terrain.map(v => v|0) : new Array(COLS*ROWS).fill(0);
     S.biome = Math.min(BIOMES.length-1, g.biome|0);
     S.bless = Array.isArray(g.bless) ? g.bless.filter(k => blessInfo(k).b) : [];
     S.pending = Array.isArray(g.pending) && g.pending.length ? g.pending.filter(k => blessInfo(k).b) : null;
+    S.trapBuys = g.trapBuys|0;
+    S.shopBuys = Object.assign({ dyn:0, hill:0, marsh:0, rune:0 }, g.shopBuys || {});
+    S.savedPreview = Array.isArray(g.preview) ? g.preview : null;
+    S.savedTraps = Array.isArray(g.traps) ? g.traps : [];
     S.board = g.board.map(a => a ? mk(a[0],a[1]) : null);
     S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1]) : null);
     while (S.bench.length < BENCH_N) S.bench.push(null);
@@ -876,7 +975,7 @@ function stats(tw, i){
   if (ter === TER.RUNE) dmg *= 1 + RUNE_DMG*M.runeMul;
   const range = ty.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0);
   let rate = ty.rate*RMUL[L-1] / (1 + sy.rate + M.rateType[tw.t]);
-  if (M.frenzy && inWave && waveTime < 10) rate /= 1.3;
+  if (M.frenzy && inWave) rate = waveTime < 6 ? rate/1.25 : rate*1.1;
   return { dmg, range, rate };
 }
 
@@ -1008,6 +1107,19 @@ function posAt(W, o){
   o.x = a.x + (b.x-a.x)*f; o.y = a.y + (b.y-a.y)*f;
   return o;
 }
+function restorePreview(p){
+  if (!Array.isArray(p) || p.length < ROWS) return false;
+  for (let k=0;k<p.length;k++){
+    const i = p[k];
+    if (!(i >= 0 && i < COLS*ROWS) || S.board[i] || !isWalk(i)) return false;
+    if (k && neighbors(p[k-1]).indexOf(i) < 0) return false;
+  }
+  if (((p[0]/COLS)|0) !== 0 || ((p[p.length-1]/COLS)|0) !== ROWS-1) return false;
+  preview = p; previewSet = new Set(p); WPprev = buildWP(p);
+  renderBG();
+  return true;
+}
+function rebuildTraps(){ trapMap = new Map(S.traps.filter(t => !t.used).map(t => [t.i, t])); }
 function makePreview(){
   preview = genPath();
   previewSet = new Set(preview); WPprev = buildWP(preview);
@@ -1018,13 +1130,30 @@ function makePreview(){
    Audio (synthé minimal)
    ========================================================= */
 let AC = null, noiseBuf = null; const lastSfx = {};
+/* iOS coupe le contexte audio quand l'app passe en arrière-plan (état « interrupted »,
+   parfois un contexte « zombie » qui ne joue plus rien). On le recrée au premier toucher. */
+let acCheck = null;
 function audio(){
-  if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } }
-  if (AC.state === 'suspended') AC.resume();
+  if (AC && AC.state === 'running' && acCheck && performance.now() - acCheck.t > 1000 && AC.currentTime === acCheck.ct){
+    try { AC.close(); } catch(e){}
+    AC = null;
+  }
+  if (AC && AC.state === 'closed') AC = null;
+  if (!AC){
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); noiseBuf = null; } catch(e){ return null; }
+  }
+  if (AC.state !== 'running'){ try { const r = AC.resume(); if (r && r.catch) r.catch(() => {}); } catch(e){} }
+  try {
+    const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource();
+    src.buffer = b; src.connect(AC.destination); src.start(0);
+  } catch(e){}
+  acCheck = { t: performance.now(), ct: AC.currentTime };
   return AC;
 }
+const liveAC = () => (AC && AC.state === 'running') ? AC : null;
+function dropAudio(){ if (AC){ try { AC.close(); } catch(e){} } AC = null; acCheck = null; }
 function tone(f, d, type, v, f2, delay=0){
-  const c = audio(); if (!c) return;
+  const c = liveAC(); if (!c) return;
   const t0 = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t0);
   if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0+d);
@@ -1032,7 +1161,7 @@ function tone(f, d, type, v, f2, delay=0){
   o.connect(g).connect(c.destination); o.start(t0); o.stop(t0+d+.02);
 }
 function noise(d, v, freq){
-  const c = audio(); if (!c) return;
+  const c = liveAC(); if (!c) return;
   if (!noiseBuf){ noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate); const ch = noiseBuf.getChannelData(0); for (let i=0;i<ch.length;i++) ch[i]=Math.random()*2-1; }
   const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
   s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.value = freq;
@@ -1057,6 +1186,8 @@ const SFX = {
   sell:   () => { tone(988,.06,'square',.03); tone(1318,.08,'square',.03,0,.06); },
   goblin: () => [1318,1568,1760,2093].forEach((f,i) => tone(f,.07,'square',.025,0,i*.05)),
   jackpot:() => [784,988,1175,1568,1976].forEach((f,i) => tone(f,.09,'square',.035,0,i*.05)),
+  spike:  () => noise(.05,.05,5000),
+  build:  () => { noise(.12,.08,1200); tone(196,.12,'square',.04,294,.05); },
   bless:  () => [523,784,1046,1568].forEach((f,i) => tone(f,.18,'triangle',.05,0,i*.08)),
   win:    () => [523,659,784,1046,784,1046].forEach((f,i) => tone(f,.2,'triangle',.06,0,i*.13)),
   over:   () => [392,330,262,196].forEach((f,i) => tone(f,.22,'triangle',.06,0,i*.18))
@@ -1328,6 +1459,7 @@ function endWave(){
   if (regen) sub += ', +1 vie';
   banner = { t:2, max:2, text:'Vague ' + S.wave + ' repoussée', sub, col:'#f2c14e' };
   sfx('clear');
+  S.traps = []; S.trapBuys = 0; rebuildTraps();
   makePreview();
   if (S.wave % blessEvery() === 0) S.pending = drawBless(3);
   save();
@@ -1377,7 +1509,7 @@ function newGame(mode){
   hasGame = true;
   enemies = []; projs = []; fx = []; queue = []; pendingSpawn = [];
   inWave = false; over = false; banner = null; drag = null; closeSheet();
-  path = null; pathSet = new Set(); WP = null;
+  path = null; pathSet = new Set(); WP = null; stopPlacing(); rebuildTraps();
   genTerrain();
   computeMods(); recomputeSyn();
   makePreview();
@@ -1391,8 +1523,9 @@ function newGame(mode){
    Bénédictions
    ========================================================= */
 function drawBless(n){
-  const owned = new Set(S.bless.map(k => String(k).split(':')[0]));
-  const pool = BLESS.filter(b => (b.stack || !owned.has(b.id)) && (!b.req || b.req()));
+  const count = {};
+  for (const k of S.bless){ const id = String(k).split(':')[0]; count[id] = (count[id] || 0) + 1; }
+  const pool = BLESS.filter(b => (count[b.id] || 0) < (b.max || 1) && (!b.req || b.req()));
   const out = [], used = new Set();
   while (out.length < n){
     const avail = pool.filter(b => !used.has(b.id)); if (!avail.length) break;
@@ -1409,9 +1542,11 @@ function openBless(){
   $('blessLead').textContent = lead;
   $('blessCards').innerHTML = S.pending.map((k,n) => {
     const { b } = blessInfo(k), R = RAR[b.rar];
+    const had = S.bless.filter(x => String(x).split(':')[0] === b.id).length;
+    const tag = (b.max || 1) > 1 ? `, ${had + 1} sur ${b.max}` : '';
     return `<button class="bcard" data-n="${n}" style="--rc:${R.col}">
       <img class="px" src="${blessIcon(k)}" alt="">
-      <div><em>${R.name}</em><b>${blessName(k)}</b><span>${blessDesc(k)}</span></div>
+      <div><em>${R.name}${tag}</em><b>${blessName(k)}</b><span>${blessDesc(k)}</span></div>
     </button>`;
   }).join('');
   $('blessCards').querySelectorAll('.bcard').forEach(btn => btn.onclick = () => pickBless(+btn.dataset.n));
@@ -1480,7 +1615,7 @@ function burst(x, y, col, n, spd=3){
 }
 function applySlow(e, s, dur = 1.6){
   if (e.k === 'boss' || e.k === 'king') s *= .5;
-  s = Math.min(.75, s);
+  s = Math.min(.6, s);
   e.slow = Math.max(e.slowT > 0 ? e.slow : 0, s); e.slowT = Math.max(e.slowT, dur);
 }
 function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L){
@@ -1499,14 +1634,14 @@ function fire(tw, cx, cy, tg, st){
   tw.anim = .12;
   if (tg.x < cx - .05) tw.face = -1; else if (tg.x > cx + .05) tw.face = 1;
   const L = tw.l, sy = tw.syn || NOSYN, M = MODS;
-  const crit = M.crit && Math.random() < M.crit, D = st.dmg * (crit ? 2 : 1);
-  if (crit) fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'×2', col:'#ffe066', life:.5, max:.5 });
+  const crit = M.crit && Math.random() < M.crit, D = st.dmg * (crit ? 2.5 : 1);
+  if (crit) fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'×2,5', col:'#ffe066', life:.5, max:.5 });
   switch (tw.t){
     case 0: {
       const vs = e => slowed(e) ? 1 + sy.vsSlow : 1;
       if (M.whirl){
         const r2 = st.range*st.range;
-        for (const e of enemies) if (!e.dead && (e.x-cx)**2 + (e.y-cy)**2 <= r2) hit(e, D*.8*vs(e));
+        for (const e of enemies) if (!e.dead && (e.x-cx)**2 + (e.y-cy)**2 <= r2) hit(e, D*.6*vs(e));
         fx.push({ k:'ring', x:cx, y:cy-.1, r:st.range*.9, life:.18, max:.18, col:'#ffffff' });
       } else {
         hit(tg, D*vs(tg));
@@ -1534,7 +1669,7 @@ function fire(tw, cx, cy, tg, st){
       sfx('ice'); break;
     }
     case 4: {
-      lightning(cx + .3*tw.face, cy-.55, tg, D, 1 + L + sy.chain + M.chainAdd, M.noDecay ? 1 : .8, sy.vsSlow, L);
+      lightning(cx + .3*tw.face, cy-.55, tg, D, 1 + L + sy.chain + M.chainAdd, M.decay, sy.vsSlow, L);
       sfx('zap'); break;
     }
   }
@@ -1545,6 +1680,32 @@ function explode(x, y, rad, dmg, bslow, big){
   burst(x, y, bslow ? '#bff0ff' : '#ffb347', big ? 10 : 5, big ? 3.5 : 2.5);
   if (big) burst(x, y, '#6b6258', 6, 2);
 }
+function triggerTrap(tr, e){
+  if (tr.used || e.y < 0) return;
+  const cx = tr.i%COLS + .5, cy = ((tr.i/COLS)|0) + .5;
+  if (tr.k === 'pics'){
+    if (!e.trapHit) e.trapHit = new Set();
+    if (e.trapHit.has(tr.id)) return;
+    e.trapHit.add(tr.id);
+    hit(e, waveHP(S.wave) * .6);
+    tr.anim = .25; burst(e.x, e.y-.1, '#e8eef2', 4, 1.5); sfx('spike');
+  } else if (tr.k === 'baril'){
+    tr.used = true;
+    explode(cx, cy, 1.2, waveHP(S.wave) * 3, 0, true);
+    burst(cx, cy, '#ff8a2a', 16, 4.5); burst(cx, cy, '#8a5a32', 8, 3);
+    fx.push({ k:'ring', x:cx, y:cy, r:1.3, life:.4, max:.4, col:'#fff3b0' });
+    shake = .3; sfx('boom');
+  } else if (tr.k === 'givre'){
+    if (tr.cd > 0) return;
+    tr.cd = 6; tr.anim = .4;
+    for (const o of enemies){
+      if (o.dead || (o.x-cx)**2 + (o.y-cy)**2 > 1.21) continue;
+      o.stunT = Math.max(o.stunT, (o.k === 'boss' || o.k === 'king') ? .4 : 1.2);
+    }
+    fx.push({ k:'ring', x:cx, y:cy, r:1.1, life:.35, max:.35, col:'#bff0ff' });
+    burst(cx, cy, '#e8f8ff', 14, 3); sfx('ice');
+  }
+}
 function updProj(p, dt){
   if (p.k === 'bomb'){
     p.t += dt;
@@ -1553,7 +1714,7 @@ function updProj(p, dt){
       explode(p.tx, p.ty, p.rad, p.dmg, p.bslow, true);
       if (p.frag) for (let k=0;k<3;k++){
         const a = Math.random()*Math.PI*2, r = .5 + Math.random()*.35;
-        explode(p.tx + Math.cos(a)*r, p.ty + Math.sin(a)*r, .45, p.dmg*.35, p.bslow, false);
+        explode(p.tx + Math.cos(a)*r, p.ty + Math.sin(a)*r, .45, p.dmg*.25, p.bslow, false);
       }
       shake = Math.max(shake, .06);
       sfx('boom');
@@ -1570,8 +1731,8 @@ function updProj(p, dt){
       if (p.k === 'arrow' && p.aslow) applySlow(tg, p.aslow, 1.2);
       if (p.k === 'shard'){
         applySlow(tg, p.slow, p.dur);
-        if (MODS.freeze && Math.random() < MODS.freeze){
-          tg.stunT = (tg.k === 'boss' || tg.k === 'king') ? .3 : .8;
+        if (MODS.freeze && tg.k !== 'boss' && tg.k !== 'king' && Math.random() < MODS.freeze){
+          tg.stunT = .6;
           burst(tg.x, tg.y-.2, '#ffffff', 8, 2);
         }
         if (p.L >= 4) for (const e of enemies) if (!e.dead && e!==tg && d2(e,tg) < .64){ applySlow(e, p.slow, p.dur); hit(e, p.dmg*.5); }
@@ -1580,7 +1741,7 @@ function updProj(p, dt){
     if (p.k === 'arrow' && p.pierce){
       let nx = null, bd = 1;
       for (const e of enemies){ if (e.dead || e === tg) continue; const dd = (e.x-tx)**2 + (e.y-tg.y)**2; if (dd < bd){ bd = dd; nx = e; } }
-      if (nx){ hit(nx, p.dmg*.6); burst(nx.x, nx.y-.25, '#e8dcc0', 3, 1.5); }
+      if (nx){ hit(nx, p.dmg*.5); burst(nx.x, nx.y-.25, '#e8dcc0', 3, 1.5); }
     }
     if (p.k === 'shard'){ burst(tx, ty, '#bff0ff', 6, 2); if (p.L>=4) fx.push({ k:'ring', x:tx, y:ty, r:.8, life:.25, max:.25, col:'#bff0ff' }); }
   } else { p.x += dx/dist*step; p.y += dy/dist*step; }
@@ -1604,7 +1765,12 @@ function update(dt){
     if (e.flash > 0) e.flash -= dt;
     let sp = e.stunT > 0 ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
     const c = Math.floor(e.x), r = Math.floor(e.y);
-    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && S.terrain[idx(c,r)] === TER.MARSH) sp *= 1 - MARSH_SLOW;
+    const ci = (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? idx(c,r) : -1;
+    if (ci >= 0 && S.terrain[ci] === TER.MARSH) sp *= 1 - MARSH_SLOW;
+    const tr = ci >= 0 ? trapMap.get(ci) : null;
+    if (tr && tr.k === 'goudron') sp *= .5;
+    if (tr) triggerTrap(tr, e);
+    if (e.dead) continue;
     e.d += sp * dt;
     if (e.d >= WP.len){ e.dead = true; leak(e); if (over) return; continue; }
     posAt(WP, e);
@@ -1621,6 +1787,8 @@ function update(dt){
     }
   }
   for (const tw of S.bench) if (tw && tw.pop > 0) tw.pop -= dt;
+  for (const tr of S.traps){ if (tr.cd > 0) tr.cd -= dt; if (tr.anim > 0) tr.anim -= dt; }
+  if (S.traps.some(t => t.used)){ S.traps = S.traps.filter(t => !t.used); rebuildTraps(); }
   for (const p of projs) updProj(p, dt);
   projs = projs.filter(p => !p.done);
   enemies = enemies.filter(e => !e.dead);
@@ -1642,7 +1810,8 @@ function updateFx(dt){
 let last = performance.now();
 function frame(now){
   let dt = Math.min(.05, (now-last)/1000); last = now;
-  const running = !paused && !anyOverlay();
+  const running = !paused && !anyOverlay() && !placing;
+  if (placing) clock += dt;
   if (running){
     clock += dt;
     if (!over) for (let k=0;k<prefs.speed;k++) update(dt);
@@ -1792,6 +1961,30 @@ function draw(){
       ctx.fillRect(snapP(ox + o.x*CS - P), snapP(oy + o.y*CS - P), 2*P, 2*P);
     }
   }
+  // pièges
+  for (const tr of S.traps){
+    if (tr.used) continue;
+    const X = ox + (tr.i%COLS)*CS, Y = oy + ((tr.i/COLS)|0)*CS;
+    ctx.drawImage(TRAPC[tr.k], X, Y - (tr.k === 'pics' && tr.anim > 0 ? P : 0), CS, CS);
+    if (tr.k === 'givre'){
+      ctx.globalAlpha = tr.cd > 0 ? .12 : .4 + .3*Math.sin(clock*3 + tr.i); ctx.fillStyle = '#ffffff';
+      for (const [gx,gy] of FROST_GLYPH) ctx.fillRect(X+gx*P, Y+gy*P, P, P);
+      ctx.globalAlpha = 1;
+    } else if (tr.k === 'baril'){
+      ctx.fillStyle = Math.floor(clock*12 + tr.i)%2 ? '#ffd23f' : '#ff8a2a';
+      ctx.fillRect(X+12*P, Y+2*P, P, P);
+    } else if (tr.k === 'goudron' && Math.floor(clock*2 + tr.i)%3 === 0){
+      ctx.fillStyle = '#4a4458'; ctx.fillRect(X+(8 + (tr.i%5))*P, Y+11*P, P, P);
+    }
+  }
+  if (placing && placing.spots){
+    const pulse = .25 + .25*Math.sin(clock*7);
+    for (const i of placing.spots){
+      const X = ox + (i%COLS)*CS, Y = oy + ((i/COLS)|0)*CS;
+      ctx.fillStyle = `rgba(255,240,200,${pulse})`; ctx.fillRect(X+P, Y+P, CS-2*P, CS-2*P);
+      ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = P; ctx.strokeRect(X+1.5*P, Y+1.5*P, CS-3*P, CS-3*P);
+    }
+  }
   const pa = inWave ? path : preview;
   if (pa){
     const ec = pa[0]%COLS, X = ox + ec*CS + 10*P, Y = oy + P;
@@ -1935,8 +2128,8 @@ function hud(){
   setTxt('vGold', String(Math.floor(S.gold)));
   const wn = inWave ? S.wave : Math.min(S.wave + 1, siege ? SIEGE_WAVES : 1e9);
   setTxt('vWave', siege ? wn + '/' + SIEGE_WAVES : String(wn));
-  setTxt('vCost', String(S.cost));
-  $('bRecruit').classList.toggle('poor', S.gold < S.cost);
+  setTxt('vCost', String(Math.round(S.cost)));
+  $('bRecruit').classList.toggle('poor', S.gold < Math.round(S.cost));
   if (inWave){
     const left = queue.length + enemies.length + pendingSpawn.length;
     setTxt('vWaveBtn', 'En cours');
@@ -2040,14 +2233,16 @@ cv.addEventListener('pointerdown', e => {
   audio();
   if (over || !hasGame) return;
   const p = toDev(e), ref = refAt(p.x, p.y);
+  if (placing){ if (ref && ref.k === 'b') placeAt(ref.i); return; }
   if (ref && ref.k !== 'sell' && getT(ref)){
     drag = { ref, troop:getT(ref), x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false, over:null, eval:{ok:false} };
     try { cv.setPointerCapture(e.pointerId); } catch(_){}
   } else {
     closeSheet();
     if (ref && ref.k === 'b'){
-      const tt = S.terrain[ref.i];
-      if (tt === TER.HILL) toast('Colline : un soldat posté ici gagne +0,6 de portée');
+      const tt = S.terrain[ref.i], tr = trapMap.get(ref.i);
+      if (tr) toast(TRAPS[tr.k].name + (tr.k === 'givre' && tr.cd > 0 ? ' : se recharge' : ' : posé pour cette vague'));
+      else if (tt === TER.HILL) toast('Colline : un soldat posté ici gagne +0,6 de portée');
       else if (tt === TER.RUNE) toast('Pierre runique : +' + Math.round(RUNE_DMG*MODS.runeMul*100) + ' % de dégâts pour le soldat posté ici');
       else if (tt === TER.MARSH) toast('Marais : les ennemis y avancent 30 % moins vite');
     } else if (ref && ref.k === 'n') toast('Touche Recruter pour remplir la réserve');
@@ -2088,7 +2283,7 @@ function openSheet(ref){
     : `<div class="sh-next">Rang le plus haut de sa lignée.</div>`;
   let syn = '';
   if (i != null){
-    const dbl = MODS.synMul > 1 ? ' (doublé)' : '';
+    const dbl = MODS.synMul > 1 ? ' (+50 %)' : '';
     const rows = (tw.syn ? tw.syn.list : []).map(s => `<div><img class="px" src="${URL_[s.with][0]}" alt=""><span><b>${s.name}</b> : ${s.txt}${s.name === 'Formation' ? '' : dbl}</span></div>`);
     const ter = S.terrain[i];
     if (ter === TER.HILL) rows.push(`<div><img class="px" src="${BI.hill}" alt=""><span><b>Colline</b> : +0,6 de portée</span></div>`);
@@ -2127,10 +2322,94 @@ function specialText(t,l){
     case 0: return l>=3 ? 'Ses coups touchent aussi les ennemis collés à sa cible (50 %).' : 'Au niveau 3, ses coups toucheront aussi les ennemis voisins.';
     case 1: return l>=4 ? 'Décoche deux flèches sur deux cibles différentes.' : 'Au niveau 4, elle décochera deux flèches à la fois.';
     case 2: return 'Explosion d’un rayon de ' + (TYPES[2].splash + .08*(l-1)).toFixed(1).replace('.', ',') + ' case.';
-    case 3: return 'Ralentit de ' + Math.round(Math.min(.75, .3+.07*(l-1)+MODS.slowAdd)*100) + ' %' + (l>=4 ? ', et tout le groupe autour de la cible.' : '. Au niveau 4, le froid touchera tout un groupe.');
-    case 4: return 'L’éclair rebondit sur ' + (1+l+MODS.chainAdd) + ' ennemis de plus' + (MODS.noDecay ? '.' : ', en perdant 20 % à chaque saut.');
+    case 3: return 'Ralentit de ' + Math.round(Math.min(.6, .3+.07*(l-1)+MODS.slowAdd)*100) + ' %' + (l>=4 ? ', et tout le groupe autour de la cible.' : '. Au niveau 4, le froid touchera tout un groupe.');
+    case 4: return 'L’éclair rebondit sur ' + (1+l+MODS.chainAdd) + ' ennemis de plus' + ', en perdant ' + Math.round((1-MODS.decay)*100) + ' % à chaque saut.';
   }
 }
+
+/* ---------- atelier : pièges et terrain ---------- */
+const nextWaveN = () => inWave ? S.wave : S.wave + 1;
+function trapPrice(k){ const t = TRAPS[k]; return Math.round((t.base + t.per*nextWaveN()) * (1 + .25*S.trapBuys)); }
+function landPrice(k){ const l = LAND[k]; return l.base + l.step*(S.shopBuys[k] || 0); }
+const itemPrice = (kind, id) => kind === 'trap' ? trapPrice(id) : landPrice(id);
+function placeSpots(kind, id){
+  const out = [], lock = inWave ? pathSet : previewSet;
+  for (let i=0;i<COLS*ROWS;i++){
+    const t = S.terrain[i];
+    if (kind === 'trap'){ if (lock.has(i) && !trapMap.has(i)) out.push(i); }
+    else if (id === 'dyn'){ if (t === TER.ROCK || t === TER.TREE) out.push(i); }
+    else if (id === 'marsh'){ if (t === TER.GRASS && !S.board[i] && !trapMap.has(i)) out.push(i); }
+    else if (t === TER.GRASS && !lock.has(i) && (S.board[i] || routeOK(i, -1))) out.push(i);
+  }
+  return out;
+}
+function openShop(){
+  if (!hasGame || over) return;
+  closeSheet();
+  $('shopLead').innerHTML = `Tu as <b>${Math.floor(S.gold)} or</b>. Les pièges se posent sur le chemin et durent une vague. Le terrain, lui, reste jusqu’à la fin de la partie.`;
+  const row = (kind, id, icon, name, desc) => {
+    const price = itemPrice(kind, id), spots = placeSpots(kind, id).length;
+    const why = !spots ? (kind === 'trap' ? 'Le chemin est déjà couvert' : 'Aucune case possible') : S.gold < price ? 'Il te manque ' + (price - Math.floor(S.gold)) + ' or' : '';
+    return `<button class="shop-item${why ? ' off' : ''}" data-kind="${kind}" data-id="${id}" data-why="${why}">
+      <img class="px" src="${icon}" alt=""><div><b>${name}</b><span>${desc}</span>${why ? `<small>${why}</small>` : ''}</div>
+      <em><img class="px" src="${COIN_URL}" alt="">${price}</em></button>`;
+  };
+  $('shopBody').innerHTML =
+    `<h3 class="cx-h">Pièges</h3><p class="cx-note">${S.trapBuys ? 'Déjà ' + S.trapBuys + ' posé' + (S.trapBuys > 1 ? 's' : '') + ' pour cette vague : chaque piège rend le suivant 25 % plus cher.' : 'Leur prix suit la vague. Chaque piège posé rend le suivant 25 % plus cher, jusqu’à la fin de la vague.'}</p>` +
+    TRAP_ORDER.map(k => row('trap', k, TRAP_URL[k], TRAPS[k].name, TRAPS[k].desc)).join('') +
+    `<h3 class="cx-h">Terrain</h3><p class="cx-note">Chaque achat rend le suivant du même genre plus cher.</p>` +
+    LAND_ORDER.map(k => row('land', k, LAND_URL[k], LAND[k].name, LAND[k].desc)).join('');
+  $('shopBody').querySelectorAll('.shop-item').forEach(b => b.onclick = () => {
+    if (b.dataset.why){ toast(b.dataset.why); sfx('bad'); return; }
+    startPlacing(b.dataset.kind, b.dataset.id);
+  });
+  show('ovShop');
+}
+function startPlacing(kind, id){
+  hide('ovShop');
+  placing = { kind, id, spots:[] };
+  refreshPlacing();
+  $('placeBar').classList.add('show');
+}
+function refreshPlacing(){
+  if (!placing) return;
+  const { kind, id } = placing, price = itemPrice(kind, id);
+  placing.spots = placeSpots(kind, id);
+  $('pbIcon').src = kind === 'trap' ? TRAP_URL[id] : LAND_URL[id];
+  $('pbName').textContent = (kind === 'trap' ? TRAPS[id].name : LAND[id].name) + ' : ' + price + ' or';
+  $('pbHint').textContent = !placing.spots.length ? 'Plus aucune case possible.'
+    : S.gold < price ? 'Il te manque ' + (price - Math.floor(S.gold)) + ' or.'
+    : 'Touche une case qui clignote. Le jeu est en pause.';
+}
+function stopPlacing(){ placing = null; const b = $('placeBar'); if (b) b.classList.remove('show'); }
+function placeAt(i){
+  const { kind, id } = placing, price = itemPrice(kind, id);
+  if (!placing.spots.includes(i)){
+    toast(kind === 'trap' ? 'Les pièges se posent sur le chemin tracé' : 'Choisis une case qui clignote'); sfx('bad'); return;
+  }
+  if (S.gold < price){ toast('Il te manque ' + (price - Math.floor(S.gold)) + ' or'); sfx('bad'); return; }
+  S.gold -= price;
+  const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5;
+  if (kind === 'trap'){
+    S.traps.push({ i, k:id, id:++trapSeq, cd:0, anim:.3, used:false });
+    S.trapBuys++; rebuildTraps();
+    burst(cx, cy, '#e8dcc0', 8, 2);
+  } else {
+    S.terrain[i] = id === 'dyn' ? TER.GRASS : id === 'hill' ? TER.HILL : id === 'marsh' ? TER.MARSH : TER.RUNE;
+    S.shopBuys[id] = (S.shopBuys[id] || 0) + 1;
+    if (id === 'dyn'){ burst(cx, cy, '#ff8a2a', 14, 4); burst(cx, cy, '#8f8a80', 10, 3); shake = .2; sfx('boom'); }
+    else burst(cx, cy, id === 'rune' ? '#7fe3ff' : id === 'marsh' ? '#7fb3b0' : '#9ed36a', 14, 2.5);
+    fx.push({ k:'ring', x:cx, y:cy, r:.7, life:.4, max:.4, col:'#fff3c4' });
+    renderBG();
+  }
+  fx.push({ k:'t', x:cx, y:cy-.5, s:'-' + price, col:'#f6c94a', life:.8, max:.8 });
+  sfx('build');
+  save();
+  refreshPlacing();
+  if (kind === 'land' || !placing.spots.length || S.gold < itemPrice(kind, id)) stopPlacing();
+}
+$('bShop').addEventListener('click', () => { audio(); openShop(); });
+$('pbDone').addEventListener('click', stopPlacing);
 
 /* ---------- boutons ---------- */
 function recruit(){
@@ -2138,8 +2417,9 @@ function recruit(){
   if (over || !hasGame) return;
   const i = S.bench.findIndex(x => !x);
   if (i < 0){ toast('Réserve pleine : poste ou fusionne un soldat'); sfx('bad'); return; }
-  if (S.gold < S.cost){ toast('Il te manque ' + (S.cost - Math.floor(S.gold)) + ' or'); sfx('bad'); return; }
-  S.gold -= S.cost; S.cost += MODS.costInc;
+  const price = Math.round(S.cost);
+  if (S.gold < price){ toast('Il te manque ' + (price - Math.floor(S.gold)) + ' or'); sfx('bad'); return; }
+  S.gold -= price; S.cost += MODS.costInc;
   const w = [0,1,2,3,4].map(t => 1 + MODS.school[t]);
   let r = Math.random() * w.reduce((a,b) => a+b, 0), t = 0;
   for (; t<4; t++){ r -= w[t]; if (r <= 0) break; }
@@ -2223,8 +2503,11 @@ $('mdSiege').src = ENS.king.url;
 /* ---------- cycle de vie ---------- */
 document.addEventListener('visibilitychange', () => {
   paused = document.hidden;
-  if (document.hidden) persist(); else last = performance.now();
+  if (document.hidden){ persist(); dropAudio(); } else last = performance.now();
 });
+window.addEventListener('pagehide', dropAudio);
+document.addEventListener('touchend', audio, { capture:true, passive:true });
+document.addEventListener('pointerdown', audio, { capture:true, passive:true });
 document.addEventListener('gesturestart', e => e.preventDefault());
 new ResizeObserver(resize).observe(stage);
 window.addEventListener('orientationchange', () => setTimeout(resize, 200));
@@ -2237,7 +2520,10 @@ quiet = false;
 recomputeSyn();
 resize();
 if (!hasGame) genTerrain();
-makePreview();
+if (!restorePreview(S.savedPreview)) makePreview();
+S.traps = (S.savedTraps || []).filter(a => a && previewSet.has(a[0]) && TRAPS[a[1]]).map(a => ({ i:a[0], k:a[1], id:++trapSeq, cd:0, anim:0, used:false }));
+delete S.savedPreview; delete S.savedTraps;
+rebuildTraps();
 snap(); persist();
 hud();
 if (!hasGame) openMode();
