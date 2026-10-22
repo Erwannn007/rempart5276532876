@@ -258,7 +258,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
     <p>Lâche un soldat sur un <b>soldat identique</b> (même type, même niveau) : ils fusionnent en un soldat du niveau suivant. Cinq niveaux par type.</p>
     <p>Deux soldats <b>côte à côte</b> forment une synergie et se renforcent. Chaque paire de types a son effet ; tout est détaillé dans le Recueil.</p>
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
-    <p>Les points qui défilent montrent le <b>chemin de la prochaine vague</b>. Une fois tracé, il ne bouge plus : on ne peut pas poser de soldat dessus.</p>
+    <p>Les points qui défilent montrent le <b>chemin des ennemis</b>. Il reste le même pendant 5 vagues, et personne ne peut s’y poster. Toutes les 5 vagues, un nouveau chemin est tracé : les soldats qui se trouvent dessus sont déplacés à côté.</p>
     <p>Régulièrement, tu choisis une <b>bénédiction</b> parmi trois. Elle dure toute la partie.</p>
     <p>L’<b>Atelier</b> transforme ton or : des pièges à poser sur le chemin, qui durent une vague, et des aménagements de terrain permanents (dynamite, colline, marais, pierre runique).</p>
     <p>Glisse un soldat sur la <b>pièce</b> pour le revendre. Chaque ennemi qui passe le rempart te coûte des vies.</p>
@@ -1081,15 +1081,49 @@ function bfsPath(free){
   }
   return null;
 }
-function genPath(){
-  const free = i => !S.board[i] && isWalk(i);
+const PATH_EVERY = 5;
+function overlapRatio(p, set){ if (!set || !set.size) return 0; let n = 0; for (const i of p) if (set.has(i)) n++; return n / p.length; }
+/* Nouveau chemin. Il doit s'écarter nettement de l'ancien : on essaie d'abord
+   de contourner les soldats, et si ce n'est pas possible on passe à travers
+   (les soldats concernés seront déplacés). */
+function genPath(old){
+  const oldSet = old ? new Set(old) : null;
   const target = 20 + (Math.random()*12|0);
-  let bestP = null;
-  for (let a=0;a<8;a++){
-    const p = tryDFS(free);
-    if (p && (!bestP || Math.abs(p.length-target) < Math.abs(bestP.length-target))) bestP = p;
+  const cands = [];
+  const add = p => { if (p) cands.push({ p, ov: overlapRatio(p, oldSet), cross: p.filter(i => S.board[i]).length }); };
+  for (let a=0;a<10;a++) add(tryDFS(i => !S.board[i] && isWalk(i)));
+  if (!cands.some(c => c.ov <= .4)) for (let a=0;a<16;a++) add(tryDFS(i => isWalk(i)));
+  if (!cands.length) return bfsPath(i => !S.board[i] && isWalk(i)) || bfsPath(i => isWalk(i));
+  // un chemin qui change vraiment passe avant tout, puis le moins de soldats déplacés
+  const ok = cands.filter(c => c.ov <= .4);
+  const pool = ok.length ? ok : cands;
+  pool.sort((x,y) => (x.cross*12 + Math.abs(x.p.length-target) + x.ov*60) - (y.cross*12 + Math.abs(y.p.length-target) + y.ov*60));
+  return pool[0].p;
+}
+function relocateOff(set){
+  let moved = 0, toBench = 0, sold = 0;
+  for (const i of set){
+    const tw = S.board[i]; if (!tw) continue;
+    S.board[i] = null;
+    let bestJ = -1, bd = Infinity;
+    for (let j=0;j<COLS*ROWS;j++){
+      if (S.board[j] || set.has(j) || !isBuild(j)) continue;
+      const d = Math.abs(j%COLS - i%COLS) + Math.abs(((j/COLS)|0) - ((i/COLS)|0)) + (S.terrain[j] === TER.GRASS ? 0 : -.1);
+      if (d < bd){ bd = d; bestJ = j; }
+    }
+    if (bestJ >= 0){ S.board[bestJ] = tw; tw.pop = .3; moved++; burst(bestJ%COLS + .5, ((bestJ/COLS)|0) + .5, '#fff3c4', 6, 1.5); continue; }
+    const b = S.bench.findIndex(x => !x);
+    if (b >= 0){ S.bench[b] = tw; toBench++; continue; }
+    S.gold += sellValue(tw.l); sold++;
   }
-  return bestP || bfsPath(free);
+  if (moved || toBench || sold){
+    const parts = [];
+    if (moved) parts.push(moved + (moved > 1 ? ' soldats déplacés' : ' soldat déplacé'));
+    if (toBench) parts.push(toBench + ' en réserve');
+    if (sold) parts.push(sold + (sold > 1 ? ' revendus' : ' revendu'));
+    setTimeout(() => toast('Nouveau chemin : ' + parts.join(', ')), 300);
+    recomputeSyn();
+  }
 }
 function buildWP(p){
   const pts = [{ x:p[0]%COLS+.5, y:-.7 }];
@@ -1120,9 +1154,15 @@ function restorePreview(p){
   return true;
 }
 function rebuildTraps(){ trapMap = new Map(S.traps.filter(t => !t.used).map(t => [t.i, t])); }
-function makePreview(){
-  preview = genPath();
-  previewSet = new Set(preview); WPprev = buildWP(preview);
+function makePreview(old){
+  preview = genPath(old);
+  previewSet = new Set(preview);
+  relocateOff(previewSet);
+  WPprev = buildWP(preview);
+  renderBG();
+}
+function keepPath(){
+  preview = path; previewSet = new Set(path); WPprev = buildWP(path);
   renderBG();
 }
 
@@ -1289,7 +1329,7 @@ function renderBG(){
       }
       put(X0+6,Y0+9,B.tuft[0]); put(X0+8,Y0+9,B.tuft[0]); put(X0+7,Y0+10,B.tuft[1]);
     } else if (tt === TER.MARSH){
-      const same = (dc,dr) => { const nc=cc+dc, nr=r+dr; return nc>=0&&nr>=0&&nc<COLS&&nr<ROWS && ter[idx(nc,nr)]===TER.MARSH; };
+      const same = (dc,dr) => { const nc=cc+dc, nr=r+dr; if (nc<0||nr<0||nc>=COLS||nr>=ROWS) return false; const j = idx(nc,nr); return ter[j]===TER.MARSH && !ps.has(j); };
       const L = same(-1,0), R = same(1,0), U = same(0,-1), D = same(0,1);
       const xl = L?0:2, xr = R?T-1:T-3, yt = U?0:2, yb = D?T-1:T-3;
       for (let y=yt;y<=yb;y++) for (let xx=xl;xx<=xr;xx++){
@@ -1317,13 +1357,19 @@ function renderBG(){
   // terre du chemin
   if (pArr){
     for (const i of pArr){
-      if (ter[i] === TER.MARSH) continue;
       const cc = i%COLS, r = (i/COLS)|0, X0 = cc*T, Y0 = r*T;
       for (let y=0;y<T;y++) for (let xx=0;xx<T;xx++){
         const n = hash(X0+xx, Y0+y, 3);
         let col = B.dirt[0];
         if (n < .12) col = B.dirt[1]; else if (n > .985) col = B.dirt[3]; else if (n > .93) col = B.dirt[2];
         put(X0+xx, Y0+y, col);
+      }
+      if (ter[i] === TER.MARSH){
+        for (let k=0;k<3;k++){
+          const px = X0 + 4 + (hash(cc,r,k*13+70)*10|0), py = Y0 + 4 + (hash(cc,r,k*13+71)*11|0), w = 2 + (k%2);
+          for (let q=0;q<w;q++) put(px+q, py, B.water[0]);
+          put(px, py, B.water[1]);
+        }
       }
       const open = (dc,dr) => {
         const nc = cc+dc, nr = r+dr;
@@ -1454,13 +1500,15 @@ function endWave(){
   if (MODS.regen && waveLeaks === 0){ S.lives++; regen = true; }
   if (S.mode === 'endless') best = Math.max(best, S.wave);
   if (S.mode === 'siege' && S.wave >= SIEGE_WAVES){ victory(); return; }
+  const newPath = S.wave % PATH_EVERY === 0;
   let sub = '+' + bonus + ' or';
   if (intr) sub += ', +' + intr + ' d’intérêts';
   if (regen) sub += ', +1 vie';
-  banner = { t:2, max:2, text:'Vague ' + S.wave + ' repoussée', sub, col:'#f2c14e' };
+  if (newPath) sub += ', nouveau chemin';
+  banner = { t: newPath ? 2.6 : 2, max: newPath ? 2.6 : 2, text:'Vague ' + S.wave + ' repoussée', sub, col:'#f2c14e' };
   sfx('clear');
   S.traps = []; S.trapBuys = 0; rebuildTraps();
-  makePreview();
+  if (newPath || !path) makePreview(path); else keepPath();
   if (S.wave % blessEvery() === 0) S.pending = drawBless(3);
   save();
   if (S.pending) setTimeout(openBless, 1100);
@@ -2182,7 +2230,7 @@ function evalDrop(src, dst){
   if (dst.k === 'b'){
     const tt = S.terrain[dst.i];
     if (!BUILD[tt]) return { ok:false, why:TER_WHY[tt] };
-    if ((inWave ? pathSet : previewSet).has(dst.i)) return { ok:false, why:'Le chemin de la vague est déjà tracé ici' };
+    if ((inWave ? pathSet : previewSet).has(dst.i)) return { ok:false, why:'Le chemin passe ici jusqu’à son prochain changement' };
     if (!routeOK(dst.i, src.k==='b' ? src.i : -1)) return { ok:false, why:'Il faut laisser un passage aux ennemis' };
   }
   return { ok:true, kind:'move' };
