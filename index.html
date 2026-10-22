@@ -290,6 +290,8 @@ html{background:#1c1610}
 .sh-xp i{flex:1;height:10px;background:#1c1610;border:2px solid var(--edge);display:block}
 .sh-xp i b{display:block;height:100%;background:#7fd6ff}
 .sh-xp small{font-size:13px;color:#7fd6ff;white-space:nowrap}
+.sh-dt{font-size:14px;color:#c9d8ff;margin:-4px 0 10px}
+.syn-row span.res{color:#c9d8ff;font-weight:600}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -408,6 +410,7 @@ html{background:#1c1610}
     <p>Lâche un soldat sur un soldat <b>du même type mais d’un autre niveau</b> : le plus faible est absorbé et le plus fort gagne de l’expérience. Quand sa jauge bleue est pleine, il monte d’un niveau.</p>
     <p>Lâche un soldat sur un <b>soldat identique</b> (même type, même niveau) : ils fusionnent en un soldat du niveau suivant. Huit niveaux par type : après le niveau 5 viennent le mythril, l’obsidienne et le céleste.</p>
     <p>Le mode <b>Histoire</b> traverse huit mondes, de la Forêt sombre au Trône noir. Chacun a ses monstres, son décor et son boss final. Gagne pour ouvrir le suivant, et rejoue les autres pour décrocher trois étoiles.</p>
+    <p>Chaque soldat a un <b>type de dégâts</b>. L’Épéiste et l’Archère frappent en <b>physique</b>, que l’armure réduit. L’Artificier fait des dégâts <b>explosifs</b>, qui ignorent la moitié de l’armure. Le Givre et la Foudre sont <b>magiques</b>, réduits par la résistance magique. L’Épéiste et l’Artificier ne peuvent pas atteindre les <b>volants</b>. Les petits boucliers au‑dessus des monstres montrent leurs résistances (gris : armure, bleu : magie), et la bande au‑dessus du terrain annonce la vague suivante.</p>
     <p>Toutes les 5 vagues, un <b>boss</b> attaque, chacun avec son pouvoir. Le Bestiaire du Recueil détaille chaque monstre.</p>
     <p>Deux soldats <b>côte à côte</b> forment une synergie et se renforcent. Chaque paire de types a son effet ; tout est détaillé dans le Recueil.</p>
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
@@ -1519,7 +1522,7 @@ const EN = {
   slime:   { name:'Gluant',        hp:1,   spd:1.0, gold:2,   dmg:1,  col:'#79c25b', desc:'Lent et mou. Il vient en nombre.' },
   wolf:    { name:'Loup',          hp:.55, spd:1.9, gold:2,   dmg:1,  col:'#8b8f9c', desc:'Fragile, mais il file à toute allure.' },
   golem:   { name:'Golem',         hp:3.4, spd:.62, gold:5,   dmg:2,  col:'#8f897c', desc:'Un bloc de pierre qui encaisse beaucoup.' },
-  bigslime:{ name:'Gros gluant',   hp:2.4, spd:.8,  gold:4,   dmg:2,  col:'#3fae8f', split:['mini',2], desc:'Quand on le crève, il se coupe en deux petits gluants.' },
+  bigslime:{ name:'Gros gluant',   hp:2.0, spd:.8,  gold:4,   dmg:2,  col:'#3fae8f', split:['mini',2], desc:'Quand on le crève, il se coupe en deux petits gluants.' },
   mini:    { name:'Petit gluant',  hp:.4,  spd:1.3, gold:1,   dmg:1,  col:'#3fae8f', desc:'Né d’un gros gluant. Petit et pressé.' },
   goblin:  { name:'Gobelin d’or',  hp:.45, spd:2.7, gold:30,  dmg:0,  col:'#e0a93a', desc:'Rare et très rapide. S’il passe le rempart, il s’enfuit avec son or.' },
   boss:    { name:'Seigneur noir', boss:true, hint:'Le seigneur noir approche', hp:26,  spd:.45, gold:40,  dmg:6,  col:'#b33a3a', desc:'Revient toutes les dix vagues, toujours plus fort.' },
@@ -1562,6 +1565,28 @@ const EN = {
   titan_ice:   { name:'Titan de givre', boss:true, hp:32, spd:.3, gold:70, dmg:8, col:'#9fc8e0', armorAll:.6, noSlow:true, hint:'Rien ne le ralentit', desc:'Un titan de glace : il encaisse tout à 60 % et ignore le froid.' },
   king:    { name:'Roi Gluant',    boss:true, hp:60,  spd:.3,  gold:200, dmg:20, col:'#3fae8f', split:['bigslime',4], desc:'Le maître du siège. À sa mort, il se répand en quatre gros gluants.' }
 };
+const RES = {
+  golem:{armor:.3}, golem_ice:{armor:.4}, golem_lava:{armor:.4}, orc:{armor:.5}, wolf_war:{armor:.3, armorAll:0}, beetle:{armor:.5},
+  scorpion:{armor:.4, armorAll:0}, yeti:{armor:.2}, mino:{armor:.2}, boss:{armor:.3}, titan:{armor:.4, armorAll:.75}, titan_ice:{armor:.4, armorAll:.75},
+  warlord:{armor:.4, armorAll:0}, ghost:{mres:.5}, wraith:{mres:.5}, imp:{mres:.5}, lich:{mres:.4}, shaman:{mres:.4}, vampire:{mres:.3},
+  slime_shadow:{mres:.3}, kraken:{mres:.3}, dragon:{mres:.3}, mummy:{mres:.3}
+};
+for (const k in RES) Object.assign(EN[k], RES[k]);
+Object.assign(EN.orc, { desc:'Un mur de muscles derrière un grand bouclier.' });
+Object.assign(EN.scorpion, { desc:'Sa carapace arrête une bonne partie des coups physiques.' });
+Object.assign(EN.titan, { desc:'Lourdement cuirassé, insensible au froid, il encaisse tout.' });
+Object.assign(EN.titan_ice, { desc:'Un titan de glace lourdement cuirassé, qui ignore le froid.' });
+Object.assign(EN.wolf_war, { desc:'Harnaché par les orcs, il encaisse mieux les coups physiques.' });
+const TYPE_DT = ['phys','phys','boom','magic','magic'];
+const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques' };
+const canHitAir = t => t === 1 || t === 3 || t === 4;
+function resText(B){
+  const r = [];
+  if (B.armor) r.push('Armure : −' + Math.round(B.armor*100) + ' % de dégâts physiques');
+  if (B.mres) r.push('Résistance magique : −' + Math.round(B.mres*100) + ' %');
+  if (B.fly) r.push('Volant : l’Épéiste et l’Artificier ne peuvent pas l’atteindre');
+  return r.join('. ');
+}
 const EN_ORDER = ['slime','wolf','golem','bigslime','mini','goblin','skeleton','spider','bat','orc','shaman','ghost','beetle','imp','head','slime_moss','slime_mud','slime_sand','slime_ice','slime_ember','slime_shadow','wolf_black','wolf_white','wolf_war','golem_ice','golem_lava','toad','scorpion','mummy','yeti','ghoul','boss','hydra_sand','titan_ice','dragon','lich','kraken','titan','queen','mino','wraith','hydra','vampire','warlord','king'];
 const BOSS_POOL = ['boss','dragon','lich','kraken','titan','queen','mino','wraith','hydra','vampire','warlord'];
 const BOSS_ALL = BOSS_POOL.concat('king');
@@ -1577,7 +1602,7 @@ const WORLDS = [
 ];
 const maxWaves = () => S.mode === 'siege' ? SIEGE_WAVES : S.mode === 'story' ? WORLDS[S.world|0].waves : Infinity;
 const finiteMode = () => S.mode === 'siege' || S.mode === 'story';
-const MONSTER_UNLOCK = [['wolf',4],['golem',6],['bigslime',7],['skeleton',8],['bat',9],['spider',10],['orc',12],['beetle',13],['shaman',14],['ghost',16],['imp',18]];
+const MONSTER_UNLOCK = [['wolf',4],['golem',6],['bigslime',7],['skeleton',8],['bat',12],['spider',10],['orc',12],['beetle',13],['shaman',14],['ghost',16],['imp',18]];
 
 const TER = { GRASS:0, ROCK:1, HILL:2, MARSH:3, RUNE:4, TREE:5 };
 const WALK  = [1,0,0,1,0,0];
@@ -1921,7 +1946,7 @@ let drag = null, sel = null, quiet = true, placing = null, trapMap = new Map(), 
 const mk = (t,l,leg,xp) => ({ t, l, leg: leg || null, xp: xp || 0, cd:0, ab:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
 
 function freshGame(mode = 'endless', world = 0){
-  S = { mode, world, wave:0, gold: mode==='story' ? WORLDS[world].gold : mode==='siege' ? 50 : 40, lives:20, cost:10,
+  S = { mode, world, wave:0, gold: mode==='story' ? WORLDS[world].gold : mode==='siege' ? 50 : START_GOLD, lives:20, cost:10,
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
     terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
     traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 },
@@ -1934,7 +1959,7 @@ function snap(){
   snapshot = { mode:S.mode, world:S.world, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
     bless:S.bless, pending:S.pending, preview: preview || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
-    bossBag:S.bossBag, streak:S.streak, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
+    bossBag:S.bossBag, streak:S.streak, nextQ:S.nextQ || null, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
     board:S.board.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0) };
 }
 function persist(){
@@ -1977,6 +2002,7 @@ function load(){
     S.legendPity = g.legendPity|0;
     S.bossBag = Array.isArray(g.bossBag) ? g.bossBag.filter(k => BOSS_POOL.includes(k)) : null;
     S.streak = g.streak|0;
+    S.nextQ = Array.isArray(g.nextQ) ? g.nextQ.filter(k => EN[k]) : null;
     S.board = g.board.map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
     S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
     while (S.bench.length < BENCH_N) S.bench.push(null);
@@ -2521,21 +2547,39 @@ function renderBG(){
 /* =========================================================
    Vagues
    ========================================================= */
+let HPG = [1.17, 1.13, 20], GOLDW = 6, EARLY = [1, 12], START_GOLD = 40;
 const blessEvery = () => finiteMode() ? 4 : 5;
 function waveHP(w){
   if (S.mode === 'story') w += WORLDS[S.world].off;
-  return S.mode === 'siege' ? Math.round(16*Math.pow(1.2, w-1) + 5*w) : Math.round(16*Math.pow(1.17, Math.min(w,25)-1)*Math.pow(1.11, Math.max(0, w-25)) + 4*w);
+  const early = w >= EARLY[1] ? 1 : EARLY[0] + (1 - EARLY[0]) * (w - 1) / (EARLY[1] - 1);
+  return Math.round(waveHPraw(w) * early);
 }
-function nextBoss(){
+function waveHPraw(w){
+  return S.mode === 'siege' ? Math.round(16*Math.pow(1.2, w-1) + 5*w) : Math.round(16*Math.pow(HPG[0], Math.min(w,HPG[2])-1)*Math.pow(HPG[1], Math.max(0, w-HPG[2])) + 4*w);
+}
+const BOSS_MIN_WAVE = { dragon:20, titan:15, vampire:15 };
+function nextBoss(w){
   if (!Array.isArray(S.bossBag) || !S.bossBag.length) S.bossBag = shuffle(BOSS_POOL.slice());
-  return S.bossBag.shift();
+  const i = S.bossBag.findIndex(k => (BOSS_MIN_WAVE[k] || 0) <= w);
+  if (i < 0) return 'boss';
+  return S.bossBag.splice(i, 1)[0];
 }
+/* Pic, respiration, pic : la vague qui suit un boss souffle, puis la pression remonte jusqu'au boss suivant. */
+let PACE = [1, .8, .95, 1.08, 1.18];
+/* Les deux espèces mises en avant n'ont jamais la même défense (pas de vague « tout blindé »). */
+const trait = k => { const B = EN[k]; return B.fly ? 'fly' : B.armor >= .3 ? 'armor' : B.mres >= .3 ? 'mres' : 'none'; };
+function pickTheme(avail){
+  const sh = shuffle(avail.slice()), out = [];
+  for (const k of sh){ if (out.length >= 2) break; if (out.length && trait(k) !== 'none' && trait(k) === trait(out[0])) continue; out.push(k); }
+  return out;
+}
+const wavePace = w => w <= 10 ? 1 : PACE[w % 5];
 function makeStoryWave(w){
   const W = WORLDS[S.world], q = [], last = w >= W.waves;
-  const ew = w + W.off, n = Math.min(8 + Math.floor(ew*1.4), 40);
+  const ew = w + W.off, n = Math.round(Math.min(8 + Math.floor(ew*1.4), 40) * wavePace(w));
   const step = Math.max(1, Math.floor(W.waves / (W.mobs.length + 1)));
   const avail = W.mobs.slice(0, Math.min(W.mobs.length, Math.floor((w - 1) / step) + 1));
-  const theme = shuffle(avail.slice()).slice(0, 2);
+  const theme = pickTheme(avail);
   for (let i=0;i<n;i++){
     const r = Math.random(); let k = W.base;
     if (theme.length && r < .45) k = theme[Math.random()*theme.length|0];
@@ -2554,9 +2598,9 @@ function makeStoryWave(w){
 function makeWave(w){
   if (S.mode === 'story') return makeStoryWave(w);
   const q = [], siege = S.mode === 'siege';
-  const n = Math.min(8 + Math.floor(w*1.4), 40);
+  const n = Math.round(Math.min(8 + Math.floor(w*1.4), 40) * wavePace(w));
   const avail = MONSTER_UNLOCK.filter(([k, from]) => w >= (siege ? Math.ceil(from*.7) : from)).map(a => a[0]);
-  const theme = shuffle(avail.slice()).slice(0, 2), thS = Math.min(.5, .2 + w*.012);
+  const theme = pickTheme(avail), thS = Math.min(.5, .2 + w*.012);
   for (let i=0;i<n;i++){
     const r = Math.random(); let k = 'slime';
     if (theme.length && r < thS) k = theme[Math.random()*theme.length|0];
@@ -2566,7 +2610,7 @@ function makeWave(w){
   }
   if (w % 5 === 0){
     if (siege && w === SIEGE_WAVES) q.push('bigslime','bigslime','king');
-    else { const b = nextBoss(), cnt = siege ? 1 : 1 + Math.floor(w/30); for (let c=0;c<cnt;c++) q.push(b); }
+    else { const b = nextBoss(w), cnt = siege ? 1 : 1 + Math.floor(w/30); for (let c=0;c<cnt;c++) q.push(b); }
   }
   const gob = w >= 3 ? (MODS.bounty ? .6 : .2) : 0;
   if (Math.random() < gob) q.splice(2 + (Math.random()*(q.length-2)|0), 0, 'goblin');
@@ -2579,7 +2623,7 @@ function startWave(){
   S.wave++;
   path = preview; pathSet = previewSet; WP = WPprev;
   preview = null; previewSet = new Set(); WPprev = null;
-  queue = makeWave(S.wave); spawnT = .3; pendingSpawn = [];
+  queue = (Array.isArray(S.nextQ) && S.nextQ.length) ? S.nextQ : makeWave(S.wave); S.nextQ = null; spawnT = .3; pendingSpawn = [];
   spawnGap = Math.max(.42, .95 - S.wave*.015);
   inWave = true; autoT = 0; waveTime = 0; herseUsed = false; waveLeaks = 0; legKills = 0;
   if (typeof recruitLevel === 'function' && recruitLevel() > (S.recLvl || 1)){ S.recLvl = recruitLevel(); setTimeout(() => toast('Tes recrues arrivent désormais au niveau ' + S.recLvl), 2400); }
@@ -2602,7 +2646,7 @@ function spawn(k, d = 0, hpOver){
   if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
   if (!hpOver && base.boss){ const ew = S.wave + (S.mode === 'story' ? WORLDS[S.world].off : 0); hp *= Math.min(1, .3 + ew*.045); }
   const spdScale = Math.min(1.3, 1 + S.wave*.006);
-  let gold = base.gold + Math.floor(S.wave/6) + MODS.goldKill;
+  let gold = base.gold + Math.floor(S.wave/GOLDW) + MODS.goldKill;
   if (k === 'mini') gold = 1 + MODS.goldKill;
   if (k === 'goblin') gold = Math.round((30 + S.wave*2) * (MODS.bounty ? 1.5 : 1));
   const e = { k, hp, max:hp, spd:base.spd*spdScale, d, seg:0, x:0, y:0, slow:0, slowT:0, stunT:0, flash:0,
@@ -2638,6 +2682,7 @@ function endWave(){
   sfx('clear');
   S.traps = []; S.trapBuys = 0; rebuildTraps();
   if (newPath || !path) makePreview(path); else keepPath();
+  if (!(finiteMode() && S.wave >= maxWaves())) S.nextQ = makeWave(S.wave + 1);
   if (S.wave % blessEvery() === 0) S.pending = drawBless(3);
   save();
   if (S.pending) setTimeout(openBless, 1100);
@@ -2720,6 +2765,7 @@ function newGame(mode, world = 0){
   computeMods(); recomputeSyn();
   makePreview();
   S.pending = drawBless(3);
+  S.nextQ = makeWave(1);
   save(); hud();
   banner = mode === 'story'
     ? { t:2.6, max:2.6, text: WORLDS[world].name, sub: 'Monde ' + (world+1) + ', ' + WORLDS[world].waves + ' vagues', col:'#f2c14e' }
@@ -2790,19 +2836,20 @@ function openBlessList(){
    ========================================================= */
 const d2 = (a,b) => (a.x-b.x)**2 + (a.y-b.y)**2;
 const slowed = e => e.slowT > 0 || e.stunT > 0;
-function findTarget(cx, cy, range, not){
+function findTarget(cx, cy, range, not, air = true){
   let bestE = null, r2 = range*range;
   for (const e of enemies){
-    if (e.dead || e === not || e.y < -.2 || e.ph) continue;
+    if (e.dead || e === not || e.y < -.2 || e.ph || (!air && EN[e.k].fly)) continue;
     if ((e.x-cx)**2 + (e.y-cy)**2 <= r2 && (!bestE || e.d > bestE.d)) bestE = e;
   }
   return bestE;
 }
-let hitKind = '';
+let hitDT = '';
 function hit(e, dmg){
   if (e.dead || e.ph) return;
   const B = EN[e.k];
-  if (B.armor && hitKind !== 'boom' && hitKind !== 'zap') dmg *= B.armor;
+  if (B.armor){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom') dmg *= 1 - B.armor/2; }
+  if (B.mres && hitDT === 'magic') dmg *= 1 - B.mres;
   if (B.armorAll) dmg *= B.armorAll;
   e.hp -= dmg; e.flash = .07;
   if (B.bats && !e.batsDone && e.hp > 0 && e.hp < e.max*.4){
@@ -2848,7 +2895,7 @@ function applySlow(e, s, dur = 1.6){
   e.slow = Math.max(e.slowT > 0 ? e.slow : 0, s); e.slowT = Math.max(e.slowT, dur);
 }
 function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L, col){
-  hitKind = 'zap';
+  const prevDT = hitDT; hitDT = 'magic';
   const pts = [{ x:x0, y:y0 }], hs = new Set();
   let cur = tg, dm = dmg;
   for (let k=0; k<=jumps && cur; k++){
@@ -2859,7 +2906,7 @@ function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L, col){
     cur = nx;
   }
   fx.push({ k:'bolt', pts, life:.2, max:.2, L, col });
-  hitKind = '';
+  hitDT = prevDT;
 }
 const isBoss = e => !!EN[e.k].boss;
 function legendFire(tw, cx, cy, tg, st, D){
@@ -2888,7 +2935,7 @@ function legendFire(tw, cx, cy, tg, st, D){
       for (const e of enemies){
         if (e.dead) continue;
         const vx = e.x-cx, vy = e.y-cy, pr = vx*ux + vy*uy, pe = Math.abs(vx*uy - vy*ux);
-        if (pr > 0 && pr <= reach && pe < .45) hit(e, D * (isBoss(e) ? 2 : 1));
+        if (pr > 0 && pr <= reach && pe < .45 && !EN[e.k].fly) hit(e, D * (isBoss(e) ? 2 : 1));
       }
       fx.push({ k:'beam', x0:cx, y0:cy-.3, x1:cx+ux*reach, y1:cy-.3+uy*reach, life:.2, max:.2, col: L===5 ? '#fff3b0' : '#ffffff' });
       sfx('slash'); break;
@@ -2897,7 +2944,7 @@ function legendFire(tw, cx, cy, tg, st, D){
       lightning(cx + .3*tw.face, cy-.6, tg, D, 1, .8, 0, L, '#f2c14e'); sfx('zap'); break;
     case 'hannibal': {
       const stn = .3 + .1*L;
-      for (const e of enemies) if (!e.dead && d2(e,tg) <= .81){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
+      for (const e of enemies) if (!e.dead && !EN[e.k].fly && d2(e,tg) <= .81){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
       fx.push({ k:'ring', x:tg.x, y:tg.y, r:.9, life:.3, max:.3, col:'#c9a77a' });
       burst(tg.x, tg.y, '#b39b7a', 12, 3); shake = Math.max(shake, .08);
       sfx('stomp'); break;
@@ -2921,7 +2968,7 @@ function legendFire(tw, cx, cy, tg, st, D){
       projs.push({ k:'shard', x:cx, y:cy-.4, tg, spd:9, dmg:D, slow:.2, dur:1.2, L:1, style:'anubis', mark:ANUBIS_GOLD[L-1] }); sfx('ice'); break;
     case 'hercule': {
       const stn = .2 + .1*L;
-      for (const e of enemies) if (!e.dead && d2(e,tg) <= .36){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
+      for (const e of enemies) if (!e.dead && !EN[e.k].fly && d2(e,tg) <= .36){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.2, max:.2, col:'#f2c14e' });
       fx.push({ k:'ring', x:tg.x, y:tg.y, r:.6, life:.25, max:.25, col:'#e6b46a' });
       shake = Math.max(shake, .05); sfx('stomp'); break;
@@ -2937,6 +2984,13 @@ function merlinFreeze(tw, cx, cy){
   sfx('freeze');
 }
 function fire(tw, cx, cy, tg, st){
+  const n0 = projs.length, prevDT = hitDT, dt = TYPE_DT[tw.t];
+  hitDT = dt;
+  fireInner(tw, cx, cy, tg, st);
+  for (let k=n0; k<projs.length; k++) if (!projs[k].dt) projs[k].dt = dt;
+  hitDT = prevDT;
+}
+function fireInner(tw, cx, cy, tg, st){
   tw.anim = .12;
   if (tg.x < cx - .05) tw.face = -1; else if (tg.x > cx + .05) tw.face = 1;
   const L = tw.l, sy = tw.syn || NOSYN, M = MODS;
@@ -2948,12 +3002,12 @@ function fire(tw, cx, cy, tg, st){
       const vs = e => slowed(e) ? 1 + sy.vsSlow : 1;
       if (M.whirl){
         const r2 = st.range*st.range;
-        for (const e of enemies) if (!e.dead && (e.x-cx)**2 + (e.y-cy)**2 <= r2) hit(e, D*.6*vs(e));
+        for (const e of enemies) if (!e.dead && !EN[e.k].fly && (e.x-cx)**2 + (e.y-cy)**2 <= r2) hit(e, D*.6*vs(e));
         fx.push({ k:'ring', x:cx, y:cy-.1, r:st.range*.9, life:.18, max:.18, col:'#ffffff' });
       } else {
         hit(tg, D*vs(tg));
         fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L===5 ? '#fff3b0' : '#ffffff' });
-        if (L>=3) for (const e of enemies) if (e!==tg && !e.dead && d2(e,tg) < .64) hit(e, D*.5*vs(e));
+        if (L>=3) for (const e of enemies) if (e!==tg && !e.dead && !EN[e.k].fly && d2(e,tg) < .64) hit(e, D*.5*vs(e));
       }
       if (sy.zap && Math.random() < sy.zap && !tg.dead) lightning(cx + .3*tw.face, cy-.5, tg, D*.5, 2, .8, 0, 1);
       sfx('slash'); break;
@@ -2982,9 +3036,9 @@ function fire(tw, cx, cy, tg, st){
   }
 }
 function explode(x, y, rad, dmg, bslow, big){
-  hitKind = 'boom';
-  for (const e of enemies) if (!e.dead && (e.x-x)**2 + (e.y-y)**2 <= rad*rad){ hit(e, dmg); if (bslow) applySlow(e, bslow, 1.4); }
-  hitKind = '';
+  const prevDT = hitDT; hitDT = 'boom';
+  for (const e of enemies) if (!e.dead && !EN[e.k].fly && (e.x-x)**2 + (e.y-y)**2 <= rad*rad){ hit(e, dmg); if (bslow) applySlow(e, bslow, 1.4); }
+  hitDT = prevDT;
   fx.push({ k:'ring', x, y, r:rad, life:.3, max:.3, col: bslow ? '#bff0ff' : '#ffcf6a' });
   burst(x, y, bslow ? '#bff0ff' : '#ffb347', big ? 10 : 5, big ? 3.5 : 2.5);
   if (big) burst(x, y, '#6b6258', 6, 2);
@@ -3016,6 +3070,11 @@ function triggerTrap(tr, e){
   }
 }
 function updProj(p, dt){
+  const prevDT = hitDT; hitDT = p.dt || '';
+  updProjInner(p, dt);
+  hitDT = prevDT;
+}
+function updProjInner(p, dt){
   if (p.k === 'hammer'){
     p.a += dt*16;
     const tx = p.back ? p.home.x : p.tg.x, ty = p.back ? p.home.y : p.tg.y - .25;
@@ -3150,7 +3209,7 @@ function update(dt){
     }
     if (tw.cd <= 0 && inWave){
       const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5, st = stats(tw, i);
-      const tg = findTarget(cx, cy, st.range);
+      const tg = findTarget(cx, cy, st.range, null, canHitAir(tw.t));
       if (tg){ fire(tw, cx, cy, tg, st); tw.cd = st.rate; } else tw.cd = 0;
     }
   }
@@ -3268,6 +3327,13 @@ function drawEnemy(e){
   ctx.globalAlpha = e.ph ? .28 : 1;
   ctx.drawImage(can, X, Y, o.w*P, o.h*P);
   ctx.globalAlpha = 1;
+  let ix = X + P;
+  for (const [on, col] of [[B.armor, '#c3cbd3'], [B.mres, '#8aa8ff']]){
+    if (!on) continue;
+    ctx.fillStyle = '#120d08'; ctx.fillRect(ix - P, Y - 2*P, 5*P, 5*P);
+    ctx.fillStyle = col; ctx.fillRect(ix, Y - P, 3*P, 2*P); ctx.fillRect(ix + P, Y + P, P, P);
+    ix += 5*P;
+  }
   if (e.stunT > 0){ ctx.globalAlpha = .45; ctx.fillStyle = '#e8f8ff'; ctx.fillRect(X+3*P, Y+3*P, (o.w-6)*P, (o.h-5)*P); ctx.globalAlpha = 1; }
   if (e.hp < e.max){
     const bw = o.w >= 27 ? 22 : big ? 18 : 12, f = Math.max(0, e.hp/e.max);
@@ -3275,6 +3341,28 @@ function drawEnemy(e){
     ctx.fillStyle = '#120d08'; ctx.fillRect(bx-P, by-P, (bw+2)*P, 3*P);
     ctx.fillStyle = f > .5 ? '#7bd34f' : f > .25 ? '#f2c14e' : '#e0523f';
     ctx.fillRect(bx, by, Math.max(P, Math.round(bw*f)*P), P);
+  }
+}
+function drawNextWave(){
+  const cnt = {};
+  for (const k of S.nextQ) cnt[k] = (cnt[k] || 0) + 1;
+  const kinds = Object.keys(cnt).sort((a,b) => (EN[b].boss ? 1e3 : 0) + cnt[b] - (EN[a].boss ? 1e3 : 0) - cnt[a]).slice(0, 6);
+  const ps = Math.max(1, Math.floor(P*.55)), cell = 20*ps, h = cell + 4*P;
+  const y0 = Math.max(0, oy - h - 3*P), x0 = ox;
+  ctx.globalAlpha = .82; ctx.fillStyle = '#120d08'; ctx.fillRect(x0, y0, ART_W*P, h); ctx.globalAlpha = 1;
+  text('Vague', x0 + Math.round(CS*.55), y0 + h/2 - Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
+  text('suivante', x0 + Math.round(CS*.55), y0 + h/2 + Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
+  let x = x0 + Math.round(CS*1.15);
+  for (const k of kinds){
+    const o = ENS[k], sc = Math.min(ps, Math.floor(cell / Math.max(o.w, o.h)) || 1);
+    ctx.drawImage(o.n, x + (cell - o.w*sc)/2, y0 + 2*P + (cell - o.h*sc), o.w*sc, o.h*sc);
+    const B = EN[k];
+    text('×' + cnt[k], x + cell + Math.round(CS*.12), y0 + h - 3*P, Math.round(CS*.2), B.boss ? '#ff7a62' : '#f3e7cc');
+    if (B.armor || B.mres || B.fly){
+      ctx.fillStyle = B.fly ? '#f2c14e' : B.armor ? '#c3cbd3' : '#8aa8ff'; ctx.fillRect(x + cell - P, y0 + 2*P, 2*P, 2*P);
+    }
+    x += cell + Math.round(CS*.32);
+    if (x > ox + ART_W*P - cell) break;
   }
 }
 function drawBolt(f){
@@ -3500,6 +3588,7 @@ function draw(){
     ctx.globalAlpha = 1;
   }
 
+  if (!inWave && !over && hasGame && Array.isArray(S.nextQ) && S.nextQ.length) drawNextWave();
   if (timeStop > 0){
     ctx.globalAlpha = Math.min(.22, timeStop*.2); ctx.fillStyle = '#bfe9ff';
     ctx.fillRect(ox, oy, ART_W*P, ROWS*CS); ctx.globalAlpha = 1;
@@ -3761,6 +3850,7 @@ function openSheet(ref){
     </div>
     ${!LG && L < MAXL ? `<div class="sh-xp"><span>Expérience</span><i><b style="width:${Math.round(Math.min(1,(tw.xp||0)/xpNeed(L))*100)}%"></b></i><small>${fmtXp(tw.xp||0)} / ${xpNeed(L)}</small></div>` : ''}
     <p class="sh-note">${LG ? LG.power(L) + (ref.k==='n' ? ' En réserve, les légendes ne combattent pas.' : '') : ty.desc + ' ' + specialText(tw.t, L) + (ref.k==='n' ? ' En réserve, il ne combat pas.' : '')}</p>
+    <p class="sh-dt">Dégâts ${DT_NAME[TYPE_DT[tw.t]]}${canHitAir(tw.t) ? '. Touche les volants.' : '. Ne touche pas les volants.'}</p>
     ${syn}
     ${next}
     <div class="sh-btns">
@@ -3817,13 +3907,30 @@ function openShop(){
   $('shopBody').innerHTML =
     `<h3 class="cx-h">Pièges</h3><p class="cx-note">${S.trapBuys ? 'Déjà ' + S.trapBuys + ' posé' + (S.trapBuys > 1 ? 's' : '') + ' pour cette vague : chaque piège rend le suivant 25 % plus cher.' : 'Leur prix suit la vague. Chaque piège posé rend le suivant 25 % plus cher, jusqu’à la fin de la vague.'}</p>` +
     TRAP_ORDER.map(k => row('trap', k, TRAP_URL[k], TRAPS[k].name, TRAPS[k].desc)).join('') +
+    `<h3 class="cx-h">Recrutement ciblé</h3><p class="cx-note">Choisis le type de ta recrue, pour deux fois le prix d’une recrue au hasard. Elle arrive dans ta réserve.</p>` +
+    TYPES.map((ty,t) => {
+      const lv = recruitLevel(), price = recruitPrice()*2, free = S.bench.some(x => !x);
+      const why = !free ? 'Réserve pleine' : S.gold < price ? 'Il te manque ' + (price - Math.floor(S.gold)) + ' or' : '';
+      return `<button class="shop-item${why ? ' off' : ''}" data-kind="hire" data-id="${t}" data-why="${why}">
+        <img class="px" src="${URL_[t][lv-1]}" alt=""><div><b>${ty.name}, niveau ${lv}</b><span>Dégâts ${DT_NAME[TYPE_DT[t]].split(' (')[0]}${canHitAir(t) ? ', touche les volants' : ''}.</span>${why ? `<small>${why}</small>` : ''}</div>
+        <em><img class="px" src="${COIN_URL}" alt="">${price}</em></button>`;
+    }).join('') +
     `<h3 class="cx-h">Terrain</h3><p class="cx-note">Chaque achat rend le suivant du même genre plus cher.</p>` +
     LAND_ORDER.map(k => row('land', k, LAND_URL[k], LAND[k].name, LAND[k].desc)).join('');
   $('shopBody').querySelectorAll('.shop-item').forEach(b => b.onclick = () => {
     if (b.dataset.why){ toast(b.dataset.why); sfx('bad'); return; }
+    if (b.dataset.kind === 'hire'){ hire(+b.dataset.id); openShop(); return; }
     startPlacing(b.dataset.kind, b.dataset.id);
   });
   show('ovShop');
+}
+function hire(t){
+  const i = S.bench.findIndex(x => !x), price = recruitPrice()*2, lv = recruitLevel();
+  if (i < 0 || S.gold < price) return;
+  S.gold -= price; S.cost += MODS.costInc;
+  S.bench[i] = mk(t, lv); markSeen(t, lv);
+  burst(i + .5, BENCH_Y/T + .5, TYPES[t].col, 14, 2.5);
+  sfx('recruit'); save();
 }
 function startPlacing(kind, id){
   hide('ovShop');
@@ -3966,7 +4073,7 @@ function buildCodex(){
   const troops = TYPES.map((ty,t) => `
     <div class="cx-type">
       <h3><i style="background:${ty.col}"></i>${ty.name}</h3>
-      <p>${ty.desc}</p>
+      <p>${ty.desc} Dégâts ${DT_NAME[TYPE_DT[t]]}${canHitAir(t) ? ', touche les volants' : ', ne touche pas les volants'}.</p>
       <div class="cx-row r8">${Array.from({length:MAXL}, (_,k) => k+1).map(l => {
         const ok = seen.has(t*MAXL + l - 1);
         return `<div class="cx-cell${ok ? '' : ' lock'}"><img class="px" src="${ok ? URL_[t][l-1] : SIL[t][l-1].toDataURL()}" alt=""><span>${ok ? ty.ranks[l-1] : 'Niveau ' + l}</span></div>`;
@@ -3981,7 +4088,7 @@ function buildCodex(){
   const beasts = EN_ORDER.map(k => {
     const ok = seenEn.has(k), e = EN[k];
     return `<div class="syn-row"><div class="pair"><img class="px big" src="${ok ? ENS[k].url : ENS[k].sil}" alt=""></div>
-      <div><b>${ok ? e.name : '???'}</b><span>${ok ? e.desc : 'Pas encore croisé.'}</span></div></div>`;
+      <div><b>${ok ? e.name : '???'}</b><span>${ok ? e.desc : 'Pas encore croisé.'}</span>${ok && resText(e) ? `<span class="res">${resText(e)}</span>` : ''}</div></div>`;
   }).join('');
   const pantheon = LEG_ORDER.map(id => {
     const L = LEGENDS[id], met = [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l));
@@ -4434,6 +4541,7 @@ if (!restorePreview(S.savedPreview)) makePreview();
 S.traps = (S.savedTraps || []).filter(a => a && previewSet.has(a[0]) && TRAPS[a[1]]).map(a => ({ i:a[0], k:a[1], id:++trapSeq, cd:0, anim:0, used:false }));
 delete S.savedPreview; delete S.savedTraps;
 rebuildTraps();
+if (hasGame && !S.nextQ) S.nextQ = makeWave(S.wave + 1);
 snap(); persist();
 hud();
 checkAch(true);
