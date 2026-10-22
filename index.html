@@ -1527,7 +1527,7 @@ const EN = {
   spider:  { name:'Araignée',      hp:.35, spd:1.8, gold:1,  dmg:1,  col:'#3a2a4a', desc:'Petite, rapide, et jamais seule.' },
   bat:     { name:'Chauve-souris', hp:.4,  spd:2.1, gold:2,  dmg:1,  col:'#4a3a5a', fly:true, desc:'Elle vole : ni pièges, ni marais, ni goudron ne l’arrêtent.' },
   orc:     { name:'Orc à bouclier',hp:1.7, spd:.8,  gold:4,  dmg:2,  col:'#6a8a3a', armor:.6, desc:'Son bouclier réduit de 40 % les flèches, les coups et les sorts. Les explosions et la foudre passent.' },
-  shaman:  { name:'Chaman gobelin',hp:1.2, spd:.9,  gold:4,  dmg:1,  col:'#7fae4a', heal:.05, desc:'Soigne les monstres autour de lui. À abattre en premier.' },
+  shaman:  { name:'Chaman gobelin',hp:1.2, spd:.9,  gold:4,  dmg:1,  col:'#7fae4a', heal:.05, desc:'Soigne les monstres autour de lui (mais ni lui-même, ni les autres soigneurs). À abattre en premier.' },
   ghost:   { name:'Fantôme',       hp:.9,  spd:1.1, gold:3,  dmg:1,  col:'#dfe8f4', phase:[3,1.2], desc:'Devient intouchable par moments.' },
   beetle:  { name:'Scarabée',      hp:2,   spd:.9,  gold:3,  dmg:1,  col:'#2f6a5a', noSlow:true, desc:'Sa carapace l’immunise contre le ralentissement et l’étourdissement.' },
   imp:     { name:'Diablotin',     hp:.7,  spd:1.4, gold:3,  dmg:1,  col:'#c8402a', blink:4, desc:'Disparaît et réapparaît un peu plus loin sur le chemin.' },
@@ -1663,14 +1663,14 @@ const BLESS = [
   { id:'surcharge', rar:'r', icon:'bolt', name:'Surcharge', desc:'Les éclairs ne perdent plus que 8 % à chaque rebond, au lieu de 20 %.', mod:M => { M.decay = .92; } },
   { id:'ecole', rar:'c', icon:'troop', max:3, name:p => 'École ' + SCHOOL[p], desc:p => 'Les recrues sont bien plus souvent des ' + PLUR[p] + '.', mod:(M,p) => { M.school[p] += 1.7; } },
   { id:'recruteur', rar:'r', icon:'scroll', name:'Sergent recruteur', desc:'Le prix du recrutement monte de 1,5 or au lieu de 2.', mod:M => { M.costInc = 1.5; } },
-  { id:'veterans', rar:'r', icon:'helm', name:'Vétérans', desc:'Une recrue sur cinq arrive directement au niveau 2.', mod:M => { M.vet = .2; } },
-  { id:'fusion', rar:'l', icon:'merge', name:'Fusion parfaite', desc:'Une fusion sur cinq saute un niveau (jusqu’au niveau 5).', mod:M => { M.skip = .2; } },
+  { id:'veterans', rar:'r', icon:'helm', name:'Vétérans', desc:'Une recrue sur quatre arrive avec un niveau d’avance sur les autres.', mod:M => { M.vet = .25; } },
+  { id:'fusion', rar:'l', icon:'merge', name:'Fusion parfaite', desc:'Une fusion sur huit saute un niveau, à tous les niveaux.', mod:M => { M.skip = .125; } },
   { id:'butin', rar:'c', icon:'coin', max:3, name:'Butin', desc:'Chaque ennemi rapporte 1 or de plus.', mod:M => { M.goldKill += 1; } },
   { id:'tresorier', rar:'c', icon:'coins', max:3, name:'Trésorier', desc:'Bonus de fin de vague : +50 %.', mod:M => { M.waveBonus += .5; } },
   { id:'interets', rar:'r', icon:'coins', name:'Intérêts', desc:'À la fin de chaque vague, gagne 10 % de ton or (25 au plus).', mod:M => { M.interest = true; } },
   { id:'coffre', rar:'c', icon:'chest', max:3, name:'Coffre de guerre', desc:() => 'Reçois ' + (50 + 5*S.wave) + ' or tout de suite.', pick:() => { S.gold += 50 + 5*S.wave; } },
   { id:'primes', rar:'r', icon:'goblin', name:'Chasseur de primes', desc:'Les gobelins d’or viennent trois fois plus souvent et rapportent 50 % de plus.', mod:M => { M.bounty = true; } },
-  { id:'brocanteur', rar:'c', icon:'coin', name:'Brocanteur', desc:'Revendre un soldat rapporte le double.', mod:M => { M.sellMul = 2; } },
+  { id:'maitre', rar:'c', icon:'sword', max:2, name:'Maître d’armes', desc:'Absorber un soldat rapporte 50 % d’expérience en plus.', mod:M => { M.absorbMul += .5; } },
   { id:'murailles', rar:'c', icon:'wall', max:3, name:'Murailles renforcées', desc:'+5 vies.', pick:() => { S.lives += 5; } },
   { id:'herse', rar:'r', icon:'gate', name:'Herse', desc:'À chaque vague, le premier ennemi qui atteint le rempart ne te coûte aucune vie.', mod:M => { M.herse = true; } },
   { id:'remedes', rar:'r', icon:'potion', name:'Remèdes', desc:'Chaque vague terminée sans perdre de vie t’en rend une.', mod:M => { M.regen = true; } },
@@ -1683,7 +1683,7 @@ const BLESS = [
   { id:'elite', rar:'l', icon:'star', name:'Élite', desc:'Les soldats de niveau 5 et plus font +40 % de dégâts.', mod:M => { M.elite = 1.4; } },
   { id:'pacte', rar:'l', icon:'drop', name:'Pacte de sang', desc:'Tous les soldats : +35 % de dégâts. En échange, tu perds 5 vies.', mod:M => { M.dmgAll *= 1.35; }, pick:() => { S.lives -= 5; }, req:() => S.lives > 8 },
   { id:'avarice', rar:'r', icon:'chest', name:'Avarice', desc:'Chaque ennemi rapporte 2 or de plus, mais tous ont 15 % de vie en plus.', mod:M => { M.goldKill += 2; M.hpMul *= 1.15; } },
-  { id:'commandement', rar:'c', icon:'banner', name:'Commandement', desc:'Les soldats de niveau 1 et 2 font +50 % de dégâts.', mod:M => { M.low = 1.5; } },
+  { id:'commandement', rar:'c', icon:'banner', name:'Commandement', desc:'Les soldats en dessous du niveau 5 font +30 % de dégâts.', mod:M => { M.low = 1.3; } },
   { id:'faucon', rar:'r', icon:'crit', name:'Œil du faucon', desc:'Chaque attaque a 15 % de chances d’infliger deux fois et demie ses dégâts.', mod:M => { M.crit = .15; } }
 ];
 
@@ -1738,11 +1738,12 @@ function baseMods(){
   return { dmgAll:1, dmgType:[1,1,1,1,1], rateType:[0,0,0,0,0], range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
     decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0], goldKill:0,
     waveBonus:1, interest:false, bounty:false, sellMul:1, herse:false, regen:false, frenzy:false, synMul:1,
-    elite:1, low:1, crit:0, hpMul:1, runeMul:1 };
+    elite:1, low:1, crit:0, hpMul:1, runeMul:1, absorbMul:1 };
 }
 let MODS = baseMods();
 const sellValue = (l, xp = 0) => Math.round(5 * ((1 << (l-1)) + xp) * MODS.sellMul);
 const troopSell = t => sellValue(t.l, t.xp || 0);
+const fmtXp = v => Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',');
 /* Absorption : l'expérience se compte en recrues de niveau 1. Passer du niveau l au niveau l+1 en demande 2^(l-1),
    exactement ce qu'apporterait un jumeau à fusionner. */
 const xpNeed = l => 1 << (l-1);
@@ -2038,7 +2039,7 @@ function stats(tw, i){
   const ter = i != null ? S.terrain[i] : 0;
   let dmg = base.dmg*(lg ? LMUL : DMUL)[L-1] * (1+sy.dmg) * M.dmgAll * M.dmgType[tw.t];
   if (L >= 5) dmg *= M.elite;
-  if (L <= 2 && !lg) dmg *= M.low;
+  if (L < 5 && !lg) dmg *= M.low;
   if (ter === TER.RUNE) dmg *= 1 + RUNE_DMG*M.runeMul;
   const range = base.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0);
   const khan = tw.leg === 'gengis' ? Math.min(L === 5 ? .5 : .3, .02*legKills) : 0;
@@ -3115,7 +3116,11 @@ function update(dt){
       e.hlT -= dt;
       if (e.hlT <= 0){
         e.hlT = 2;
-        for (const o of enemies) if (!o.dead && o.hp < o.max && d2(o,e) < 2.25){ o.hp = Math.min(o.max, o.hp + o.max*B.heal); burst(o.x, o.y-.3, '#7bd34f', 3, 1.2); }
+        for (const o of enemies){
+          if (o.dead || o === e || EN[o.k].heal || o.hp >= o.max || d2(o,e) >= 2.25) continue;
+          if (o.healedAt != null && waveTime - o.healedAt < 1.9) continue;
+          o.healedAt = waveTime; o.hp = Math.min(o.max, o.hp + o.max*B.heal); burst(o.x, o.y-.3, '#7bd34f', 3, 1.2);
+        }
         fx.push({ k:'ring', x:e.x, y:e.y-.2, r:1.5, life:.35, max:.35, col:'#7bd34f' });
       }
     }
@@ -3629,7 +3634,7 @@ function applyDrop(src, dst, r){
     sfx('sell');
   } else if (r.kind === 'merge'){
     const b = getT(dst); pstat.merges++;
-    const jump = b.l <= 3 && MODS.skip && Math.random() < MODS.skip;
+    const jump = b.l + 2 <= MAXL && MODS.skip && Math.random() < MODS.skip;
     b.l = Math.min(MAXL, b.l + (jump ? 2 : 1)); b.pop = .35; b.cd = 0; setT(src, null);
     b.xp = (b.xp || 0) + (a.xp || 0); xpLevel(b);
     if (jump) markSeen(b.t, b.l-1);
@@ -3642,7 +3647,7 @@ function applyDrop(src, dst, r){
   } else if (r.kind === 'absorb'){
     const b = getT(dst), hi = a.l > b.l ? a : b, lo = hi === a ? b : a;
     setT(src, null); setT(dst, hi);
-    const gain = xpNeed(lo.l) + (lo.xp || 0), before = hi.l;
+    const gain = (xpNeed(lo.l) + (lo.xp || 0)) * MODS.absorbMul, before = hi.l;
     hi.xp = (hi.xp || 0) + gain; hi.pop = .25; xpLevel(hi);
     pstat.merges++;
     const { X, Y } = cellXY(dst), cx = (X-ox)/CS + .5, cy = (Y-oy)/CS + .5;
@@ -3754,7 +3759,7 @@ function openSheet(ref){
       <div>Portée<b>${st.range.toFixed(1)}</b></div>
       <div>Cadence<b>${st.rate.toFixed(2)} s</b></div>
     </div>
-    ${!LG && L < MAXL ? `<div class="sh-xp"><span>Expérience</span><i><b style="width:${Math.round(Math.min(1,(tw.xp||0)/xpNeed(L))*100)}%"></b></i><small>${tw.xp||0} / ${xpNeed(L)}</small></div>` : ''}
+    ${!LG && L < MAXL ? `<div class="sh-xp"><span>Expérience</span><i><b style="width:${Math.round(Math.min(1,(tw.xp||0)/xpNeed(L))*100)}%"></b></i><small>${fmtXp(tw.xp||0)} / ${xpNeed(L)}</small></div>` : ''}
     <p class="sh-note">${LG ? LG.power(L) + (ref.k==='n' ? ' En réserve, les légendes ne combattent pas.' : '') : ty.desc + ' ' + specialText(tw.t, L) + (ref.k==='n' ? ' En réserve, il ne combat pas.' : '')}</p>
     ${syn}
     ${next}
