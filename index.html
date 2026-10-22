@@ -55,7 +55,21 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 #bRecruit{flex:1.15;white-space:nowrap;padding:0 6px;min-width:0;background:#8a5526;flex-direction:column;gap:2px;line-height:1}
 #bRecruit .cost{display:flex;align-items:center;gap:4px;font-size:15px;color:#ffe6a6;white-space:nowrap}
 #bRecruit.poor .cost{color:#e9a092}
-#bWave{flex:1;background:#3f6a2f;flex-direction:column;gap:2px;line-height:1;white-space:nowrap;padding:0 6px;min-width:0}
+#bWave{flex:1;background:#3f6a2f;flex-direction:row;gap:6px;line-height:1;white-space:nowrap;padding:0 6px;min-width:0;overflow:hidden}
+#bWave .wtxt{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+#wUltImg{display:none;width:40px;height:40px;flex:none;background:#1c1610;border:2px solid var(--edge)}
+#wUltBar{display:none;position:absolute;left:8px;right:8px;bottom:7px;height:6px;background:#1c1610;border:1px solid var(--edge)}
+#wUltBar b{display:block;height:100%;width:0;background:#f2c14e}
+#bWave.ult{background:#4a3a5a;color:var(--ink)}
+#bWave.ult #wUltImg,#bWave.ult #wUltBar{display:block}
+#bWave.ult .wtxt{padding-bottom:8px}
+#bWave.ult #vWaveBtn{font-size:16px}
+#bWave.ult small{font-size:12px}
+#bWave.ult{gap:4px;padding:0 4px}
+#bWave.ult #wUltImg{width:34px;height:34px;margin-bottom:8px}
+#bWave.ult small{color:#e8dcf0}
+#bWave.ult.ready{background:#6a4a1a;animation:ultPulse .9s ease-in-out infinite}
+#bWave.ult.ready small{color:#ffe6a6}
 #bWave small{font-size:14px;font-weight:600;color:#cfe3b9}
 #bWave.busy{background:#3a3128;color:var(--dim)}
 #bShop{width:62px;flex-direction:column;gap:3px;font-size:14px;line-height:1;padding:0;background:#5a4630}
@@ -292,14 +306,6 @@ html{background:#1c1610}
 .sh-xp small{font-size:13px;color:#7fd6ff;white-space:nowrap}
 .sh-dt{font-size:14px;color:#c9d8ff;margin:-4px 0 10px}
 .syn-row span.res{color:#c9d8ff;font-weight:600}
-#ultBtn{position:absolute;right:4px;top:4px;z-index:2;width:62px;height:72px;padding:3px;display:none;flex-direction:column;align-items:center;gap:2px;overflow:hidden}
-#ultBtn.show{display:flex}
-#ultBtn img{width:50px;height:50px;background:#1c1610;border:2px solid var(--edge)}
-#ultFill{position:absolute;left:5px;right:5px;top:5px;height:100%;max-height:50px;background:rgba(14,10,6,.72);pointer-events:none}
-#ultBtn span{font-size:12px;font-weight:800;color:var(--dim);line-height:1}
-#ultBtn.ready{box-shadow:inset 0 3px 0 var(--wood-hi),inset 0 -3px 0 var(--wood-lo),0 0 0 3px #f2c14e;animation:ultPulse .9s ease-in-out infinite}
-#ultBtn.ready span{color:#f2c14e}
-#ultBtn:active{transform:translateY(2px)}
 @keyframes ultPulse{50%{box-shadow:inset 0 3px 0 var(--wood-hi),inset 0 -3px 0 var(--wood-lo),0 0 0 3px #fff3a0,0 0 16px #f2c14e}}
 .sh-ult{font-size:15px;line-height:1.35;margin:0 0 8px;color:var(--ink)}
 .sh-ult b{color:#f2c14e}
@@ -317,10 +323,10 @@ html{background:#1c1610}
     <button class="btn" id="bSpeed" aria-label="Vitesse">×1</button>
     <button class="btn icon" id="bMenu" aria-label="Menu"><span class="burger"></span></button>
   </div>
-  <div id="stage"><canvas id="cv"></canvas><div id="toast" class="plank"></div><button id="ultBtn" class="plank" aria-label="Pouvoir ultime"><img class="px" id="ultImg" alt=""><i id="ultFill"></i><span id="ultLbl"></span></button></div>
+  <div id="stage"><canvas id="cv"></canvas><div id="toast" class="plank"></div></div>
   <div class="bar">
     <button class="btn" id="bRecruit"><span>Recruter</span><span class="cost"><img class="px" id="icCoin2" alt=""><span id="vCost">10</span></span></button>
-    <button class="btn" id="bWave"><span id="vWaveBtn">Lancer</span><small id="vWaveSub">vague 1</small></button>
+    <button class="btn" id="bWave"><img class="px" id="wUltImg" alt=""><span class="wtxt"><span id="vWaveBtn">Lancer</span><small id="vWaveSub">vague 1</small></span><i id="wUltBar"><b id="wUltFill"></b></i></button>
     <button class="btn" id="bShop" aria-label="Atelier"><img class="px" id="icHammer" alt="">Atelier</button>
     <button class="btn" id="bAuto" aria-label="Enchaîner les vagues"><i></i>Auto</button>
   </div>
@@ -2851,7 +2857,7 @@ function openBlessList(){
    Combat
    ========================================================= */
 const d2 = (a,b) => (a.x-b.x)**2 + (a.y-b.y)**2;
-const slowed = e => e.slowT > 0 || e.stunT > 0;
+const slowed = e => e.slowT > 0 || e.stunT > 0 || e.frozenT > 0;
 function findTarget(cx, cy, range, not, air = true){
   let bestE = null, r2 = range*range;
   for (const e of enemies){
@@ -2939,7 +2945,7 @@ function legendFire(tw, cx, cy, tg, st, D){
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L===5 ? '#fff3b0' : '#ffffff' });
       if (id === 'leonidas' && tw.ab <= 0 && !tg.dead){
         tw.ab = LEO_CD[L-1];
-        tg.stunT = Math.max(tg.stunT, LEO_STUN[L-1] * (isBoss(tg) ? .5 : 1));
+        tg.frozenT = Math.max(tg.frozenT || 0, LEO_STUN[L-1] * (isBoss(tg) ? .5 : 1));
         fx.push({ k:'ring', x:tg.x, y:tg.y-.2, r:.5, life:.3, max:.3, col:'#f2c14e' });
         fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'Halte !', col:'#f2c14e', life:.8, max:.8 });
         sfx('clang');
@@ -2993,7 +2999,7 @@ function legendFire(tw, cx, cy, tg, st, D){
 }
 function merlinFreeze(tw, cx, cy){
   const dur = MERLIN_DUR[tw.l-1];
-  for (const e of enemies) if (!e.dead && e.y >= 0) e.stunT = Math.max(e.stunT, dur * (isBoss(e) ? .5 : 1));
+  for (const e of enemies) if (!e.dead && e.y >= 0) e.frozenT = Math.max(e.frozenT || 0, dur * (isBoss(e) ? .5 : 1));
   tw.ab = MERLIN_CD[tw.l-1]; timeStop = Math.max(timeStop, dur);
   fx.push({ k:'ring', x:cx, y:cy, r:2.5, life:.5, max:.5, col:'#bff6ff' });
   fx.push({ k:'t', x:cx, y:cy-.9, s:'Le temps s’arrête', col:'#bff6ff', life:1.2, max:1.2 });
@@ -3168,8 +3174,9 @@ function update(dt){
     if (e.stunT > 0) e.stunT -= dt;
     if (e.markT > 0) e.markT -= dt;
     if (e.flash > 0) e.flash -= dt;
-    let sp = e.stunT > 0 ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
-    if (B.enrage && e.hp < e.max/2){ sp *= 1.8; if (!e.rage){ e.rage = true; fx.push({ k:'t', x:e.x, y:e.y-.9, s:'Furie !', col:'#ff6a4a', life:1, max:1 }); burst(e.x, e.y-.3, '#ff6a4a', 10, 2.5); } }
+    if (e.frozenT > 0) e.frozenT -= dt;
+    let sp = (e.stunT > 0 || e.frozenT > 0) ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
+    if (B.enrage && e.hp < e.max/2 && !(e.frozenT > 0)){ sp *= 1.8; if (!e.rage){ e.rage = true; fx.push({ k:'t', x:e.x, y:e.y-.9, s:'Furie !', col:'#ff6a4a', life:1, max:1 }); burst(e.x, e.y-.3, '#ff6a4a', 10, 2.5); } }
     const c = Math.floor(e.x), r = Math.floor(e.y);
     const ci = (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? idx(c,r) : -1;
     const inMarsh = ci >= 0 && S.terrain[ci] === TER.MARSH;
@@ -3182,7 +3189,7 @@ function update(dt){
       e.phT -= dt;
       if (e.phT <= 0){ e.ph = !e.ph; e.phT = e.ph ? B.phase[1] : B.phase[0]; if (e.ph) burst(e.x, e.y-.3, '#dfe8f4', 5, 1.5); }
     }
-    if (B.blink && e.y >= 0){
+    if (B.blink && e.y >= 0 && !(e.frozenT > 0)){
       e.blT -= dt;
       if (e.blT <= 0){ e.blT = B.blink; burst(e.x, e.y-.3, '#a83a5a', 8, 2); e.d = Math.min(WP.len - .3, e.d + 1.2); }
     }
@@ -3358,7 +3365,7 @@ function drawEnemy(e){
     ctx.fillStyle = col; ctx.fillRect(ix, Y - P, 3*P, 2*P); ctx.fillRect(ix + P, Y + P, P, P);
     ix += 5*P;
   }
-  if (e.stunT > 0){ ctx.globalAlpha = .45; ctx.fillStyle = '#e8f8ff'; ctx.fillRect(X+3*P, Y+3*P, (o.w-6)*P, (o.h-5)*P); ctx.globalAlpha = 1; }
+  if (e.stunT > 0 || e.frozenT > 0){ ctx.globalAlpha = .45; ctx.fillStyle = '#e8f8ff'; ctx.fillRect(X+3*P, Y+3*P, (o.w-6)*P, (o.h-5)*P); ctx.globalAlpha = 1; }
   if (e.hp < e.max){
     const bw = o.w >= 27 ? 22 : big ? 18 : 12, f = Math.max(0, e.hp/e.max);
     const bx = snapP(cx - bw*P/2), by = Y + (e.k==='slime' ? 5*P : e.k==='mini' ? 9*P : big ? 0 : P);
@@ -3664,6 +3671,10 @@ function hud(){
   if (over){
     setTxt('vWaveBtn', 'Terminée');
     setTxt('vWaveSub', 'vague ' + S.wave);
+  } else if (inWave && legendOnBoard()){
+    const v = S.ult || 0;
+    setTxt('vWaveBtn', v >= 1 ? 'Ultime !' : 'Ultime');
+    setTxt('vWaveSub', v >= 1 ? 'touche pour lancer' : Math.round(v*100) + ' %');
   } else if (inWave){
     const left = queue.length + enemies.length + pendingSpawn.length;
     setTxt('vWaveBtn', 'En cours');
@@ -3672,7 +3683,8 @@ function hud(){
     setTxt('vWaveBtn', 'Lancer');
     setTxt('vWaveSub', (siege && S.wave + 1 >= MW) ? 'vague finale' : 'vague ' + (S.wave + 1));
   }
-  $('bWave').classList.toggle('busy', inWave || over);
+  const ultMode = inWave && !over && !!legendOnBoard();
+  $('bWave').classList.toggle('busy', (inWave && !ultMode) || over);
   $('bAuto').classList.toggle('on', !!prefs.auto);
   setTxt('bSpeed', '×' + prefs.speed);
 }
@@ -4086,7 +4098,12 @@ function recruit(){
   save();
 }
 $('bRecruit').addEventListener('click', recruit);
-$('bWave').addEventListener('click', () => { audio(); if (!inWave) startWave(); });
+$('bWave').addEventListener('click', () => {
+  audio();
+  if (!inWave){ startWave(); return; }
+  if (!legendOnBoard()) return;
+  if (!castUltimate()) toast('L’ultime se recharge : ' + Math.round((S.ult || 0)*100) + ' %');
+});
 $('bAuto').addEventListener('click', () => {
   prefs.auto = !prefs.auto; persist();
   toast(prefs.auto ? 'Les vagues s’enchaînent' : 'Tu lances chaque vague');
@@ -4706,7 +4723,7 @@ const ULTS = {
   zeus:     ['Colère de l’Olympe', 'La foudre frappe chaque ennemi du terrain (quatre fois ses dégâts).'],
   thor:     ['Tempête de Mjöllnir', 'Un éclair rebondit sur 15 ennemis sans faiblir (triple dégâts).'],
   merlin:   ['Éternité', 'Fige tous les ennemis du terrain pendant 5 s (2,5 s pour les boss).'],
-  anubis:   ['Jugement des âmes', 'Achève tous les ennemis sous 25 % de leur vie, avec le bonus d’or de sa marque. Les boss subissent huit fois ses dégâts.'],
+  anubis:   ['Jugement des âmes', 'Marque tous les ennemis et leur inflige trois fois ses dégâts, puis achève ceux qui passent sous 30 % de leur vie. Les boss subissent huit fois ses dégâts.'],
   hercule:  ['Douzième travail', 'Un coup colossal sur l’ennemi le plus résistant (douze fois ses dégâts), qui l’assomme 2 s.']
 };
 for (const id in ULTS){ LEGENDS[id].ult = ULTS[id][0]; LEGENDS[id].ultDesc = ULTS[id][1]; }
@@ -4736,12 +4753,12 @@ function castUltimate(){
       for (const e of near(ground, 3.2)){ hit(e, D*6); e.d = Math.max(0, e.d - 1.5); e.seg = 0; }
       fx.push({ k:'ring', x:cx, y:cy, r:3.2, life:.5, max:.5, col:'#fff3b0' }); sfx('stomp'); break;
     case 'leonidas':
-      for (const e of near(ground, 3.2)){ e.stunT = Math.max(e.stunT, isBoss(e) ? 1.5 : 3); e.d = Math.max(0, e.d - 1); e.seg = 0; }
+      for (const e of near(ground, 3.2)){ e.frozenT = Math.max(e.frozenT || 0, isBoss(e) ? 1.5 : 3); e.d = Math.max(0, e.d - 1); e.seg = 0; }
       fx.push({ k:'ring', x:cx, y:cy, r:3.2, life:.5, max:.5, col:'#c42a35' }); sfx('clang'); break;
     case 'jeanne':
       S.lives += 3; buffT = 8; buffDmg = 0; buffRate = .4; break;
     case 'hannibal':
-      for (const e of ground){ hit(e, D*4); e.stunT = Math.max(e.stunT, isBoss(e) ? .5 : 1.5); burst(e.x, e.y, '#b39b7a', 4, 2); }
+      for (const e of ground){ hit(e, D*4); e.frozenT = Math.max(e.frozenT || 0, isBoss(e) ? .75 : 1.5); burst(e.x, e.y, '#b39b7a', 4, 2); }
       shake = .5; sfx('stomp'); break;
     case 'zeus':
       for (const e of live){ hit(e, D*4); fx.push({ k:'bolt', pts:[{ x:e.x + (Math.random()-.5)*.6, y:e.y - 3 }, { x:e.x, y:e.y - .2 }], life:.3, max:.3, L:5, col:'#9ec9ff' }); }
@@ -4752,17 +4769,18 @@ function castUltimate(){
       sfx('thunder'); break;
     }
     case 'merlin':
-      for (const e of live) e.stunT = Math.max(e.stunT, isBoss(e) ? 2.5 : 5);
+      for (const e of live){ e.frozenT = Math.max(e.frozenT || 0, isBoss(e) ? 2.5 : 5); burst(e.x, e.y - .3, '#bff6ff', 4, 1.5); }
       timeStop = 5; sfx('freeze'); break;
     case 'anubis':
       for (const e of live){
-        if (isBoss(e)) hit(e, D*8);
-        else if (e.hp < e.max*.25){ e.markT = 4; e.markB = ANUBIS_GOLD[L-1]; hit(e, e.hp + 1); burst(e.x, e.y-.3, '#f2c14e', 6, 2); }
+        e.markT = 4; e.markB = ANUBIS_GOLD[L-1];
+        hit(e, D * (isBoss(e) ? 8 : 3));
+        if (!e.dead && !isBoss(e) && e.hp < e.max*.3){ hit(e, e.hp + 1); burst(e.x, e.y-.3, '#f2c14e', 6, 2); }
       }
       sfx('jackpot'); break;
     case 'hercule': {
       const t = live.slice().sort((a,b) => b.hp - a.hp)[0];
-      if (t){ hit(t, D*12); t.stunT = Math.max(t.stunT, isBoss(t) ? 1 : 2); fx.push({ k:'ring', x:t.x, y:t.y, r:1, life:.4, max:.4, col:'#f2c14e' }); burst(t.x, t.y-.3, '#f2c14e', 18, 3.5); }
+      if (t){ hit(t, D*12); t.frozenT = Math.max(t.frozenT || 0, isBoss(t) ? 1 : 2); fx.push({ k:'ring', x:t.x, y:t.y, r:1, life:.4, max:.4, col:'#f2c14e' }); burst(t.x, t.y-.3, '#f2c14e', 18, 3.5); }
       shake = .35; sfx('stomp'); break;
     }
   }
@@ -4774,22 +4792,14 @@ function castUltimate(){
   return true;
 }
 function updUltButton(){
-  const btn = $('ultBtn'), lb = hasGame && !over ? legendOnBoard() : null;
-  if (!lb){ btn.classList.remove('show'); return; }
-  btn.classList.add('show');
-  const src = LURL[lb.t.leg][lb.t.l - 1]; if ($('ultImg').getAttribute('src') !== src) $('ultImg').src = src;
-  const v = S.ult || 0, ready = v >= 1 && inWave;
-  $('ultFill').style.height = Math.round((1 - v) * 100) + '%';
-  btn.classList.toggle('ready', ready);
-  setTxt('ultLbl', ready ? 'Ultime !' : v >= 1 ? 'Prêt' : Math.round(v*100) + ' %');
+  const btn = $('bWave'), lb = (hasGame && !over && inWave) ? legendOnBoard() : null;
+  btn.classList.toggle('ult', !!lb);
+  if (!lb){ btn.classList.remove('ready'); return; }
+  const src = LURL[lb.t.leg][lb.t.l - 1]; if ($('wUltImg').getAttribute('src') !== src) $('wUltImg').src = src;
+  const v = S.ult || 0;
+  $('wUltFill').style.width = Math.round(v * 100) + '%';
+  btn.classList.toggle('ready', v >= 1);
 }
-$('ultBtn').addEventListener('click', () => {
-  audio();
-  if (!castUltimate()){
-    const lb = legendOnBoard();
-    toast(!inWave ? 'L’ultime se lance pendant une vague' : 'L’ultime se recharge : ' + Math.round((S.ult || 0)*100) + ' %');
-  }
-});
 
 /* ---------- cycle de vie ---------- */
 document.addEventListener('visibilitychange', () => {
