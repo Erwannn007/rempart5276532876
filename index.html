@@ -72,7 +72,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 
 /* fiche du soldat */
 #sheet{position:fixed;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 8px);
-  z-index:5;padding:12px 12px 12px;transform:translateY(130%);transition:transform .18s ease-out}
+  z-index:5;padding:12px 12px 12px;transform:translateY(calc(100% + var(--sb) + 24px));transition:transform .18s ease-out}
 #sheet.show{transform:none}
 .sh-top{display:flex;gap:12px;align-items:center}
 .sh-top img{width:80px;height:80px;background:#2a1e14;border:3px solid var(--edge)}
@@ -163,7 +163,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .stars img{width:60px;height:60px}
 .stars img.off{opacity:.22;filter:grayscale(1)}
 #placeBar{position:fixed;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 8px);z-index:6;
-  display:flex;gap:10px;align-items:center;padding:8px 8px 8px 10px;min-height:66px;transform:translateY(140%);transition:transform .16s ease-out}
+  display:flex;gap:10px;align-items:center;padding:8px 8px 8px 10px;min-height:66px;transform:translateY(calc(100% + var(--sb) + 24px));transition:transform .16s ease-out}
 #placeBar.show{transform:none}
 #placeBar img{width:44px;height:44px;flex:none}
 #placeBar div{flex:1;min-width:0}
@@ -183,6 +183,19 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .shop-item.off{opacity:.55}
 .shop-item.off em{color:#e9a092}
 #shopLead b{color:var(--gold)}
+.legend-win{border-color:#3a2a10;box-shadow:inset 0 3px 0 #8a6a2a,inset 0 -3px 0 var(--wood-lo),0 0 0 3px #f2c14e}
+#lgCards{gap:10px}
+.lcard{display:flex;gap:12px;align-items:center;text-align:left;width:100%;padding:10px;
+  background:#2a1e14;border:3px solid var(--edge);border-left:8px solid #f2c14e;
+  box-shadow:inset 0 3px 0 rgba(255,236,200,.1),inset 0 -4px 0 rgba(0,0,0,.3)}
+.lcard:active{transform:translateY(2px)}
+.lcard>img{width:76px;height:76px;flex:none;background:#1c1610;border:2px solid #6a5020}
+.lcard em{display:block;font-style:normal;font-size:13px;font-weight:700;color:#f2c14e}
+.lcard b{display:block;font-size:22px;line-height:1.1}
+.lcard span{display:block;font-size:15px;line-height:1.3;margin-top:3px}
+.lcard small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);margin-top:5px}
+.lcard small img{width:30px;height:30px}
+.sh-top img.leg{border-color:#f2c14e}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -236,6 +249,12 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
   <div class="stack scroll" id="blessCards"></div>
 </div></div>
 
+<div class="ov" id="ovLegend"><div class="win plank legend-win">
+  <h2 class="title">Une légende répond</h2>
+  <p class="lead">Choisis celle qui défendra ton rempart. Les deux autres ne reviendront pas de la partie.</p>
+  <div class="stack scroll" id="lgCards"></div>
+</div></div>
+
 <div class="ov" id="ovShop"><div class="win plank">
   <h2>Atelier</h2>
   <p class="lead" id="shopLead"></p>
@@ -260,6 +279,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
     <p>Les points qui défilent montrent le <b>chemin des ennemis</b>. Il reste le même pendant 5 vagues, et personne ne peut s’y poster. Toutes les 5 vagues, un nouveau chemin est tracé : les soldats qui se trouvent dessus sont déplacés à côté.</p>
     <p>Régulièrement, tu choisis une <b>bénédiction</b> parmi trois. Elle dure toute la partie.</p>
+    <p>À partir de la vague 5, un recrutement peut faire apparaître des <b>légendes</b>. Tu en choisis une, pour toute la partie. Pour la faire monter, offre-lui un soldat de son niveau.</p>
     <p>L’<b>Atelier</b> transforme ton or : des pièges à poser sur le chemin, qui durent une vague, et des aménagements de terrain permanents (dynamite, colline, marais, pierre runique).</p>
     <p>Glisse un soldat sur la <b>pièce</b> pour le revendre. Chaque ennemi qui passe le rempart te coûte des vies.</p>
   </div>
@@ -588,6 +608,373 @@ function enemyPixels(k){
   EN_DRAW[k](s);
   return s.pixels();
 }
+/* ---------- Légendes : sprites 24×24 ---------- */
+const LY = '#ffe066', LYW = '#fffbe0';
+function lgLegs(s, leg, boot){ s.r(9,18,2,3,leg); s.r(13,18,2,3,leg); s.r(8,21,3,1,boot); s.r(13,21,3,1,boot); }
+function lgEyes(s, c = EYE, y = 9){ s.p(10,y,c,1); s.p(13,y,c,1); }
+function lgCircle(s, cx, cy, r, fill, rim, rimW = .9){
+  for (let y=0;y<24;y++) for (let x=0;x<24;x++){
+    const d = Math.hypot(x-cx, y-cy);
+    if (d <= r) s.p(x, y, d > r-rimW ? rim : fill);
+  }
+}
+
+/* Gengis Khan : archer des steppes */
+function lgGengis(s,l){
+  const deel = l===5 ? '#7a1f2a' : '#3d5a8a', trim = l>=4 ? GOLD : '#c9a26b';
+  const fur = '#8a6440', furL = '#c9a26b', sk = '#e0a878', hair = l>=4 ? '#6a6a6a' : '#2a1a12';
+  if (l===5){
+    s.v(20,3,21,'#6b4428'); s.r(19,1,3,1,GOLD); s.p(20,2,GOLD);
+    s.r(19,3,3,4,'#f2ead6'); s.p(18,6,'#f2ead6'); s.p(22,6,'#f2ead6'); s.hl(19,21,7,'#d8cfbd'); s.p(20,8,'#d8cfbd');
+  }
+  if (l>=3){ s.r(16,7,2,7,'#7a4a2a'); s.p(16,6,'#e8e2d0',1); s.p(17,5,'#e8e2d0',1); s.p(17,6,'#c8473d',1); s.hl(16,17,10,trim,1); }
+  s.r(9,18,2,3,'#4a3428'); s.r(13,18,2,3,'#4a3428');
+  s.r(8,21,3,1,'#2a1a12'); s.r(13,21,3,1,'#2a1a12'); s.p(7,20,'#2a1a12'); s.p(16,20,'#2a1a12');
+  s.r(8,12,8,7,deel);
+  s.p(9,12,trim,1); s.p(10,13,trim,1); s.p(11,14,trim,1); s.p(12,15,trim,1);
+  s.hl(8,15,16,'#5a3a22'); s.r(11,16,2,1,GOLD,1); s.hl(8,15,18,trim,1);
+  if (l>=3){
+    const lm = l>=4 ? GOLD : '#8e99a4', lmd = l>=4 ? '#a06d1f' : '#5e6872';
+    for (let y=12;y<=15;y++) for (let x=9;x<=14;x++) s.p(x,y,(x+y)%2 ? lm : lmd,1);
+  }
+  s.r(16,12,1,4,deel); s.p(16,16,sk);
+  const bw = l>=4 ? '#5a2a1a' : '#7a4a2a';
+  s.v(6,8,20,'#eee6cf',1);
+  s.p(7,6,bw); s.p(6,7,bw); s.p(5,8,bw); s.v(4,9,19,bw); s.p(5,20,bw); s.p(6,21,bw); s.p(7,22,bw);
+  if (l>=2){ s.p(4,13,GOLD,1); s.p(4,14,GOLD,1); }
+  s.p(7,12,deel); s.p(7,13,deel); s.p(6,13,deel); s.p(5,14,sk);
+  s.r(9,6,6,6,sk); lgEyes(s, EYE, 9);
+  s.hl(11,12,10,hair,1); s.p(10,10,hair,1); s.p(13,10,hair,1); s.p(10,11,hair,1); s.p(13,11,hair,1); s.hl(11,12,11,SKD,1);
+  if (l<=3){
+    const cap = '#a83a2a';
+    s.r(9,3,6,3,cap); s.hl(10,13,2,cap);
+    if (l>=2) s.hl(11,12,1,GOLD);
+    s.r(8,6,8,2,fur); s.v(8,8,10,fur); s.v(15,8,10,fur);
+    s.p(9,6,furL,1); s.p(12,7,furL,1); s.p(14,6,furL,1); s.p(8,9,furL,1);
+  } else {
+    const m = l===5 ? '#f2e2a0' : GOLD, md = l===5 ? '#d1a23a' : '#a06d1f';
+    s.hl(11,12,1, l===5 ? '#ffffff' : m); s.hl(10,13,2,m); s.hl(9,14,3,m); s.r(8,4,8,2,m);
+    s.hl(9,11,3,shade(m,1.2),1); s.hl(8,15,5,md,1);
+    s.r(8,6,8,1,fur); s.v(8,7,10,md); s.v(15,7,10,md);
+    s.p(14,0,'#2a1a12'); s.p(15,1,'#2a1a12'); s.v(16,2,5,'#2a1a12');
+  }
+}
+
+/* Jules César */
+function lgCesar(s,l){
+  const red = '#b3262e', purp = '#5a2272', hair = '#4a3020', sk = SK;
+  if (l===5){
+    s.v(20,4,21,'#6b4428');
+    s.hl(18,22,2,GOLD); s.hl(19,21,1,GOLD); s.p(17,1,GOLD); s.p(23,1,GOLD);
+    s.r(19,3,3,1,GOLD); s.p(20,4,GOLD);
+    s.r(18,6,5,3,red); s.hl(19,21,7,GOLD,1);
+  }
+  if (l>=3) s.r(7,11,10,10, l===5 ? purp : '#8a1f26');
+  s.r(9,18,2,3,sk); s.r(13,18,2,3,sk);
+  s.r(8,21,3,1,'#6b4428'); s.r(13,21,3,1,'#6b4428'); s.p(9,19,'#6b4428',1); s.p(14,19,'#6b4428',1);
+  s.r(8,12,8,6,red);
+  if (l>=2){
+    for (let x=8;x<=15;x++) s.p(x,17, x%2 ? '#6b4428' : '#8a5a32');
+    const cu = l===2 ? '#8e99a4' : l===3 ? '#c8913a' : GOLD;
+    if (l===2){ for (let y=12;y<=15;y++) s.hl(8,15,y, y%2 ? cu : shade(cu,.82)); }
+    else {
+      s.r(8,12,8,4,cu);
+      s.hl(9,10,13,shade(cu,1.25),1); s.hl(13,14,13,shade(cu,1.25),1);
+      s.p(11,14,shade(cu,.8),1); s.p(12,14,shade(cu,.8),1); s.p(11,15,shade(cu,.8),1); s.p(12,15,shade(cu,.8),1);
+    }
+    if (l>=4) s.hl(8,15,15,purp);
+  }
+  s.hl(8,15,16, l>=4 ? GOLD : '#5a3a22');
+  s.r(7,12,1,2,red); s.r(7,14,1,3,sk); s.r(16,12,1,2,red); s.r(16,14,1,2,sk);
+  s.v(17,8,13,'#dfe6ec'); s.p(17,7,'#eef4f8',1); s.hl(16,18,14, l>=4 ? GOLD : '#6b4428'); s.p(17,15,'#5a3a22'); s.p(17,16, l>=3 ? GOLD : '#8e99a4');
+  s.r(9,6,6,6,sk); lgEyes(s, EYE, 9); s.hl(11,12,11,SKD,1); s.p(11,10,SKD,1);
+  s.p(8,9,sk); s.p(15,9,sk);
+  s.r(9,5,6,2,hair); s.p(9,7,hair); s.p(14,7,hair); s.p(10,7,hair); s.p(12,7,hair);
+  if (l>=4){
+    const lf = l===5 ? GOLD : '#4f8f3a', lfL = l===5 ? '#fbe08a' : '#7cc25b';
+    s.p(8,8,lf); s.p(8,7,lf); s.p(8,6,lf); s.p(9,4,lf); s.p(10,4,lf); s.p(15,8,lf); s.p(15,7,lf); s.p(15,6,lf); s.p(14,4,lf); s.p(13,4,lf);
+    s.p(8,7,lfL,1); s.p(15,7,lfL,1); s.p(9,4,lfL,1); s.p(14,4,lfL,1);
+    if (l===4){ s.p(16,9,red); s.p(16,10,red); }
+  }
+}
+
+/* Alexandre le Grand */
+function lgAlex(s,l){
+  const purp = '#5a2a8a', bz = l===5 ? GOLD : '#c8913a', hair = '#d9a441', hairD = '#a8742a', sk = SK;
+  if (l>=3) s.r(7,11,10,10, l===5 ? '#7a2a9a' : purp);
+  const leg = l>=2 ? bz : sk;
+  s.r(9,18,2,3,leg); s.r(13,18,2,3,leg); s.r(8,21,3,1,'#6b4428'); s.r(13,21,3,1,'#6b4428');
+  if (l===1){ s.r(8,12,8,6,'#5a7ab0'); s.hl(8,15,16,'#c9b37a'); }
+  else {
+    const ch = l>=4 ? GOLD : '#efe8d4';
+    s.r(8,12,8,6,ch);
+    for (let x=8;x<=15;x++) s.p(x,17, x%2 ? '#efe8d4' : '#c9b37a');
+    s.r(9,12,2,1,'#c9b37a'); s.r(13,12,2,1,'#c9b37a');
+    s.hl(8,15,16,bz); s.p(11,14,l>=4 ? '#fbe08a' : GOLD,1); s.p(12,14,l>=4 ? '#fbe08a' : GOLD,1);
+  }
+  s.r(7,12,1,4,sk); s.p(7,16,sk); s.r(16,12,1,4,sk); s.p(16,16,sk);
+  if (l===1){ s.v(5,2,21,'#7a5230'); s.p(5,1,'#c3cbd3',1); s.p(5,2,'#c3cbd3'); s.p(6,13,sk); }
+  else {
+    const face = l===2 ? '#2f4a8a' : purp, rim = l>=4 ? GOLD : bz;
+    lgCircle(s, 4.5, 15, 3.6, face, rim, 1);
+    const G = l===5 ? '#fff3b0' : GOLD;
+    s.r(4,14,2,2,G,1); s.p(4,12,G,1); s.p(5,17,G,1); s.p(2,15,G,1); s.p(7,14,G,1); s.p(3,13,G,1); s.p(6,16,G,1); s.p(6,13,G,1); s.p(3,16,G,1);
+  }
+  s.v(17,9,14,'#dfe6ec'); s.p(18,11,'#dfe6ec'); s.p(17,8,'#eef4f8',1); s.hl(16,18,15,bz); s.p(17,16,'#5a3a22');
+  s.r(9,6,6,6,sk); lgEyes(s, '#2a4a8a', 9); s.hl(11,12,11,SKD,1);
+  if (l===3 || l===5){
+    const h = l===5 ? GOLD : bz;
+    s.r(9,4,6,4,h); s.hl(10,13,3,h); s.p(11,2,h); s.p(12,2,h);
+    s.v(9,8,10,h); s.v(14,8,10,h); s.hl(10,12,4,shade(h,1.25),1);
+    s.v(8,0,4,'#ffffff'); s.v(15,0,4,'#ffffff'); s.p(7,1,'#ffffff'); s.p(16,1,'#ffffff');
+    if (l===5){ s.p(7,6,'#e9dcc0'); s.p(6,7,'#e9dcc0'); s.p(6,8,'#e9dcc0'); s.p(16,6,'#e9dcc0'); s.p(17,7,'#e9dcc0'); s.p(17,8,'#e9dcc0'); }
+  } else {
+    s.r(9,5,6,2,hair); s.v(8,6,10,hair); s.v(15,6,10,hair); s.p(11,4,hair); s.p(12,4,hair); s.p(12,3,hair);
+    s.p(9,5,hairD,1); s.p(14,6,hairD,1); s.p(8,8,hairD,1); s.p(15,9,hairD,1);
+    if (l===4){
+      const h = '#e9dcc0';
+      s.hl(9,14,7,GOLD);
+      s.p(8,5,h); s.p(7,6,h); s.p(6,7,h); s.p(6,8,h); s.p(7,9,h);
+      s.p(15,5,h); s.p(16,6,h); s.p(17,7,h); s.p(17,8,h); s.p(16,9,h);
+    }
+  }
+}
+
+/* Léonidas */
+function lgLeon(s,l){
+  const red = '#b3262e', bz = l===5 ? GOLD : '#c8913a', bzD = l===5 ? '#a06d1f' : '#8a5a2a', bzL = l===5 ? '#fbe08a' : '#e6b46a', sk = '#e0a878', hair = '#3a2418';
+  if (l>=3) s.r(7,11,10,10, l===5 ? '#c42a35' : '#8a1f26');
+  s.v(17,2,21,'#7a5230'); s.p(17,0,bzL,1); s.p(17,1,bz);
+  s.r(9,18,2,3, l>=2 ? bz : sk); s.r(13,18,2,3, l>=2 ? bz : sk); s.r(8,21,3,1,'#6b4428'); s.r(13,21,3,1,'#6b4428');
+  s.r(8,12,8,6,red);
+  if (l>=2){
+    s.r(8,12,8,4,bz); s.hl(9,10,13,bzL,1); s.hl(13,14,13,bzL,1); s.p(11,14,bzD,1); s.p(12,14,bzD,1);
+    for (let x=8;x<=15;x++) s.p(x,17, x%2 ? red : '#8a1f26');
+  }
+  s.hl(8,15,16,'#5a3a22');
+  s.r(16,12,1,3,sk); s.p(16,15,sk);
+  const face = l===1 ? '#8a5a32' : bz, rim = l===1 ? '#5a3a22' : bzD;
+  lgCircle(s, 4.5, 15, 4.3, face, rim, 1);
+  if (l>=3){ const L = l===5 ? '#c42a35' : red;
+    for (const [x,y] of [[4,12],[5,12],[3,13],[6,13],[3,14],[6,14],[2,15],[7,15],[2,16],[7,16]]) s.p(x,y,L,1); }
+  else if (l===2) s.p(4,14,bzL,1);
+  if (l===1){
+    s.r(9,6,6,6,sk); lgEyes(s, EYE, 8);
+    s.r(9,5,6,2,hair); s.v(8,6,12,hair); s.v(15,6,12,hair);
+    s.r(10,10,4,2,hair); s.hl(11,12,12,hair);
+  } else {
+    s.r(9,5,6,7,bz); s.hl(10,13,4,bz);
+    s.p(10,8,SK); s.p(13,8,SK); s.p(10,8,'#1a1320',1); s.p(13,8,'#1a1320',1);
+    s.r(10,10,4,2,hair);
+    s.hl(10,12,5,bzL,1);
+    s.v(8,9,13,hair); s.v(15,9,13,hair);
+    if (l>=4){
+      const C = l===5 ? '#e2334a' : red;
+      s.hl(9,14,1,C); s.hl(7,16,2,C); s.hl(7,16,3,C); 
+      s.hl(9,14,4,bzD); s.p(8,2,shade(C,1.2),1); s.p(15,2,shade(C,1.2),1);
+    } else { s.r(11,1,2,4,red); s.p(10,2,red); s.p(13,2,red); s.p(11,1,shade(red,1.25),1); }
+  }
+}
+
+/* Jeanne d'Arc */
+function lgJeanne(s,l){
+  const steel = l===5 ? '#f2ead6' : '#c9d3dc', steelD = l===5 ? '#d1a23a' : '#8e99a4', hair = '#5a3a22', blue = '#2f4a9a', sk = SK;
+  if (l===1){
+    s.v(17,4,21,'#7a5230'); s.p(18,3,'#7a5230'); s.p(19,4,'#7a5230'); s.p(19,5,'#7a5230');
+  } else {
+    s.v(17,2,21, l===5 ? GOLD : '#7a5230');
+    s.r(18,2,5,7,'#f4f0e4');
+    if (l>=3){ s.p(19,4,GOLD,1); s.v(20,3,6,GOLD,1); s.p(21,4,GOLD,1); s.hl(19,21,6,GOLD,1); }
+    if (l===5){ s.hl(18,22,9,GOLD); s.p(17,1,GOLD,1); }
+  }
+  if (l===1){
+    const dr = '#9a3a2a';
+    s.r(8,12,8,6,dr); s.r(7,18,10,3,dr); s.r(9,14,6,4,'#e8dcc0');
+    s.r(8,21,3,1,'#4a3020'); s.r(13,21,3,1,'#4a3020');
+    s.r(7,12,1,4,dr); s.r(16,12,1,4,dr); s.p(7,16,sk); s.p(16,16,sk);
+  } else {
+    s.r(9,18,2,3,steel); s.r(13,18,2,3,steel); s.r(8,21,3,1,steelD); s.r(13,21,3,1,steelD);
+    s.p(9,19,steelD,1); s.p(14,19,steelD,1);
+    s.r(8,12,8,6,steel); s.hl(9,14,13,shade(steel,1.12),1); s.hl(8,15,16,steelD);
+    s.r(7,12,1,4,steel); s.r(16,12,1,4,steel); s.p(7,16,steelD); s.p(16,16,steelD);
+    s.r(7,11,2,2,steel); s.r(15,11,2,2,steel);
+    if (l>=4){ s.r(9,12,6,6,blue); s.p(11,13,GOLD,1); s.v(12,13,15,GOLD,1); s.p(13,13,GOLD,1); s.hl(11,13,15,GOLD,1); s.hl(9,14,16,steelD); }
+    if (l>=3){ s.v(6,14,20,'#dfe6ec'); s.hl(5,7,13, l>=4 ? GOLD : steelD); s.p(6,12,'#5a3a22'); }
+  }
+  s.r(9,6,6,6,sk); lgEyes(s, '#3a5a8a', 9); s.hl(11,12,11,'#d98a7a',1);
+  s.r(9,5,6,2,hair); s.v(8,6,10,hair); s.v(15,6,10,hair); s.hl(9,14,7,hair); s.p(11,8,hair);
+  if (l===5){ s.hl(9,14,2,GOLD,1); s.p(8,3,GOLD,1); s.p(15,3,GOLD,1); s.hl(10,13,1,'#fff3b0',1); }
+}
+
+/* Hannibal et son éléphant */
+function lgHannibal(s,l){
+  const g = '#8d8a93', gD = '#6f6c76', tusk = '#f2ead6', purp = '#5a2272', sk = '#c98a5a', tun = l>=3 ? purp : '#9a3a2a';
+  const bz = l===5 ? GOLD : '#c8913a';
+  s.p(21,13,g); s.p(22,14,g); s.p(22,15,'#3a3640');
+  s.hl(10,17,10,g); s.hl(8,19,11,g); s.r(7,12,14,7,g);
+  for (const x of [8,11,16,19]){ s.r(x,19,2,3,g); s.hl(x,x+1,21,'#c9c6cc',1); }
+  s.r(3,10,6,6,g); s.hl(4,7,9,g);
+  s.r(7,11,3,5,gD);
+  s.v(3,16,18,g); s.p(2,19,g); s.p(2,20,g); s.p(3,21,g);
+  s.p(4,16,tusk); s.p(5,17,tusk); s.p(6,17,tusk);
+  if (l>=4) s.p(6,17,GOLD,1);
+  s.p(5,12,EYE,1);
+  if (l>=2){
+    const bl = l===5 ? purp : '#b3262e', ed = l>=4 ? GOLD : '#e6b46a';
+    s.r(10,11,9,4,bl); s.hl(10,18,15,ed); for (let x=10;x<=18;x+=2) s.p(x,16,ed,1);
+  }
+  if (l>=3){ const ar = l===5 ? GOLD : bz; s.r(3,9,5,2,ar); s.p(4,11,ar); s.p(5,11,ar); s.hl(4,6,9,shade(ar,1.2),1); }
+  s.r(12,7,4,5,tun); s.p(12,12,tun); s.p(12,13,'#4a3020');
+  s.v(11,8,10,tun); s.p(11,11,sk);
+  s.v(16,7,9,tun); s.p(16,10,sk);
+  if (l>=4){ s.v(17,1,13,'#7a5230'); s.p(17,0, l===5 ? '#fff3b0' : '#c3cbd3',1); }
+  s.r(12,3,4,4,sk); s.p(12,4,EYE,1); s.p(14,4,EYE,1);
+  s.hl(12,15,6,'#2a1a12'); s.p(13,5,'#2a1a12',1);
+  if (l===1){ s.hl(12,15,2,'#2a1a12'); s.p(16,3,'#2a1a12'); s.p(16,4,'#2a1a12'); }
+  else { s.hl(12,15,2,bz); s.hl(12,15,1,bz); s.p(16,3,bz); s.p(16,4,bz); s.hl(13,14,1,shade(bz,1.25),1);
+    if (l===5){ s.p(14,0,'#e2334a'); s.p(15,0,'#e2334a'); } }
+}
+
+/* Zeus */
+function lgZeus(s,l){
+  const robe = '#eef0f2', robeS = '#c9ced6', drape = l>=4 ? '#2f4a9a' : '#5a7ab0';
+  const beard = l===1 ? '#5a4a3a' : l===2 ? '#a8a29a' : '#f4f4f4', sk = SK;
+  if (l===5){
+    const cl = '#9aa3b8', clL = '#d6dcea';
+    s.r(1,3,6,2,cl); s.hl(2,4,2,cl); s.hl(2,4,2,clL,1); s.p(3,5,LY,1); s.p(4,6,LY,1); s.p(3,7,LYW,1);
+    s.r(18,17,5,2,cl); s.hl(19,21,16,cl); s.hl(19,21,16,clL,1);
+  }
+  s.r(8,12,8,9,robe); s.v(10,15,20,robeS,1); s.v(13,16,20,robeS,1);
+  s.r(8,21,3,1,GOLD); s.r(13,21,3,1,GOLD);
+  for (let k=0;k<7;k++){ s.p(8+k,12+k,drape); s.p(9+k,12+k,drape); }
+  if (l>=4) s.hl(8,15,19,GOLD,1);
+  s.r(7,12,1,5,drape); s.p(7,17,sk);
+  s.p(16,12,sk); s.v(17,8,11,sk); s.p(17,7,sk);
+  const bolt = l>=3
+    ? [[19,1],[18,2],[19,2],[17,3],[18,3],[18,4],[19,4],[20,4],[19,5],[18,6]]
+    : [[18,3],[17,4],[18,4],[18,5],[17,6]];
+  for (const [x,y] of bolt) s.p(x,y, l===5 ? LYW : LY, 1);
+  if (l>=3){ s.p(20,1,LYW,1); s.p(16,5,LYW,1); }
+  s.r(9,6,6,6,sk);
+  lgEyes(s, l===5 ? '#bfe9ff' : EYE, 8);
+  s.r(9,4,6,2,beard); s.v(8,5,12,beard); s.v(15,5,12,beard);
+  s.hl(10,13,9,beard); s.r(9,10,6,2,beard); s.r(10,12,4,2,beard); s.hl(11,12,14,beard);
+  if (l>=3) s.hl(11,12,15,beard);
+  if (l>=4){ const lf = l===5 ? GOLD : '#5aa04a';
+    s.hl(9,14,4,lf); s.p(8,5,lf); s.p(15,5,lf); s.p(10,3,lf); s.p(13,3,lf); s.p(9,4,shade(lf,1.3),1); s.p(14,4,shade(lf,1.3),1); }
+}
+
+/* Thor */
+function lgThor(s,l){
+  const red = '#c8502a', redD = '#9a3a1a', tun = '#3a4a5a', fur = '#8a7a6a', iron = '#7d8a96', ironL = '#c3cbd3', sk = SK;
+  if (l>=3) s.r(7,11,10,10, l===5 ? '#6a1f1f' : '#5a3a2a');
+  s.r(9,18,2,3,'#4a3a30'); s.r(13,18,2,3,'#4a3a30'); s.p(9,19,fur,1); s.p(14,19,fur,1);
+  s.r(8,21,3,1,fur); s.r(13,21,3,1,fur);
+  s.r(8,12,8,6,tun);
+  if (l>=2) for (let y=13;y<=15;y++) for (let x=8;x<=15;x++) if ((x+y)%2) s.p(x,y,iron,1);
+  if (l>=4){ s.r(8,16,8,2,GOLD); s.hl(9,14,16,'#fbe08a',1); } else s.hl(8,15,16,'#4a3020');
+  if (l>=3){ s.hl(7,16,12,fur); s.p(9,12,shade(fur,1.25),1); s.p(14,12,shade(fur,1.25),1); }
+  s.r(7,13,1,3,sk); s.p(7,16, l===5 ? iron : sk); s.r(16,13,1,2,sk); s.p(16,15, l===5 ? iron : sk);
+  if (l>=2){ s.p(7,15,iron); s.p(16,14,iron); }
+  s.v(17,14,18,'#6b4428'); s.p(17,19,'#4a3020');
+  s.r(15,10,5,4,iron); s.hl(16,18,10,ironL,1); s.v(15,11,13,shade(iron,.8),1);
+  if (l>=3) s.p(17,12,'#7fe3ff',1);
+  if (l===5){ s.p(21,9,LY,1); s.p(21,10,LYW,1); s.p(14,9,LY,1); s.p(20,14,LY,1); s.p(13,8,LYW,1); }
+  s.r(9,6,6,6,sk); lgEyes(s, l===5 ? '#bfe9ff' : '#3a5a8a', 8);
+  s.r(9,5,6,2,red); s.hl(9,14,6,red); s.v(8,6,13,red); s.v(15,6,13,red);
+  s.hl(10,13,10,red); s.p(9,10,red); s.p(14,10,red); s.r(9,11,6,1,red); s.r(10,12,4,1,red);
+  if (l>=2){ s.p(10,13,redD); s.p(13,13,redD); }
+  if (l>=4){ s.p(10,14,GOLD,1); s.p(13,14,GOLD,1); }
+  if (l>=2){ const h = l>=4 ? '#8e99a4' : iron; s.hl(10,13,3,h); s.r(9,4,6,2,h); s.hl(10,12,3,ironL,1); if (l>=4) s.hl(9,14,5,GOLD); }
+}
+
+/* Merlin */
+function lgMerlin(s,l){
+  const robe = l===5 ? '#eef0f2' : l>=3 ? '#2a4a6a' : '#2f5a46', trim = l>=4 ? GOLD : '#c9b37a', beard = '#eef2f6', orb = '#7fe3ff', sk = SK;
+  s.v(4,4,21,'#6b4a2e'); s.p(3,7,'#6b4a2e'); s.p(5,11,'#6b4a2e'); s.p(3,15,'#6b4a2e');
+  s.r(3,1,3,3,orb); s.p(4,2,'#ffffff',1);
+  if (l>=4){ s.p(2,2,'#bff6ff',1); s.p(6,2,'#bff6ff',1); s.p(4,0,'#bff6ff',1); }
+  s.r(8,12,8,6,robe); s.r(7,18,10,3,robe); s.hl(7,16,20,trim); s.v(11,13,19,trim,1);
+  s.r(8,21,3,1,'#4a3020'); s.r(13,21,3,1,'#4a3020');
+  if (l>=4){ s.p(9,14,'#fff3a0',1); s.p(14,17,'#fff3a0',1); s.p(9,19,'#fff3a0',1); s.p(14,13,'#fff3a0',1); }
+  s.r(6,12,2,3,robe); s.p(5,13,sk);
+  s.r(16,12,2,3,robe); s.p(17,15,sk); s.p(18,14,'#bff6ff',1);
+  s.r(8,4,8,3,robe); s.v(8,7,11,robe); s.v(15,7,11,robe); s.hl(9,14,3,robe); s.hl(10,13,2,robe);
+  s.hl(9,14,6, l>=4 ? trim : shade(robe,1.2), l>=4 ? 1 : 0);
+  s.r(9,7,6,5,sk); s.p(10,8,EYE,1); s.p(13,8,EYE,1); s.hl(9,10,7,beard,1); s.hl(13,14,7,beard,1);
+  s.hl(10,13,9,beard); s.r(9,10,6,2,beard); s.r(10,12,4,3,beard); s.hl(11,12,15,beard);
+  if (l>=3){
+    const ow = '#8a6a4a';
+    s.r(16,8,3,3,ow); s.p(16,7,ow); s.p(18,7,ow);
+    s.p(16,9,'#ffcf3a',1); s.p(18,9,'#ffcf3a',1); s.p(17,10,'#e0a93a',1); s.hl(16,18,11,'#6b4a2e');
+  }
+  if (l===5){ s.p(21,4,orb,1); s.p(20,6,'#bff6ff',1); s.p(21,18,orb,1); s.p(2,18,'#bff6ff',1); s.hl(9,14,1,'#a8d870'); s.p(10,0,'#a8d870'); s.p(13,0,'#a8d870'); }
+}
+
+/* Anubis */
+function lgAnubis(s,l){
+  const blk = '#24212e', gold = GOLD, sk = '#8a5a3a', kilt = '#efe8d4', lapis = '#2f4a9a';
+  const st = l>=3 ? gold : '#6b4428';
+  s.v(18,3,21,st); s.hl(17,19,3,st); s.p(19,2,st); s.p(17,21,st); s.p(19,21,st);
+  s.r(9,18,2,3,sk); s.r(13,18,2,3,sk); s.r(8,21,3,1,gold); s.r(13,21,3,1,gold);
+  s.r(8,16,8,4,kilt); s.v(10,17,19,'#c9c0a8',1); s.v(13,17,19,'#c9c0a8',1); s.hl(8,15,16,gold);
+  if (l>=4) s.r(11,17,2,3,lapis);
+  s.r(8,12,8,4,sk);
+  s.hl(8,15,12,gold); s.hl(8,15,13,lapis); s.hl(9,14,14,gold);
+  if (l>=3) s.hl(10,13,15,lapis);
+  s.r(7,12,1,4,sk); s.p(7,16,sk); s.r(16,12,1,4,sk); s.p(16,16,sk);
+  if (l>=2){ s.p(7,13,gold,1); s.p(16,13,gold,1); }
+  if (l>=3 && l<5){
+    s.hl(2,7,13,gold); s.v(4,12,13,gold);
+    s.v(2,14,15,'#c9b37a',1); s.v(7,14,15,'#c9b37a',1); s.hl(1,3,16,gold); s.hl(6,8,16,gold);
+  }
+  if (l===5){
+    s.p(4,10,gold); s.p(3,11,gold); s.p(5,11,gold); s.p(3,12,gold); s.p(5,12,gold); s.p(4,13,gold);
+    s.hl(2,6,14,gold); s.v(4,15,18,gold);
+  }
+  if (l>=4){ for (let y=7;y<=13;y++){ s.p(8,y, y%2 ? gold : lapis); s.p(15,y, y%2 ? gold : lapis); } }
+  s.r(9,5,6,5,blk); s.r(10,10,4,2,blk); s.hl(11,12,11,'#111111',1);
+  s.r(9,1,2,4,blk); s.r(13,1,2,4,blk);
+  if (l>=2){ s.p(10,2,gold,1); s.p(13,2,gold,1); }
+  const ey = l===5 ? '#7fe3ff' : '#ffcf3a';
+  s.p(10,7,ey,1); s.p(13,7,ey,1); s.p(9,7,gold,1); s.p(14,7,gold,1);
+  s.hl(10,13,5,'#3a3648',1);
+}
+
+/* Hercule */
+function lgHercule(s,l){
+  const sk = '#d9a070', pelt = l===5 ? GOLD : '#c8963a', peltD = l===5 ? '#a06d1f' : '#8a5a2a', mane = l===5 ? '#d1a23a' : '#7a4a1f';
+  const club = l===5 ? GOLD : '#6b4428', clubD = l===5 ? '#a06d1f' : '#4a2e18';
+  if (l>=2) s.r(7,10,10,11,pelt);
+  s.r(9,18,2,3,sk); s.r(13,18,2,3,sk); s.r(8,21,3,1,'#6b4428'); s.r(13,21,3,1,'#6b4428');
+  s.r(8,12,8,4,sk);
+  s.hl(9,10,12,shade(sk,1.15),1); s.hl(13,14,12,shade(sk,1.15),1);
+  s.p(11,13,shade(sk,.82),1); s.p(12,13,shade(sk,.82),1); s.p(11,15,shade(sk,.82),1); s.p(12,15,shade(sk,.82),1);
+  s.r(8,16,8,2, l===1 ? '#efe8d4' : pelt); s.hl(8,15,16, l===1 ? '#c9b37a' : peltD);
+  if (l>=3){ s.p(9,13,pelt); s.p(9,14,pelt); s.p(14,13,pelt); s.p(14,14,pelt); s.p(9,15,peltD,1); s.p(14,15,peltD,1); }
+  s.r(6,12,2,4,sk); s.p(6,16,sk); s.p(7,16,sk);
+  s.r(16,12,2,4,sk); s.p(16,16,sk); s.p(17,16,sk);
+  if (l>=4){ s.p(6,13,GOLD,1); s.p(17,13,GOLD,1); }
+  if (l===4){ s.p(5,16,GOLD); s.p(5,17,'#e0a93a'); s.p(4,16,'#5aa04a',1); }
+  s.r(18,3,3,6,club); s.r(18,9,2,4,club); s.v(18,13,17,club);
+  s.p(19,4,clubD,1); s.p(20,7,clubD,1); s.p(18,6,clubD,1); s.p(19,10,clubD,1); s.p(21,5,club); s.p(17,7,club);
+  if (l>=4) s.hl(18,20,9, l===5 ? '#fbe08a' : '#c8913a');
+  s.r(9,6,6,6,sk); lgEyes(s, EYE, 9);
+  s.r(9,10,6,2,'#5a3a1f'); s.hl(10,13,12,'#5a3a1f'); s.hl(11,12,10,SKD,1);
+  if (l===1){ s.r(9,5,6,2,'#5a3a1f'); s.p(8,6,'#5a3a1f'); s.p(15,6,'#5a3a1f'); s.p(10,4,'#5a3a1f'); s.p(13,4,'#5a3a1f'); }
+  else {
+    s.v(7,4,11,mane); s.v(16,4,11,mane); s.hl(8,15,3,mane);
+    s.r(8,4,8,4,pelt); s.p(8,2,pelt); s.p(15,2,pelt);
+    s.p(10,5,'#2a1a12',1); s.p(13,5,'#2a1a12',1); s.hl(11,12,6,'#2a1a12',1);
+    s.p(10,7,'#ffffff',1); s.p(13,7,'#ffffff',1);
+    s.hl(9,14,4,shade(pelt,1.2),1);
+  }
+}
+
+const LEGEND_DRAW = { gengis:lgGengis, cesar:lgCesar, alexandre:lgAlex, leonidas:lgLeon, jeanne:lgJeanne,
+  hannibal:lgHannibal, zeus:lgZeus, thor:lgThor, merlin:lgMerlin, anubis:lgAnubis, hercule:lgHercule };
+function legendPixels(id, l){ const s = new Spr(24,24); LEGEND_DRAW[id](s,l); return s.pixels(); }
+
 // </SPRITES>
 
 /* =========================================================
@@ -702,6 +1089,49 @@ const BLESS = [
   { id:'commandement', rar:'c', icon:'banner', name:'Commandement', desc:'Les soldats de niveau 1 et 2 font +50 % de dégâts.', mod:M => { M.low = 1.5; } },
   { id:'faucon', rar:'r', icon:'crit', name:'Œil du faucon', desc:'Chaque attaque a 15 % de chances d’infliger deux fois et demie ses dégâts.', mod:M => { M.crit = .15; } }
 ];
+
+/* ---------- Légendes ---------- */
+const LMUL = [4.8, 10.5, 23, 40, 70];
+const LEO_CD = [9,8,7,6,5], LEO_STUN = [1,1.2,1.4,1.6,2];
+const MERLIN_CD = [16,15,14,12,10], MERLIN_DUR = [1,1.2,1.4,1.6,2];
+const CESAR_AURA = [.1,.12,.14,.17,.2], JEANNE_AURA = [.08,.1,.12,.15,.2], ANUBIS_GOLD = [.5,.6,.75,.9,1];
+const fr1 = v => v.toFixed(1).replace('.', ',');
+const LEGENDS = {
+  gengis:   { name:'Gengis Khan', fam:1, kind:'Historique', era:'Mongolie, XIIIe siècle', range:3.1, dmg:6, rate:.6,
+    ranks:['Témoudjin','Chef de clan','Khan des steppes','Gengis Khan','Empereur universel'],
+    power:l => 'Décoche une volée sur ' + (l>=5 ? 4 : l>=3 ? 3 : 2) + ' cibles. Chaque ennemi tué pendant la vague accélère ses tirs de 2 % (jusqu’à +' + (l===5 ? 50 : 30) + ' %).' },
+  cesar:    { name:'Jules César', fam:0, kind:'Historique', era:'Rome, Ier siècle av. J.-C.', range:1.45, dmg:12, rate:.55,
+    ranks:['Tribun','Légionnaire','Général','Consul','Imperator'],
+    power:l => 'Aura de commandement : les soldats sur les 8 cases autour de lui font +' + Math.round(CESAR_AURA[l-1]*100) + ' % de dégâts.' + (l===5 ? ' Rapporte 25 or à chaque vague repoussée.' : ' Au niveau 5, il rapportera de l’or à chaque vague.') },
+  alexandre:{ name:'Alexandre le Grand', fam:0, kind:'Historique', era:'Macédoine, IVe siècle av. J.-C.', range:1.6, dmg:16, rate:.9,
+    ranks:['Prince de Macédoine','Hétaïre','Roi de Macédoine','Fils d’Amon','Conquérant du monde'],
+    power:l => 'Sa charge transperce tous les ennemis alignés derrière sa cible, sur ' + (l>=4 ? 3 : 2) + ' cases. Dégâts doublés contre les boss.' },
+  leonidas: { name:'Léonidas', fam:0, kind:'Historique', era:'Sparte, Ve siècle av. J.-C.', range:1.4, dmg:12, rate:.55,
+    ranks:['Élève de l’agogé','Hoplite','Spartiate','Roi de Sparte','Chef des Trois-Cents'],
+    power:l => 'Toutes les ' + LEO_CD[l-1] + ' s, son bouclier arrête net sa cible pendant ' + fr1(LEO_STUN[l-1]) + ' s (moitié pour les boss).' },
+  jeanne:   { name:'Jeanne d’Arc', fam:4, kind:'Historique', era:'France, XVe siècle', range:2.5, dmg:7, rate:.8,
+    ranks:['Bergère de Domrémy','Pucelle','Chef de guerre','Libératrice d’Orléans','Sainte'],
+    power:l => 'Les soldats sur les 8 cases autour d’elle frappent ' + Math.round(JEANNE_AURA[l-1]*100) + ' % plus vite. ' + (l>=5 ? 'Rend 2 vies à chaque vague repoussée.' : l>=3 ? 'Rend 1 vie à chaque vague repoussée.' : 'Rend 1 vie toutes les deux vagues.') },
+  hannibal: { name:'Hannibal', fam:2, kind:'Historique', era:'Carthage, IIIe siècle av. J.-C.', range:1.8, dmg:18, rate:1.6,
+    ranks:['Fils d’Hamilcar','Cornac','Général carthaginois','Passeur des Alpes','Terreur de Rome'],
+    power:l => 'Son éléphant piétine tous les ennemis autour de sa cible et les étourdit ' + fr1(.3+.1*l) + ' s (pas les boss).' },
+  zeus:     { name:'Zeus', fam:4, kind:'Mythologie grecque', era:'Mont Olympe', range:3.4, dmg:30, rate:2.0,
+    ranks:['Fils de Cronos','Vainqueur des Titans','Roi de l’Olympe','Maître du ciel','Père des dieux'],
+    power:l => 'La foudre tombe sur l’ennemi le plus résistant à portée et frappe aussi ceux qui l’entourent' + (l>=4 ? ', en les étourdissant un instant.' : '. Au niveau 4, elle étourdira.') },
+  thor:     { name:'Thor', fam:4, kind:'Mythologie nordique', era:'Ásgard', range:2.6, dmg:12, rate:1.2,
+    ranks:['Fils d’Odin','Gardien de Midgard','Porteur de Mjöllnir','Dieu du tonnerre','Tueur de géants'],
+    power:l => 'Mjöllnir rebondit sur ' + (2+l) + ' ennemis sans faiblir, puis revient dans sa main.' },
+  merlin:   { name:'Merlin', fam:3, kind:'Légende arthurienne', era:'Bretagne', range:2.5, dmg:5, rate:1.0,
+    ranks:['Apprenti druide','Barde','Conseiller du roi','Enchanteur','Merlin l’Enchanteur'],
+    power:l => 'Ses sorts ralentissent. Toutes les ' + MERLIN_CD[l-1] + ' s, il fige le temps : tous les ennemis du terrain s’arrêtent ' + fr1(MERLIN_DUR[l-1]) + ' s (moitié pour les boss).' },
+  anubis:   { name:'Anubis', fam:3, kind:'Mythologie égyptienne', era:'Duat', range:2.4, dmg:8, rate:.8,
+    ranks:['Chacal des sables','Gardien des tombes','Peseur des âmes','Seigneur de la nécropole','Dieu des morts'],
+    power:l => 'Ses coups ralentissent et marquent les ennemis : s’ils meurent dans les 4 s, ils rapportent +' + Math.round(ANUBIS_GOLD[l-1]*100) + ' % d’or.' },
+  hercule:  { name:'Hercule', fam:0, kind:'Mythologie grecque', era:'Thèbes', range:1.4, dmg:22, rate:1.0,
+    ranks:['Fils d’Alcmène','Vainqueur du lion','Héros des douze travaux','Porteur des pommes d’or','Demi-dieu'],
+    power:l => 'Sa massue écrase tous les ennemis autour de sa cible et les assomme ' + fr1(.2+.1*l) + ' s (pas les boss).' }
+};
+const LEG_ORDER = Object.keys(LEGENDS);
 const BLESS_BY = Object.fromEntries(BLESS.map(b => [b.id, b]));
 function blessInfo(key){ const [id, p] = String(key).split(':'); return { b: BLESS_BY[id], p: p != null ? +p : null }; }
 const blessName = key => { const { b, p } = blessInfo(key); return typeof b.name === 'function' ? b.name(p) : b.name; };
@@ -747,6 +1177,11 @@ for (let t=0;t<5;t++){
     SPR[t].push(pxCanvas(o)); SIL[t].push(pxCanvas(o,'sil'));
     URL_[t].push(SPR[t][l-1].toDataURL());
   }
+}
+const LSPR = {}, LSIL = {}, LURL = {};
+for (const id of LEG_ORDER){
+  LSPR[id] = []; LSIL[id] = []; LURL[id] = [];
+  for (let l=1;l<=5;l++){ const o = legendPixels(id,l); const c = pxCanvas(o); LSPR[id].push(c); LURL[id].push(c.toDataURL()); LSIL[id].push(pxCanvas(o,'sil').toDataURL()); }
 }
 const ENS = {};
 for (const k of EN_ORDER){
@@ -869,7 +1304,7 @@ document.getElementById('icHammer').src = SHOP_IC.hammer;
    État
    ========================================================= */
 let S, prefs = { sound:true, speed:1, auto:false, helped:false }, best = 0, siegeRec = { wins:0, stars:0 };
-let seen = new Set(), seenEn = new Set(), snapshot = null, hasGame = false;
+let seen = new Set(), seenEn = new Set(), seenLeg = new Set(), legKills = 0, timeStop = 0, snapshot = null, hasGame = false;
 let enemies = [], projs = [], fx = [], queue = [], pendingSpawn = [], spawnT = 0, spawnGap = .8;
 let inWave = false, over = false, paused = false, waveTime = 0, herseUsed = false, waveLeaks = 0;
 let path = null, pathSet = new Set(), WP = null;
@@ -877,13 +1312,14 @@ let preview = null, previewSet = new Set(), WPprev = null;
 let autoT = 0, shake = 0, gateFlash = 0, banner = null, clock = 0;
 let drag = null, sel = null, quiet = true, placing = null, trapMap = new Map(), trapSeq = 0;
 
-const mk = (t,l) => ({ t, l, cd:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
+const mk = (t,l,leg) => ({ t, l, leg: leg || null, cd:0, ab:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
 
 function freshGame(mode = 'endless'){
   S = { mode, wave:0, gold: mode==='siege' ? 50 : 40, lives:20, cost:10,
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
     terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
-    traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 } };
+    traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 },
+    legend:null, legendOffer:null, legendSlot:-1, legendPity:0 };
 }
 
 /* ---------- sauvegarde (une seule clé) ---------- */
@@ -892,11 +1328,12 @@ function snap(){
   snapshot = { mode:S.mode, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
     bless:S.bless, pending:S.pending, preview: preview || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
-    board:S.board.map(t => t ? [t.t,t.l] : 0), bench:S.bench.map(t => t ? [t.t,t.l] : 0) };
+    legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
+    board:S.board.map(t => t ? [t.t,t.l,t.leg||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0] : 0) };
 }
 function persist(){
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ v:2, best, siege:siegeRec, seen:[...seen], seenEn:[...seenEn], prefs, game: (over || !hasGame) ? null : snapshot }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v:2, best, siege:siegeRec, seen:[...seen], seenEn:[...seenEn], seenLeg:[...seenLeg], prefs, game: (over || !hasGame) ? null : snapshot }));
   } catch(e){}
 }
 function save(){ snap(); persist(); }
@@ -905,7 +1342,7 @@ function load(){
   try { d = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch(e){}
   freshGame();
   if (!d) return;
-  best = d.best || 0; seen = new Set(d.seen || []); seenEn = new Set(d.seenEn || []);
+  best = d.best || 0; seen = new Set(d.seen || []); seenEn = new Set(d.seenEn || []); seenLeg = new Set(d.seenLeg || []);
   if (d.siege) siegeRec = Object.assign({ wins:0, stars:0 }, d.siege);
   Object.assign(prefs, d.prefs || {});
   if (![1,2,3].includes(prefs.speed)) prefs.speed = 1;
@@ -921,8 +1358,13 @@ function load(){
     S.shopBuys = Object.assign({ dyn:0, hill:0, marsh:0, rune:0 }, g.shopBuys || {});
     S.savedPreview = Array.isArray(g.preview) ? g.preview : null;
     S.savedTraps = Array.isArray(g.traps) ? g.traps : [];
-    S.board = g.board.map(a => a ? mk(a[0],a[1]) : null);
-    S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1]) : null);
+    const okLeg = id => LEGENDS[id] ? id : null;
+    S.legend = okLeg(g.legend);
+    S.legendOffer = Array.isArray(g.legendOffer) && g.legendOffer.every(id => LEGENDS[id]) ? g.legendOffer : null;
+    S.legendSlot = Number.isInteger(g.legendSlot) ? g.legendSlot : -1;
+    S.legendPity = g.legendPity|0;
+    S.board = g.board.map(a => a ? mk(a[0],a[1],okLeg(a[2])) : null);
+    S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1],okLeg(a[2])) : null);
     while (S.bench.length < BENCH_N) S.bench.push(null);
     hasGame = true;
   }
@@ -954,7 +1396,7 @@ function synergyFor(t, i, ignore){
     const k = synKey(t, o.t); if (done.has(k)) continue; done.add(k);
     const sy = SYN[k], f = sy.fx[t];
     for (const key in f) s[key] += f[key] * (key === 'chain' ? 1 : mul);
-    s.list.push({ name:sy.name, with:o.t, txt:sy.txt[t] });
+    s.list.push({ name:sy.name, with:o.t, icon: o.leg ? LURL[o.leg][0] : null, txt:sy.txt[t] });
   }
   if (same){
     s.dmg += FORMATION*same*mul;
@@ -965,16 +1407,29 @@ function synergyFor(t, i, ignore){
 function recomputeSyn(){
   for (const tw of S.bench) if (tw) tw.syn = null;
   S.board.forEach((tw,i) => { if (tw) tw.syn = synergyFor(tw.t, i); });
+  S.board.forEach((lt,i) => {
+    if (!lt || (lt.leg !== 'cesar' && lt.leg !== 'jeanne')) return;
+    const c = i%COLS, r = (i/COLS)|0;
+    for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++){
+      if (!dc && !dr) continue;
+      const nc = c+dc, nr = r+dr; if (nc<0||nr<0||nc>=COLS||nr>=ROWS) continue;
+      const o = S.board[idx(nc,nr)]; if (!o || !o.syn) continue;
+      if (lt.leg === 'cesar'){ const v = CESAR_AURA[lt.l-1]; o.syn.dmg += v; o.syn.list.push({ name:'Aura de César', icon:LURL.cesar[lt.l-1], txt:'+' + Math.round(v*100) + ' % de dégâts' }); }
+      else { const v = JEANNE_AURA[lt.l-1]; o.syn.rate += v; o.syn.list.push({ name:'Inspiration de Jeanne', icon:LURL.jeanne[lt.l-1], txt:'+' + Math.round(v*100) + ' % de cadence' }); }
+    }
+  });
 }
 function stats(tw, i){
   const ty = TYPES[tw.t], L = tw.l, sy = tw.syn || NOSYN, M = MODS;
+  const lg = tw.leg ? LEGENDS[tw.leg] : null, base = lg || ty;
   const ter = i != null ? S.terrain[i] : 0;
-  let dmg = ty.dmg*DMUL[L-1] * (1+sy.dmg) * M.dmgAll * M.dmgType[tw.t];
+  let dmg = base.dmg*(lg ? LMUL : DMUL)[L-1] * (1+sy.dmg) * M.dmgAll * M.dmgType[tw.t];
   if (L === 5) dmg *= M.elite;
-  if (L <= 2) dmg *= M.low;
+  if (L <= 2 && !lg) dmg *= M.low;
   if (ter === TER.RUNE) dmg *= 1 + RUNE_DMG*M.runeMul;
-  const range = ty.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0);
-  let rate = ty.rate*RMUL[L-1] / (1 + sy.rate + M.rateType[tw.t]);
+  const range = base.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0);
+  const khan = tw.leg === 'gengis' ? Math.min(L === 5 ? .5 : .3, .02*legKills) : 0;
+  let rate = base.rate*RMUL[L-1] / (1 + sy.rate + M.rateType[tw.t] + khan);
   if (M.frenzy && inWave) rate = waveTime < 6 ? rate/1.25 : rate*1.1;
   return { dmg, range, rate };
 }
@@ -1114,6 +1569,10 @@ function relocateOff(set){
     if (bestJ >= 0){ S.board[bestJ] = tw; tw.pop = .3; moved++; burst(bestJ%COLS + .5, ((bestJ/COLS)|0) + .5, '#fff3c4', 6, 1.5); continue; }
     const b = S.bench.findIndex(x => !x);
     if (b >= 0){ S.bench[b] = tw; toBench++; continue; }
+    if (tw.leg){
+      let k = -1; for (let j=0;j<BENCH_N;j++) if (!S.bench[j].leg && (k < 0 || S.bench[j].l < S.bench[k].l)) k = j;
+      if (k >= 0){ S.gold += sellValue(S.bench[k].l); S.bench[k] = tw; toBench++; sold++; continue; }
+    }
     S.gold += sellValue(tw.l); sold++;
   }
   if (moved || toBench || sold){
@@ -1228,6 +1687,12 @@ const SFX = {
   jackpot:() => [784,988,1175,1568,1976].forEach((f,i) => tone(f,.09,'square',.035,0,i*.05)),
   spike:  () => noise(.05,.05,5000),
   build:  () => { noise(.12,.08,1200); tone(196,.12,'square',.04,294,.05); },
+  legend: () => [392,523,659,784,1046].forEach((f,i) => tone(f,.22,'triangle',.06,0,i*.11)),
+  offer:  () => [659,880,1175,1568].forEach((f,i) => tone(f,.16,'triangle',.05,0,i*.07)),
+  thunder:() => { noise(.45,.14,900); tone(70,.4,'sine',.12,35); },
+  stomp:  () => { noise(.18,.1,400); tone(80,.2,'sine',.12,45); },
+  clang:  () => { tone(1250,.08,'square',.025,900); tone(1880,.06,'triangle',.02); },
+  freeze: () => [2093,1568,1175,880].forEach((f,i) => tone(f,.12,'triangle',.04,0,i*.06)),
   bless:  () => [523,784,1046,1568].forEach((f,i) => tone(f,.18,'triangle',.05,0,i*.08)),
   win:    () => [523,659,784,1046,784,1046].forEach((f,i) => tone(f,.2,'triangle',.06,0,i*.13)),
   over:   () => [392,330,262,196].forEach((f,i) => tone(f,.22,'triangle',.06,0,i*.18))
@@ -1469,7 +1934,8 @@ function startWave(){
   preview = null; previewSet = new Set(); WPprev = null;
   queue = makeWave(S.wave); spawnT = .3; pendingSpawn = [];
   spawnGap = Math.max(.42, .95 - S.wave*.015);
-  inWave = true; autoT = 0; waveTime = 0; herseUsed = false; waveLeaks = 0;
+  inWave = true; autoT = 0; waveTime = 0; herseUsed = false; waveLeaks = 0; legKills = 0;
+  for (const tw of S.board) if (tw) tw.ab = 0;
   renderBG();
   const siege = S.mode === 'siege';
   let sub = '', col = '#f3e7cc', text = 'Vague ' + S.wave;
@@ -1504,6 +1970,12 @@ function endWave(){
   let sub = '+' + bonus + ' or';
   if (intr) sub += ', +' + intr + ' d’intérêts';
   if (regen) sub += ', +1 vie';
+  const lt = S.board.find(t => t && t.leg);
+  if (lt && lt.leg === 'cesar' && lt.l === 5){ S.gold += 25; sub += ', +25 or de César'; }
+  if (lt && lt.leg === 'jeanne'){
+    const n = lt.l >= 5 ? 2 : lt.l >= 3 ? 1 : (S.wave % 2 === 0 ? 1 : 0);
+    if (n){ S.lives += n; sub += ', +' + n + (n > 1 ? ' vies' : ' vie') + ' de Jeanne'; }
+  }
   if (newPath) sub += ', nouveau chemin';
   banner = { t: newPath ? 2.6 : 2, max: newPath ? 2.6 : 2, text:'Vague ' + S.wave + ' repoussée', sub, col:'#f2c14e' };
   sfx('clear');
@@ -1532,12 +2004,13 @@ function gameOver(){
   snapshot = null; persist();
   sfx('over');
   const done = Math.max(0, S.wave - 1);
+  const fell = 'Tombé pendant la vague ' + S.wave + '.';
   if (S.mode === 'siege'){
     $('overWave').textContent = done + '/' + SIEGE_WAVES;
-    $('overSub').textContent = 'vagues tenues pendant le siège';
+    $('overSub').textContent = (done > 1 ? 'vagues tenues' : 'vague tenue') + ' pendant le siège. ' + fell;
   } else {
     $('overWave').textContent = done;
-    $('overSub').textContent = (done > 1 ? 'vagues repoussées' : 'vague repoussée') + ', record ' + best;
+    $('overSub').textContent = (done > 1 ? 'vagues repoussées. ' : 'vague repoussée. ') + fell + ' Record : ' + best + '.';
   }
   setTimeout(() => show('ovOver'), 700);
 }
@@ -1642,9 +2115,12 @@ function hit(e, dmg){
   if (e.dead) return;
   e.hp -= dmg; e.flash = .07;
   if (e.hp <= 0){
-    e.dead = true; S.gold += e.gold;
+    e.dead = true; legKills++;
+    const gv = Math.round(e.gold * (e.markT > 0 ? 1 + e.markB : 1));
+    S.gold += gv;
     const gob = e.k === 'goblin';
-    fx.push({ k:'t', x:e.x, y:e.y-.5, s:'+'+e.gold, col:'#f6c94a', life: gob ? 1.4 : .8, max: gob ? 1.4 : .8, big:gob });
+    if (e.markT > 0) burst(e.x, e.y-.3, '#f2c14e', 6, 2);
+    fx.push({ k:'t', x:e.x, y:e.y-.5, s:'+'+gv, col:'#f6c94a', life: gob ? 1.4 : .8, max: gob ? 1.4 : .8, big:gob });
     burst(e.x, e.y-.2, EN[e.k].col, e.k==='boss' || e.k==='king' ? 26 : 9);
     if (gob){ burst(e.x, e.y-.2, '#fbe08a', 22, 4); sfx('jackpot'); }
     const sp = EN[e.k].split;
@@ -1666,7 +2142,7 @@ function applySlow(e, s, dur = 1.6){
   s = Math.min(.6, s);
   e.slow = Math.max(e.slowT > 0 ? e.slow : 0, s); e.slowT = Math.max(e.slowT, dur);
 }
-function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L){
+function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L, col){
   const pts = [{ x:x0, y:y0 }], hs = new Set();
   let cur = tg, dm = dmg;
   for (let k=0; k<=jumps && cur; k++){
@@ -1676,7 +2152,82 @@ function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L){
     for (const e of enemies){ if (e.dead || hs.has(e)) continue; const dd = d2(e,cur); if (dd < bd){ bd = dd; nx = e; } }
     cur = nx;
   }
-  fx.push({ k:'bolt', pts, life:.2, max:.2, L });
+  fx.push({ k:'bolt', pts, life:.2, max:.2, L, col });
+}
+const isBoss = e => e.k === 'boss' || e.k === 'king';
+function legendFire(tw, cx, cy, tg, st, D){
+  const L = tw.l, id = tw.leg;
+  switch (id){
+    case 'gengis': {
+      const n = L>=5 ? 4 : L>=3 ? 3 : 2, r2 = st.range*st.range;
+      const tgts = enemies.filter(e => !e.dead && e.y >= -.2 && (e.x-cx)**2 + (e.y-cy)**2 <= r2).sort((a,b) => b.d - a.d).slice(0, n);
+      for (const t of tgts) projs.push({ k:'arrow', x:cx+tw.face*.2, y:cy-.3, tg:t, spd:13, dmg:D, L:5, aslow:0, pierce:false });
+      sfx('arrow'); break;
+    }
+    case 'cesar': case 'leonidas': {
+      hit(tg, D);
+      fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L===5 ? '#fff3b0' : '#ffffff' });
+      if (id === 'leonidas' && tw.ab <= 0 && !tg.dead){
+        tw.ab = LEO_CD[L-1];
+        tg.stunT = Math.max(tg.stunT, LEO_STUN[L-1] * (isBoss(tg) ? .5 : 1));
+        fx.push({ k:'ring', x:tg.x, y:tg.y-.2, r:.5, life:.3, max:.3, col:'#f2c14e' });
+        fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'Halte !', col:'#f2c14e', life:.8, max:.8 });
+        sfx('clang');
+      }
+      sfx('slash'); break;
+    }
+    case 'alexandre': {
+      const dx = tg.x-cx, dy = tg.y-cy, dl = Math.hypot(dx,dy) || 1, ux = dx/dl, uy = dy/dl, reach = dl + (L>=4 ? 3 : 2);
+      for (const e of enemies){
+        if (e.dead) continue;
+        const vx = e.x-cx, vy = e.y-cy, pr = vx*ux + vy*uy, pe = Math.abs(vx*uy - vy*ux);
+        if (pr > 0 && pr <= reach && pe < .45) hit(e, D * (isBoss(e) ? 2 : 1));
+      }
+      fx.push({ k:'beam', x0:cx, y0:cy-.3, x1:cx+ux*reach, y1:cy-.3+uy*reach, life:.2, max:.2, col: L===5 ? '#fff3b0' : '#ffffff' });
+      sfx('slash'); break;
+    }
+    case 'jeanne':
+      lightning(cx + .3*tw.face, cy-.6, tg, D, 1, .8, 0, L, '#f2c14e'); sfx('zap'); break;
+    case 'hannibal': {
+      const stn = .3 + .1*L;
+      for (const e of enemies) if (!e.dead && d2(e,tg) <= .81){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
+      fx.push({ k:'ring', x:tg.x, y:tg.y, r:.9, life:.3, max:.3, col:'#c9a77a' });
+      burst(tg.x, tg.y, '#b39b7a', 12, 3); shake = Math.max(shake, .08);
+      sfx('stomp'); break;
+    }
+    case 'zeus': {
+      let t = tg, r2 = st.range*st.range;
+      for (const e of enemies) if (!e.dead && e.y >= -.2 && (e.x-cx)**2 + (e.y-cy)**2 <= r2 && e.hp > t.hp) t = e;
+      hit(t, D);
+      for (const e of enemies) if (!e.dead && e !== t && d2(e,t) < .49){ hit(e, D*.5); if (L>=4 && !isBoss(e)) e.stunT = Math.max(e.stunT, .4); }
+      if (L>=4 && !t.dead && !isBoss(t)) t.stunT = Math.max(t.stunT, .4);
+      fx.push({ k:'bolt', pts:[{ x:t.x+(Math.random()-.5)*.8, y:t.y-3.2 }, { x:t.x+(Math.random()-.5)*.4, y:t.y-1.6 }, { x:t.x, y:t.y-.2 }], life:.28, max:.28, L:5, col:'#9ec9ff' });
+      fx.push({ k:'ring', x:t.x, y:t.y-.1, r:.7, life:.3, max:.3, col:'#fffbe0' });
+      shake = Math.max(shake, .1); sfx('thunder'); break;
+    }
+    case 'thor':
+      projs.push({ k:'hammer', x:cx+.3*tw.face, y:cy-.4, tg, spd:9, dmg:D, left:2+L, hitSet:new Set(), home:{ x:cx, y:cy-.4 }, back:false, a:0, L });
+      sfx('lob'); break;
+    case 'merlin':
+      projs.push({ k:'shard', x:cx, y:cy-.4, tg, spd:9, dmg:D, slow: L===5 ? .4 : .3, dur:1.6, L, style:'merlin' }); sfx('ice'); break;
+    case 'anubis':
+      projs.push({ k:'shard', x:cx, y:cy-.4, tg, spd:9, dmg:D, slow:.2, dur:1.2, L:1, style:'anubis', mark:ANUBIS_GOLD[L-1] }); sfx('ice'); break;
+    case 'hercule': {
+      const stn = .2 + .1*L;
+      for (const e of enemies) if (!e.dead && d2(e,tg) <= .36){ hit(e, D); if (!isBoss(e)) e.stunT = Math.max(e.stunT, stn); }
+      fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.2, max:.2, col:'#f2c14e' });
+      fx.push({ k:'ring', x:tg.x, y:tg.y, r:.6, life:.25, max:.25, col:'#e6b46a' });
+      shake = Math.max(shake, .05); sfx('stomp'); break;
+    }
+  }
+}
+function merlinFreeze(tw, cx, cy){
+  const dur = MERLIN_DUR[tw.l-1];
+  for (const e of enemies) if (!e.dead && e.y >= 0) e.stunT = Math.max(e.stunT, dur * (isBoss(e) ? .5 : 1));
+  tw.ab = MERLIN_CD[tw.l-1]; timeStop = Math.max(timeStop, dur);
+  fx.push({ k:'ring', x:cx, y:cy, r:2.5, life:.5, max:.5, col:'#bff6ff' });
+  fx.push({ k:'t', x:cx, y:cy-.9, s:'Le temps s’arrête', col:'#bff6ff', life:1.2, max:1.2 });
+  sfx('freeze');
 }
 function fire(tw, cx, cy, tg, st){
   tw.anim = .12;
@@ -1684,6 +2235,7 @@ function fire(tw, cx, cy, tg, st){
   const L = tw.l, sy = tw.syn || NOSYN, M = MODS;
   const crit = M.crit && Math.random() < M.crit, D = st.dmg * (crit ? 2.5 : 1);
   if (crit) fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'×2,5', col:'#ffe066', life:.5, max:.5 });
+  if (tw.leg){ legendFire(tw, cx, cy, tg, st, D); return; }
   switch (tw.t){
     case 0: {
       const vs = e => slowed(e) ? 1 + sy.vsSlow : 1;
@@ -1755,6 +2307,23 @@ function triggerTrap(tr, e){
   }
 }
 function updProj(p, dt){
+  if (p.k === 'hammer'){
+    p.a += dt*16;
+    const tx = p.back ? p.home.x : p.tg.x, ty = p.back ? p.home.y : p.tg.y - .25;
+    const dx = tx-p.x, dy = ty-p.y, dist = Math.hypot(dx,dy), step = p.spd*dt;
+    if (dist <= step){
+      p.x = tx; p.y = ty;
+      if (p.back){ p.done = true; return; }
+      const tg = p.tg;
+      if (!tg.dead){ hit(tg, p.dmg); burst(tg.x, tg.y-.25, '#c3cbd3', 5, 2); if (p.L === 5) burst(tg.x, tg.y-.25, LY, 4, 2); }
+      p.hitSet.add(tg); p.left--;
+      let nx = null, bd = 4;
+      if (p.left > 0) for (const e of enemies){ if (e.dead || p.hitSet.has(e)) continue; const dd = d2(e,tg); if (dd < bd){ bd = dd; nx = e; } }
+      if (nx) p.tg = nx; else { p.back = true; p.spd = 12; }
+      sfx('clang');
+    } else { p.x += dx/dist*step; p.y += dy/dist*step; }
+    return;
+  }
   if (p.k === 'bomb'){
     p.t += dt;
     if (p.t >= p.dur){
@@ -1779,6 +2348,7 @@ function updProj(p, dt){
       if (p.k === 'arrow' && p.aslow) applySlow(tg, p.aslow, 1.2);
       if (p.k === 'shard'){
         applySlow(tg, p.slow, p.dur);
+        if (p.mark){ tg.markT = 4; tg.markB = p.mark; }
         if (MODS.freeze && tg.k !== 'boss' && tg.k !== 'king' && Math.random() < MODS.freeze){
           tg.stunT = .6;
           burst(tg.x, tg.y-.2, '#ffffff', 8, 2);
@@ -1810,6 +2380,7 @@ function update(dt){
     if (e.dead) continue;
     if (e.slowT > 0) e.slowT -= dt;
     if (e.stunT > 0) e.stunT -= dt;
+    if (e.markT > 0) e.markT -= dt;
     if (e.flash > 0) e.flash -= dt;
     let sp = e.stunT > 0 ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
     const c = Math.floor(e.x), r = Math.floor(e.y);
@@ -1828,6 +2399,13 @@ function update(dt){
     const tw = S.board[i]; if (!tw) continue;
     if (tw.anim > 0) tw.anim -= dt; if (tw.pop > 0) tw.pop -= dt;
     tw.cd -= dt;
+    if (tw.leg){
+      if (tw.ab > 0) tw.ab -= dt;
+      if (tw.leg === 'merlin' && inWave && tw.ab <= 0){
+        const mx = i%COLS + .5, my = ((i/COLS)|0) + .5;
+        if (findTarget(mx, my, stats(tw, i).range)) merlinFreeze(tw, mx, my);
+      }
+    }
     if (tw.cd <= 0 && inWave){
       const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5, st = stats(tw, i);
       const tg = findTarget(cx, cy, st.range);
@@ -1852,6 +2430,7 @@ function updateFx(dt){
   fx = fx.filter(f => f.life > 0);
   if (shake > 0) shake -= dt;
   if (gateFlash > 0) gateFlash -= dt;
+  if (timeStop > 0) timeStop -= dt;
   if (banner){ banner.t -= dt; if (banner.t <= 0) banner = null; }
 }
 
@@ -1885,24 +2464,29 @@ function text(s, x, y, size, col){
   ctx.strokeText(s, x, y); ctx.fillStyle = col; ctx.fillText(s, x, y);
 }
 function drawTroop(tw, X, Y, alpha=1, scale=1){
-  const can = SPR[tw.t][tw.l-1];
+  const lg = !!tw.leg;
+  const can = lg ? LSPR[tw.leg][tw.l-1] : SPR[tw.t][tw.l-1], SZ = lg ? 24*P : CS;
   const bob = (Math.floor(clock*1.7 + tw.seed) % 2) ? P : 0;
   const dx = tw.anim > 0 ? tw.face*P : 0;
   const sc = scale * (1 + (tw.pop > 0 ? tw.pop*1.1 : 0));
   ctx.globalAlpha = alpha * .3; ctx.fillStyle = '#000';
   ctx.fillRect(X+5*P, Y+17*P, 10*P, 2*P); ctx.fillRect(X+4*P, Y+18*P, 12*P, P);
+  if (lg){
+    ctx.globalAlpha = alpha * (.35 + .2*Math.sin(clock*3 + tw.seed)); ctx.fillStyle = '#f2c14e';
+    ctx.fillRect(X+5*P, Y+16*P, 10*P, P); ctx.fillRect(X+3*P, Y+17*P, 2*P, 2*P); ctx.fillRect(X+15*P, Y+17*P, 2*P, 2*P); ctx.fillRect(X+5*P, Y+19*P, 10*P, P);
+  }
   ctx.globalAlpha = alpha;
   ctx.save();
   ctx.translate(X + CS/2 + dx, Y + CS);
   if (tw.face < 0) ctx.scale(-1, 1);
   if (sc !== 1) ctx.scale(sc, sc);
-  ctx.drawImage(can, -CS/2, -CS - bob, CS, CS);
+  ctx.drawImage(can, -SZ/2, -SZ - bob, SZ, SZ);
   ctx.restore();
   const w = tw.l*3 - 1, px0 = X + Math.round((T-w)/2)*P, py0 = Y + 18*P;
   ctx.fillStyle = '#120d08'; ctx.fillRect(px0-P, py0-P, (w+2)*P, 4*P);
-  ctx.fillStyle = tw.l===5 ? '#f2c14e' : TYPES[tw.t].col;
+  ctx.fillStyle = (tw.l===5 || lg) ? '#f2c14e' : TYPES[tw.t].col;
   for (let k=0;k<tw.l;k++) ctx.fillRect(px0 + k*3*P, py0, 2*P, 2*P);
-  if (tw.l === 5){
+  if (tw.l === 5 || (lg && tw.l >= 3)){
     ctx.fillStyle = '#fff1a8';
     for (let k=0;k<3;k++){
       const a = clock*1.6 + k*2.1, fl = (Math.sin(clock*6+k*3)+1)/2;
@@ -1949,7 +2533,7 @@ function drawBolt(f){
     pts.forEach((p,i) => { const X = ox + p.x*CS, Y = oy + p.y*CS; i ? ctx.lineTo(X,Y) : ctx.moveTo(X,Y); });
     ctx.stroke();
   };
-  line(P*4, f.L===5 ? '#c9b8ff' : '#7a58c9', .45*a); line(P*1.5, '#fffbe0', a);
+  line(P*4, f.col || (f.L===5 ? '#c9b8ff' : '#7a58c9'), .45*a); line(P*1.5, '#fffbe0', a);
   ctx.globalAlpha = 1;
 }
 function gem(x, y, col, alpha){
@@ -2052,7 +2636,8 @@ function draw(){
     const a = drag.troop, pulse = (Math.sin(clock*8)+1)/2;
     const mark = ref => {
       const t = getT(ref); if (!t || t === a) return;
-      if (t.t===a.t && t.l===a.l && a.l<5){
+      const combo = (!t.leg && !a.leg && t.t===a.t && t.l===a.l && a.l<5) || (!!t.leg !== !!a.leg && t.l===a.l && a.l<5);
+      if (combo){
         const { X, Y } = cellXY(ref);
         ctx.globalAlpha = .45 + pulse*.5; ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 2*P;
         ctx.strokeRect(X+P, Y+P, CS-2*P, CS-2*P); ctx.globalAlpha = 1;
@@ -2112,10 +2697,17 @@ function draw(){
         ctx.fillStyle = p.L===5 ? '#fff6d0' : '#d9c7a0'; ctx.fillRect(-4*P, -P/2, 7*P, P);
         ctx.fillStyle = p.aslow ? '#aeeeff' : '#eef4f8'; ctx.fillRect(2*P, -P, 2*P, 2*P);
         ctx.fillStyle = '#c8473d'; ctx.fillRect(-4*P, -P, 2*P, 2*P);
+      } else if (p.k === 'hammer'){
+        ctx.rotate(p.a);
+        ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -4*P, 6*P, 5*P); ctx.fillRect(-P, P, 2*P, 4*P);
+        ctx.fillStyle = '#7d8a96'; ctx.fillRect(-2*P, -3*P, 4*P, 3*P);
+        ctx.fillStyle = '#c3cbd3'; ctx.fillRect(-2*P, -3*P, 4*P, P);
+        ctx.fillStyle = '#6b4428'; ctx.fillRect(-P/2, 0, P, 4*P);
       } else {
-        ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -2*P, 6*P, 4*P);
-        ctx.fillStyle = '#aeeeff'; ctx.fillRect(-2*P, -P, 4*P, 2*P);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(P, -P/2, P, P);
+        const sty = p.style === 'anubis' ? ['#24212e','#e0a93a','#fff3b0'] : p.style === 'merlin' ? ['#120d08','#9ec9ff','#ffffff'] : ['#120d08','#aeeeff','#ffffff'];
+        ctx.fillStyle = sty[0]; ctx.fillRect(-3*P, -2*P, 6*P, 4*P);
+        ctx.fillStyle = sty[1]; ctx.fillRect(-2*P, -P, 4*P, 2*P);
+        ctx.fillStyle = sty[2]; ctx.fillRect(P, -P/2, P, P);
       }
       ctx.restore();
     }
@@ -2135,6 +2727,11 @@ function draw(){
       const sp = (1-a)*1.4;
       ctx.beginPath(); ctx.arc(ox + f.x*CS, oy + f.y*CS, .36*CS, f.a - 1.2 + sp, f.a - .2 + sp); ctx.stroke();
     } else if (f.k === 'bolt') drawBolt(f);
+    else if (f.k === 'beam'){
+      ctx.globalAlpha = a; ctx.strokeStyle = '#120d08'; ctx.lineWidth = 4*P;
+      ctx.beginPath(); ctx.moveTo(ox + f.x0*CS, oy + f.y0*CS); ctx.lineTo(ox + f.x1*CS, oy + f.y1*CS); ctx.stroke();
+      ctx.strokeStyle = f.col; ctx.lineWidth = 2*P; ctx.stroke();
+    }
     else if (f.k === 't'){
       ctx.globalAlpha = Math.min(1, a*2);
       text(f.s, ox + f.x*CS, oy + f.y*CS, Math.round(CS*(f.big ? .42 : .32)), f.col);
@@ -2142,6 +2739,10 @@ function draw(){
     ctx.globalAlpha = 1;
   }
 
+  if (timeStop > 0){
+    ctx.globalAlpha = Math.min(.22, timeStop*.2); ctx.fillStyle = '#bfe9ff';
+    ctx.fillRect(ox, oy, ART_W*P, ROWS*CS); ctx.globalAlpha = 1;
+  }
   // soldat en main
   if (drag && drag.moved){
     const X = drag.x - CS/2, Y = drag.y - CS*.45 - CS/2;
@@ -2174,11 +2775,14 @@ function hud(){
   const siege = S.mode === 'siege';
   setTxt('vLives', String(S.lives));
   setTxt('vGold', String(Math.floor(S.gold)));
-  const wn = inWave ? S.wave : Math.min(S.wave + 1, siege ? SIEGE_WAVES : 1e9);
+  const wn = (inWave || over) ? S.wave : Math.min(S.wave + 1, siege ? SIEGE_WAVES : 1e9);
   setTxt('vWave', siege ? wn + '/' + SIEGE_WAVES : String(wn));
   setTxt('vCost', String(Math.round(S.cost)));
   $('bRecruit').classList.toggle('poor', S.gold < Math.round(S.cost));
-  if (inWave){
+  if (over){
+    setTxt('vWaveBtn', 'Terminée');
+    setTxt('vWaveSub', 'vague ' + S.wave);
+  } else if (inWave){
     const left = queue.length + enemies.length + pendingSpawn.length;
     setTxt('vWaveBtn', 'En cours');
     setTxt('vWaveSub', left + (left > 1 ? ' ennemis' : ' ennemi'));
@@ -2186,7 +2790,7 @@ function hud(){
     setTxt('vWaveBtn', 'Lancer');
     setTxt('vWaveSub', (siege && S.wave + 1 >= SIEGE_WAVES) ? 'vague finale' : 'vague ' + (S.wave + 1));
   }
-  $('bWave').classList.toggle('busy', inWave);
+  $('bWave').classList.toggle('busy', inWave || over);
   $('bAuto').classList.toggle('on', !!prefs.auto);
   setTxt('bSpeed', '×' + prefs.speed);
 }
@@ -2218,8 +2822,15 @@ function markSeen(t, l){
 function evalDrop(src, dst){
   if (!dst || sameRef(src,dst)) return { ok:false, none:true };
   const a = getT(src);
-  if (dst.k === 'sell') return { ok:true, kind:'sell' };
+  if (dst.k === 'sell') return a.leg ? { ok:false, why:'Une légende ne se vend pas' } : { ok:true, kind:'sell' };
   const b = getT(dst);
+  if (b && (a.leg || b.leg)){
+    if (a.l === b.l && !(a.leg && b.leg)){
+      if (a.l >= 5) return { ok:false, why:'Ta légende est déjà au sommet' };
+      return { ok:true, kind:'offer' };
+    }
+    return { ok:true, kind:'swap' };
+  }
   if (b){
     if (b.t===a.t && b.l===a.l){
       if (a.l >= 5) return { ok:false, why:'Niveau maximum déjà atteint' };
@@ -2266,6 +2877,17 @@ function applyDrop(src, dst, r){
     fx.push({ k:'ring', x:cx, y:cy, r:.7, life:.35, max:.35, col:'#fff3c4' });
     fx.push({ k:'t', x:cx, y:cy-.6, s:(jump ? 'Bond ! Niv. ' : 'Niv. ') + b.l, col: b.l===5 || jump ? '#f2c14e' : '#f3e7cc', life:1, max:1, big:true });
     sfx('merge');
+  } else if (r.kind === 'offer'){
+    const b = getT(dst), lgT = a.leg ? a : b;
+    setT(src, null); setT(dst, lgT);
+    lgT.l++; lgT.pop = .45; lgT.cd = 0;
+    markSeenLeg(lgT.leg, lgT.l);
+    const { X, Y } = cellXY(dst), cx = (X-ox)/CS + .5, cy = (Y-oy)/CS + .5;
+    burst(cx, cy, '#f2c14e', 22, 3.5); burst(cx, cy, '#fff3c4', 12, 2.5);
+    fx.push({ k:'ring', x:cx, y:cy, r:.9, life:.45, max:.45, col:'#f2c14e' });
+    fx.push({ k:'t', x:cx, y:cy-.7, s:'Offrande, niv. ' + lgT.l, col:'#f2c14e', life:1.1, max:1.1, big:true });
+    banner = { t:2, max:2, text: LEGENDS[lgT.leg].ranks[lgT.l-1], sub: LEGENDS[lgT.leg].name + ', niveau ' + lgT.l, col:'#f2c14e' };
+    sfx('offer');
   } else if (r.kind === 'swap'){
     const b = getT(dst); setT(dst, a); setT(src, b);
   } else {
@@ -2324,15 +2946,18 @@ cv.addEventListener('pointercancel', () => endDrag(true));
 function openSheet(ref){
   const tw = getT(ref); if (!tw) return;
   sel = ref;
-  const ty = TYPES[tw.t], i = ref.k === 'b' ? ref.i : null, st = stats(tw, i), L = tw.l;
-  const pips = Array.from({length:5}, (_,k) => `<i style="background:${k<L ? (L===5?'#f2c14e':ty.col) : ''}"></i>`).join('');
-  const next = L < 5
+  const ty = TYPES[tw.t], i = ref.k === 'b' ? ref.i : null, st = stats(tw, i), L = tw.l, LG = tw.leg ? LEGENDS[tw.leg] : null;
+  const pips = Array.from({length:5}, (_,k) => `<i style="background:${k<L ? ((L===5 || LG)?'#f2c14e':ty.col) : ''}"></i>`).join('');
+  const next = LG ? (L < 5
+    ? `<div class="sh-next"><img class="px" src="${LURL[tw.leg][L]}" alt="">Prochain rang : ${LG.ranks[L]}. Offrande : un soldat de niveau ${L}.</div>`
+    : `<div class="sh-next">Sommet de sa légende.</div>`)
+    : L < 5
     ? `<div class="sh-next"><img class="px" src="${URL_[tw.t][L]}" alt="">Fusionné avec un soldat identique, il devient ${ty.ranks[L]}.</div>`
     : `<div class="sh-next">Rang le plus haut de sa lignée.</div>`;
   let syn = '';
   if (i != null){
     const dbl = MODS.synMul > 1 ? ' (+50 %)' : '';
-    const rows = (tw.syn ? tw.syn.list : []).map(s => `<div><img class="px" src="${URL_[s.with][0]}" alt=""><span><b>${s.name}</b> : ${s.txt}${s.name === 'Formation' ? '' : dbl}</span></div>`);
+    const rows = (tw.syn ? tw.syn.list : []).map(s => `<div><img class="px" src="${s.icon || URL_[s.with][0]}" alt=""><span><b>${s.name}</b> : ${s.txt}${s.name === 'Formation' ? '' : dbl}</span></div>`);
     const ter = S.terrain[i];
     if (ter === TER.HILL) rows.push(`<div><img class="px" src="${BI.hill}" alt=""><span><b>Colline</b> : +0,6 de portée</span></div>`);
     if (ter === TER.RUNE) rows.push(`<div><img class="px" src="${BI.rune}" alt=""><span><b>Pierre runique</b> : +${Math.round(RUNE_DMG*MODS.runeMul*100)} % de dégâts</span></div>`);
@@ -2340,24 +2965,25 @@ function openSheet(ref){
   }
   $('sheet').innerHTML = `
     <div class="sh-top">
-      <img class="px" src="${URL_[tw.t][L-1]}" alt="">
-      <div><div class="sh-name">${ty.ranks[L-1]}</div>
-      <div class="sh-sub">${ty.name}, niveau ${L}<span class="pips">${pips}</span></div></div>
+      <img class="px${LG ? ' leg' : ''}" src="${LG ? LURL[tw.leg][L-1] : URL_[tw.t][L-1]}" alt="">
+      <div><div class="sh-name">${LG ? LG.ranks[L-1] : ty.ranks[L-1]}</div>
+      <div class="sh-sub">${LG ? LG.name + ', légende' : ty.name}, niveau ${L}<span class="pips">${pips}</span></div></div>
     </div>
     <div class="stats">
       <div>Dégâts<b>${Math.round(st.dmg)}</b></div>
       <div>Portée<b>${st.range.toFixed(1)}</b></div>
       <div>Cadence<b>${st.rate.toFixed(2)} s</b></div>
     </div>
-    <p class="sh-note">${ty.desc} ${specialText(tw.t, L)}${ref.k==='n' ? ' En réserve, il ne combat pas.' : ''}</p>
+    <p class="sh-note">${LG ? LG.power(L) + (ref.k==='n' ? ' En réserve, les légendes ne combattent pas.' : '') : ty.desc + ' ' + specialText(tw.t, L) + (ref.k==='n' ? ' En réserve, il ne combat pas.' : '')}</p>
     ${syn}
     ${next}
     <div class="sh-btns">
-      <button class="btn sell" id="shSell"><img class="px" src="${COIN_URL}" alt="">Vendre ${sellValue(L)}</button>
+      ${LG ? '' : `<button class="btn sell" id="shSell"><img class="px" src="${COIN_URL}" alt="">Vendre ${sellValue(L)}</button>`}
       <button class="btn" id="shClose">Fermer</button>
     </div>`;
   $('sheet').classList.add('show');
   $('shClose').onclick = closeSheet;
+  if (LG) return;
   $('shSell').onclick = () => {
     if (!getT(ref)) return closeSheet();
     applyDrop(ref, { k:'sell' }, { ok:true, kind:'sell' });
@@ -2459,6 +3085,42 @@ function placeAt(i){
 $('bShop').addEventListener('click', () => { audio(); openShop(); });
 $('pbDone').addEventListener('click', stopPlacing);
 
+/* ---------- légendes : choix et suivi ---------- */
+function markSeenLeg(id, l){ seenLeg.add(id + ':' + l); }
+function openLegendOffer(){
+  if (!S.legendOffer || over || !hasGame) return;
+  $('lgCards').innerHTML = S.legendOffer.map(id => {
+    const L = LEGENDS[id];
+    return `<button class="lcard" data-id="${id}">
+      <img class="px" src="${LURL[id][0]}" alt="">
+      <div><em>${L.kind}, ${L.era}</em><b>${L.name}</b>
+      <span>${L.power(1)}</span>
+      <small><img class="px" src="${LURL[id][4]}" alt="">Au niveau 5 : ${L.ranks[4]}. Famille ${TYPES[L.fam].name.toLowerCase()}.</small></div>
+    </button>`;
+  }).join('');
+  $('lgCards').querySelectorAll('.lcard').forEach(b => b.onclick = () => pickLegend(b.dataset.id));
+  show('ovLegend');
+}
+function pickLegend(id){
+  if (!S.legendOffer || !LEGENDS[id]) return;
+  const L = LEGENDS[id], tw = mk(L.fam, 1, id);
+  S.legend = id; S.legendOffer = null;
+  let slot = S.legendSlot;
+  if (!(slot >= 0 && slot < BENCH_N) || S.bench[slot]) slot = S.bench.findIndex(x => !x);
+  if (slot < 0){
+    let k = 0; for (let j=1;j<BENCH_N;j++) if (S.bench[j] && S.bench[j].l < S.bench[k].l) k = j;
+    S.gold += sellValue(S.bench[k].l); slot = k;
+  }
+  S.bench[slot] = tw; S.legendSlot = -1;
+  markSeenLeg(id, 1);
+  hide('ovLegend');
+  burst(slot + .5, BENCH_Y/T + .5, '#f2c14e', 26, 3.5);
+  banner = { t:2.4, max:2.4, text:L.name, sub:'rejoint ton rempart', col:'#f2c14e' };
+  sfx('legend');
+  save();
+  if (S.pending) setTimeout(openBless, 700);
+}
+
 /* ---------- boutons ---------- */
 function recruit(){
   audio();
@@ -2468,6 +3130,15 @@ function recruit(){
   const price = Math.round(S.cost);
   if (S.gold < price){ toast('Il te manque ' + (price - Math.floor(S.gold)) + ' or'); sfx('bad'); return; }
   S.gold -= price; S.cost += MODS.costInc;
+  if (!S.legend && !S.legendOffer && nextWaveN() >= 5){
+    const ch = nextWaveN() > 10 ? 1 : Math.min(1, .05 + .05*S.legendPity);
+    if (Math.random() < ch){
+      S.legendOffer = shuffle(LEG_ORDER.slice()).slice(0,3); S.legendSlot = i;
+      for (const id of S.legendOffer) markSeenLeg(id, 1);
+      save(); sfx('legend'); setTimeout(openLegendOffer, 150); return;
+    }
+    S.legendPity++;
+  }
   const w = [0,1,2,3,4].map(t => 1 + MODS.school[t]);
   let r = Math.random() * w.reduce((a,b) => a+b, 0), t = 0;
   for (; t<4; t++){ r -= w[t]; if (r <= 0) break; }
@@ -2523,7 +3194,19 @@ function buildCodex(){
     return `<div class="syn-row"><div class="pair"><img class="px big" src="${ok ? ENS[k].url : ENS[k].sil}" alt=""></div>
       <div><b>${ok ? e.name : '???'}</b><span>${ok ? e.desc : 'Pas encore croisé.'}</span></div></div>`;
   }).join('');
+  const pantheon = LEG_ORDER.map(id => {
+    const L = LEGENDS[id], met = [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l));
+    return `<div class="cx-type">
+      <h3><i style="background:#f2c14e"></i>${met ? L.name : '???'}</h3>
+      <p>${met ? L.kind + ', ' + L.era + '. ' + L.power(1) : 'Légende pas encore rencontrée.'}</p>
+      <div class="cx-row">${[1,2,3,4,5].map(l => {
+        const ok = seenLeg.has(id + ':' + l);
+        return `<div class="cx-cell${ok ? '' : ' lock'}"><img class="px" src="${ok ? LURL[id][l-1] : LSIL[id][l-1]}" alt=""><span>${ok ? L.ranks[l-1] : 'Niveau ' + l}</span></div>`;
+      }).join('')}</div></div>`;
+  }).join('');
+  const metN = LEG_ORDER.filter(id => [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l))).length;
   $('cxBody').innerHTML = troops +
+    `<h3 class="cx-h">Panthéon</h3><p class="cx-note">${metN} légendes rencontrées sur ${LEG_ORDER.length}. À partir de la vague 5, un recrutement peut faire apparaître trois légendes : tu en choisis une pour toute la partie. Offre-lui un soldat de son niveau pour la faire monter.</p>${pantheon}` +
     `<h3 class="cx-h">Synergies</h3><p class="cx-note">Deux soldats posés côte à côte (haut, bas, gauche, droite) se renforcent. Un losange apparaît entre eux.</p>${syns}` +
     `<h3 class="cx-h">Bestiaire</h3>${beasts}`;
 }
@@ -2575,6 +3258,7 @@ rebuildTraps();
 snap(); persist();
 hud();
 if (!hasGame) openMode();
+else if (S.legendOffer) openLegendOffer();
 else if (S.pending) openBless();
 if (!prefs.helped) show('ovHelp');
 requestAnimationFrame(t => { last = t; frame(t); });
