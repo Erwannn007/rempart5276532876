@@ -124,6 +124,7 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 
 
 #ovHelp{z-index:12}
+#ovConfirm{z-index:13}
 .win .stack .btn .n{color:var(--gold);margin-left:auto;font-size:17px}
 .mode{display:flex;gap:12px;align-items:center;text-align:left;padding:10px 12px;min-height:86px;width:100%;
   background:var(--wood-hi);border:3px solid var(--edge);box-shadow:inset 0 3px 0 rgba(255,236,200,.14),inset 0 -5px 0 rgba(0,0,0,.35)}
@@ -266,6 +267,21 @@ html{background:#1c1610}
 .ach-row em{font-style:normal;font-weight:800;color:#8fd35a;font-size:20px}
 .ach-row.lock{opacity:.55}
 .ach-row.lock img{filter:grayscale(1) brightness(.6)}
+.world{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:8px;background:#2a1e14;border:3px solid var(--edge);
+  box-shadow:inset 0 3px 0 rgba(255,236,200,.08),inset 0 -4px 0 rgba(0,0,0,.3)}
+.world:active{transform:translateY(2px)}
+.wthumb{position:relative;flex:none;width:128px;height:60px;border:3px solid var(--edge);overflow:hidden}
+.wthumb img{width:100%;height:100%;display:block}
+.wthumb i{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(14,10,6,.82) 0 6px,rgba(14,10,6,.7) 6px 12px)}
+.winfo{flex:1;min-width:0;display:block}
+.winfo em{display:block;font-style:normal;font-size:12px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}
+.winfo b{display:block;font-size:19px;line-height:1.1}
+.winfo small{display:block;font-size:13px;color:var(--dim);line-height:1.25;margin-top:2px}
+.wstars{display:flex;gap:3px;margin-top:4px}
+.wstars img{width:18px;height:18px}
+.wstars img.off{opacity:.2;filter:grayscale(1)}
+.world.lock{opacity:.7}
+.map-trail{height:16px;margin-left:66px;border-left:4px dotted #8a6a3a}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -315,7 +331,7 @@ html{background:#1c1610}
       <button class="btn main home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
       <div class="home-row">
         <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
-        <button class="btn home-mode siege" data-new="siege"><img class="px" id="hiSiege" alt=""><span><b>Siège</b><small id="hSiegeRec"></small></span></button>
+        <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
       </div>
       <div class="home-row small">
         <button class="btn" data-hact="codex">Recueil</button>
@@ -381,6 +397,7 @@ html{background:#1c1610}
     <p><b>Recruter</b> envoie un soldat au hasard dans ta réserve, en bas, derrière le mur.</p>
     <p>Fais-le <b>glisser sur l’herbe</b> pour le poster. Seuls les soldats sur le terrain se battent.</p>
     <p>Lâche un soldat sur un <b>soldat identique</b> (même type, même niveau) : ils fusionnent en un soldat du niveau suivant. Huit niveaux par type : après le niveau 5 viennent le mythril, l’obsidienne et le céleste.</p>
+    <p>Le mode <b>Histoire</b> traverse huit mondes, de la Forêt sombre au Trône noir. Chacun a ses monstres, son décor et son boss final. Gagne pour ouvrir le suivant, et rejoue les autres pour décrocher trois étoiles.</p>
     <p>Toutes les 5 vagues, un <b>boss</b> attaque, chacun avec son pouvoir. Le Bestiaire du Recueil détaille chaque monstre.</p>
     <p>Deux soldats <b>côte à côte</b> forment une synergie et se renforcent. Chaque paire de types a son effet ; tout est détaillé dans le Recueil.</p>
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
@@ -404,14 +421,21 @@ html{background:#1c1610}
   <h2>Le rempart est tombé</h2>
   <div class="over-score" id="overWave">0</div>
   <p class="lead" id="overSub">vagues repoussées</p>
-  <div class="stack"><button class="btn main" data-act="again">Retour à l’accueil</button></div>
+  <div class="stack"><button class="btn main" id="overRetry">Réessayer ce monde</button><button class="btn" data-act="again">Retour à l’accueil</button></div>
 </div></div>
 
 <div class="ov" id="ovWin"><div class="win plank" style="text-align:center">
-  <h2 class="title">Le siège est levé</h2>
+  <h2 class="title" id="winTitle">Le siège est levé</h2>
   <div class="stars" id="winStars"></div>
   <p class="lead" id="winSub"></p>
-  <div class="stack"><button class="btn main" data-act="again">Retour à l’accueil</button></div>
+  <div class="stack"><button class="btn main" id="winNext">Monde suivant</button><button class="btn" id="winMap">Carte des mondes</button><button class="btn" data-act="again">Retour à l’accueil</button></div>
+</div></div>
+
+<div class="ov" id="ovStory"><div class="win plank">
+  <h2>Histoire</h2>
+  <p class="lead" id="storyLead"></p>
+  <div class="scroll" id="storyBody"></div>
+  <div class="close-row"><button class="btn" data-close>Fermer</button></div>
 </div></div>
 
 <script>
@@ -969,13 +993,124 @@ const NEW_EN_DRAW = { skeleton:enSkeleton, spider:enSpider, bat:enBat, orc:enOrc
   dragon:enDragon, lich:enLich, kraken:enKraken, titan:enTitan, queen:enQueen, mino:enMino, wraith:enWraith, hydra:enHydra, vampire:enVamp, warlord:enWarlord };
 const NEW_EN_SIZE = { dragon:[28,25], kraken:[28,24], titan:[28,27], queen:[28,22], hydra:[28,24], lich:[24,24], mino:[24,23], wraith:[24,23], vampire:[24,23], warlord:[24,23] };
 
+/* ---------- mode Histoire : nouvelles créatures ---------- */
+function enToad(s){
+  const g = '#6a8a3a', d = '#4a6a2a', b = '#c8d890';
+  s.r(3,14,3,3,g); s.r(14,14,3,3,g); s.p(2,17,g); s.p(17,17,g);
+  s.hl(6,13,9,g); s.r(4,10,12,6,g); s.hl(5,14,16,g);
+  s.r(7,12,6,4,b);
+  s.r(5,7,3,3,g); s.r(12,7,3,3,g);
+  s.p(6,8,'#ffe066',1); s.p(13,8,'#ffe066',1); s.p(6,9,EYE,1); s.p(13,9,EYE,1);
+  s.hl(6,13,11,d,1); s.p(5,10,d,1); s.p(14,10,d,1);
+  s.p(8,10,'#8aaa4a',1); s.p(11,10,'#8aaa4a',1); s.p(5,13,'#8aaa4a',1);
+}
+function enScorpion(s){
+  const c = '#c86a2a', d = '#8a4418', l = '#e8964a';
+  for (const [x,y] of [[5,9],[4,10],[5,12],[4,13],[6,14],[5,15]]){ s.p(x,y,d); s.p(19-x,y,d); }
+  s.r(7,8,6,7,c); s.hl(8,11,15,c);
+  s.hl(7,12,10,d,1); s.hl(7,12,12,d,1);
+  s.r(4,15,3,2,c); s.r(13,15,3,2,c); s.p(3,17,c); s.p(5,17,c); s.p(14,17,c); s.p(16,17,c);
+  s.p(8,15,'#1a1320',1); s.p(11,15,'#1a1320',1);
+  s.v(9,4,7,c); s.v(10,4,7,c); s.p(10,3,c); s.p(11,2,c); s.p(12,2,c); s.p(12,3,l); s.p(13,3,'#f2ead6',1);
+  s.p(8,9,l,1); s.p(11,9,l,1);
+}
+function enMummy(s){
+  const w = '#e8dcc0', d = '#b8a888', gl = '#7fff8a';
+  s.r(8,15,2,3,w); s.r(10,15,2,3,w);
+  s.r(7,9,6,6,w); s.r(5,9,2,2,w); s.r(13,9,2,2,w); s.p(4,10,w); s.p(15,10,w);
+  s.r(7,3,6,6,w);
+  for (let y=4;y<=16;y+=2) s.hl(7,12,y,d,1);
+  s.p(6,10,d,1); s.p(14,10,d,1);
+  s.hl(8,11,6,'#2a2420',1); s.p(8,6,gl,1); s.p(11,6,gl,1);
+  s.p(13,13,w); s.p(14,14,w); s.p(6,16,w);
+}
+function enYeti(s){
+  const f = '#eef2f6', d = '#c8d4e0', fc = '#8aa0b8';
+  s.r(5,16,4,2,f); s.r(11,16,4,2,f);
+  s.r(4,7,12,10,f); s.hl(5,14,6,f);
+  s.r(2,8,2,8,f); s.r(16,8,2,8,f); s.r(2,16,2,1,fc); s.r(16,16,2,1,fc);
+  s.r(6,2,8,6,f); s.p(6,1,f); s.p(13,1,f);
+  s.r(7,4,6,4,fc); s.p(8,5,'#1a2a3a',1); s.p(11,5,'#1a2a3a',1); s.hl(8,11,7,'#2a3a4a',1); s.p(8,7,'#ffffff',1); s.p(11,7,'#ffffff',1);
+  s.p(5,9,d,1); s.p(14,11,d,1); s.p(7,13,d,1); s.p(12,14,d,1);
+}
+function enGhoul(s){
+  const c = '#7a8a6a', d = '#5a6a4a', cl = '#5a4a3a';
+  s.r(8,15,2,3,c); s.r(11,15,2,3,c);
+  s.r(7,8,6,7,c); s.r(7,12,6,3,cl); s.p(8,15,cl); s.p(11,15,cl);
+  s.p(9,9,d,1); s.p(10,10,d,1); s.p(9,11,d,1);
+  s.v(5,9,14,c); s.v(14,9,14,c); s.p(4,15,'#e8e2d0'); s.p(5,15,'#e8e2d0'); s.p(14,15,'#e8e2d0'); s.p(15,15,'#e8e2d0');
+  s.r(7,3,6,5,c); s.p(6,4,c); s.p(13,4,c);
+  s.p(8,5,'#ffffff',1); s.p(11,5,'#ffffff',1); s.hl(8,11,7,'#2a1a1a',1); s.p(9,7,'#e8e2d0',1); s.p(11,7,'#e8e2d0',1);
+  s.p(7,3,d); s.p(12,3,d);
+}
+
+/* ---------- variantes de couleur ---------- */
+const VARIANTS = {
+  slime_moss:  { base:'slime', map:{ '#79c25b':'#3f8a6a', '#c9f2a8':'#9fe0c0', '#3a6b2a':'#1f4a3a' } },
+  slime_mud:   { base:'slime', map:{ '#79c25b':'#7a6a3a', '#c9f2a8':'#c0b080', '#3a6b2a':'#4a3a1a' } },
+  slime_sand:  { base:'slime', map:{ '#79c25b':'#d9b86a', '#c9f2a8':'#fff0c0', '#3a6b2a':'#8a6a2a' } },
+  slime_ice:   { base:'slime', map:{ '#79c25b':'#8fd0f0', '#c9f2a8':'#e8f8ff', '#3a6b2a':'#3a7aa0' } },
+  slime_ember: { base:'slime', map:{ '#79c25b':'#e0602a', '#c9f2a8':'#ffd27a', '#3a6b2a':'#7a2a10' } },
+  slime_shadow:{ base:'slime', map:{ '#79c25b':'#5a3a7a', '#c9f2a8':'#b090e0', '#3a6b2a':'#2a1a3a' } },
+  wolf_black:  { base:'wolf', map:{ '#8b8f9c':'#3a3640', '#5d6170':'#24212a', '#c9ccd4':'#6a6470', '#ffcf3a':'#ff4a3a' } },
+  wolf_white:  { base:'wolf', map:{ '#8b8f9c':'#e8eef4', '#5d6170':'#b0bcc8', '#c9ccd4':'#ffffff', '#ffcf3a':'#3fa0e0' } },
+  wolf_war:    { base:'wolf', map:{ '#8b8f9c':'#8a6a4a', '#5d6170':'#5a4030', '#c9ccd4':'#c9a27a', '#ffcf3a':'#ff4a3a', '#d98a8a':'#b3262e' } },
+  golem_ice:   { base:'golem', map:{ '#8f897c':'#9fc8e0', '#6b665b':'#6a98b8', '#5d8a3c':'#e8f8ff', '#7cf3ff':'#ffffff' } },
+  golem_lava:  { base:'golem', map:{ '#8f897c':'#4a3a38', '#6b665b':'#2e2422', '#5d8a3c':'#ff6a2a', '#7cf3ff':'#ffd27a' } },
+  hydra_sand:  { base:'hydra', map:{ '#3f8a4a':'#c8a050', '#7cc25b':'#f0d890', '#2a5a30':'#8a6a2a' } },
+  titan_ice:   { base:'titan', map:{ '#6e6a64':'#9fc8e0', '#4e4a46':'#6a98b8', '#ff8a2a':'#7fe3ff', '#ffd27a':'#e8f8ff', '#5d8a3c':'#ffffff' } }
+};
+
+/* ---------- décors ---------- */
+function terMushroom(){
+  const s = new Spr(), cap = '#5a3a8a', st = '#d8d0c0', gl = '#7fe3ff';
+  s.r(8,11,4,6,st); s.p(7,17,st); s.p(12,17,st);
+  s.hl(7,12,4,cap); s.hl(5,14,5,cap); s.r(4,6,12,4,cap); s.hl(3,16,10,cap);
+  s.p(6,6,gl,1); s.p(10,5,gl,1); s.p(13,7,gl,1); s.p(8,8,gl,1); s.p(14,9,gl,1);
+  s.hl(5,14,11,'#3a2a5a');
+  s.p(15,15,cap); s.hl(14,16,14,cap); s.p(15,16,st); s.p(14,14,gl,1);
+  return s.pixels();
+}
+function terDeadTree(trunk){
+  const s = new Spr(), t = trunk || '#3a2a20';
+  s.r(9,8,2,9,t); s.p(8,17,t); s.p(11,17,t);
+  sline(s,9,10,5,6,t); sline(s,10,9,14,4,t); sline(s,9,7,8,3,t); sline(s,10,12,14,10,t); sline(s,6,7,4,7,t); sline(s,13,5,16,5,t);
+  return s.pixels();
+}
+function terCactus(){
+  const s = new Spr(), g = '#5a8a3a', l = '#8ab85a';
+  s.r(8,4,4,14,g); s.hl(9,10,3,g);
+  s.r(4,8,2,5,g); s.hl(4,7,12,g); s.r(14,6,2,5,g); s.hl(12,15,10,g);
+  s.v(9,5,16,l,1); s.p(4,9,l,1); s.p(14,7,l,1);
+  s.p(10,2,'#f06a8a',1); s.p(9,2,'#f8a0b8',1);
+  s.hl(7,12,18,'#c8a060');
+  return s.pixels();
+}
+function terTomb(){
+  const s = new Spr(), st = '#8a8a92', d = '#5a5a62';
+  s.hl(8,11,5,st); s.hl(7,12,6,st); s.r(6,7,8,9,st); s.hl(5,14,16,'#4a4a52');
+  s.v(9,8,13,d,1); s.v(10,8,13,d,1); s.hl(8,11,9,d,1);
+  s.p(7,7,'#b0b0b8',1); s.p(13,14,'#5a6a5a'); s.p(6,15,'#5a6a5a');
+  return s.pixels();
+}
+function terBrazier(){
+  const s = new Spr(), ir = '#4a4048';
+  s.v(7,12,17,ir); s.v(12,12,17,ir); s.hl(6,13,17,ir);
+  s.hl(5,14,9,ir); s.hl(6,13,10,ir); s.hl(7,12,11,ir);
+  s.hl(6,13,8,'#ff6a2a',1); s.hl(7,12,7,'#ff8a2a',1); s.hl(8,11,6,'#ffb347',1); s.hl(8,11,5,'#ffd27a',1); s.p(9,4,'#fff3b0',1); s.p(10,3,'#ffd27a',1); s.p(8,4,'#ff8a2a',1); s.p(11,4,'#ff8a2a',1);
+  return s.pixels();
+}
+
+const STORY_EN_DRAW = { toad:enToad, scorpion:enScorpion, mummy:enMummy, yeti:enYeti, ghoul:enGhoul };
 const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre];
 function troopPixels(t,l){ const s = new Spr(); drawSoldier(s,t,l); return s.pixels(); }
 const EN_DRAW = { slime:enSlime, wolf:enWolf, golem:enGolem, boss:enBoss, bigslime:enBigSlime, mini:enMini, goblin:enGoblin, king:enKing };
 function enemyPixels(k){
-  const sz = NEW_EN_SIZE[k];
-  const s = k==='king' ? new Spr(28,27) : k==='boss' ? new Spr(24,24) : sz ? new Spr(sz[0], sz[1]) : new Spr();
-  (EN_DRAW[k] || NEW_EN_DRAW[k])(s);
+  const v = VARIANTS[k], kk = v ? v.base : k;
+  const sz = NEW_EN_SIZE[kk];
+  const s = kk==='king' ? new Spr(28,27) : kk==='boss' ? new Spr(24,24) : sz ? new Spr(sz[0], sz[1]) : new Spr();
+  (EN_DRAW[kk] || NEW_EN_DRAW[kk] || STORY_EN_DRAW[kk])(s);
+  if (v) recolor(s, v.map);
   return s.pixels();
 }
 /* ---------- Légendes : sprites 24×24 ---------- */
@@ -1397,11 +1532,41 @@ const EN = {
   hydra:   { name:'Hydre',            boss:true, hp:18, spd:.4,  gold:50, dmg:6, col:'#3f8a4a', split:['head',3], hint:'Ses têtes repoussent', desc:'À sa mort, trois têtes s’en détachent et continuent la route.' },
   vampire: { name:'Comte vampire',    boss:true, hp:20, spd:.5,  gold:50, dmg:6, col:'#9a1a2a', bats:6, hint:'Il se change en nuée', desc:'Sous 40 % de sa vie, il se change en nuée de chauves-souris.' },
   warlord: { name:'Chef de guerre orc', boss:true, hp:22, spd:.42, gold:50, dmg:6, col:'#5a7a2a', heal:.04, armorAll:.8, hint:'Il soigne sa horde', desc:'Soigne les monstres autour de lui et encaisse mieux les coups.' },
+  slime_moss:  Object.assign({}, { hp:1, spd:1.0, gold:2, dmg:1 }, { name:'Gluant moussu', col:'#3f8a6a', desc:'Un gluant qui a trop traîné sous les fougères.' }),
+  slime_mud:   { name:'Gluant de vase', hp:1.1, spd:.9, gold:2, dmg:1, col:'#7a6a3a', desc:'Lourd et collant, il traîne la vase avec lui.' },
+  slime_sand:  { name:'Gluant des sables', hp:1, spd:1.1, gold:2, dmg:1, col:'#d9b86a', desc:'Sec et nerveux, il file sur le sable chaud.' },
+  slime_ice:   { name:'Gluant de givre', hp:1.2, spd:.9, gold:2, dmg:1, col:'#8fd0f0', desc:'À moitié gelé, il encaisse un peu mieux.' },
+  slime_ember: { name:'Gluant de braise', hp:1, spd:1.15, gold:2, dmg:1, col:'#e0602a', desc:'Il fume, il crépite, il fonce.' },
+  slime_shadow:{ name:'Gluant d’ombre', hp:1.3, spd:1, gold:3, dmg:1, col:'#5a3a7a', desc:'Né au pied du Trône noir.' },
+  wolf_black:  { name:'Loup noir', hp:.6, spd:2, gold:2, dmg:1, col:'#3a3640', desc:'Il chasse dans le noir, plus vite que ses cousins gris.' },
+  wolf_white:  { name:'Loup blanc', hp:.7, spd:1.9, gold:2, dmg:1, col:'#e8eef4', noSlow:true, desc:'Le froid ne lui fait rien : impossible de le ralentir.' },
+  wolf_war:    { name:'Loup de guerre', hp:1, spd:1.8, gold:3, dmg:1, col:'#8a6a4a', armor:.7, desc:'Harnaché par les orcs, il encaisse mieux les flèches et les coups.' },
+  golem_ice:   { name:'Golem de glace', hp:3.6, spd:.6, gold:5, dmg:2, col:'#9fc8e0', noSlow:true, desc:'Un bloc de glace vivante, insensible au froid.' },
+  golem_lava:  { name:'Golem de lave', hp:3.4, spd:.68, gold:5, dmg:2, col:'#ff6a2a', regen:.01, desc:'La lave qui coule en lui referme ses blessures.' },
+  toad:        { name:'Crapaud géant', hp:1.3, spd:.8, gold:3, dmg:1, col:'#6a8a3a', blink:3, desc:'Il bondit d’un coup sur le chemin toutes les 3 s.' },
+  scorpion:    { name:'Scorpion', hp:1.4, spd:1.1, gold:3, dmg:1, col:'#c86a2a', armorAll:.75, desc:'Sa carapace absorbe un quart de chaque coup.' },
+  mummy:       { name:'Momie', hp:3, spd:.6, gold:4, dmg:2, col:'#e8dcc0', regen:.012, desc:'Lente, mais ses bandelettes se resserrent sur ses blessures.' },
+  yeti:        { name:'Yéti', hp:3.5, spd:.75, gold:5, dmg:2, col:'#eef2f6', noSlow:true, desc:'Une montagne de fourrure que rien ne ralentit.' },
+  ghoul:       { name:'Goule', hp:1.1, spd:1.3, gold:3, dmg:1, col:'#7a8a6a', enrage:true, desc:'Blessée, elle se jette en avant presque deux fois plus vite.' },
+  hydra_sand:  { name:'Hydre des sables', boss:true, hp:20, spd:.42, gold:60, dmg:6, col:'#c8a050', split:['head',3], hint:'Ses têtes repoussent', desc:'La cousine du désert : à sa mort, trois têtes s’en détachent.' },
+  titan_ice:   { name:'Titan de givre', boss:true, hp:32, spd:.3, gold:70, dmg:8, col:'#9fc8e0', armorAll:.6, noSlow:true, hint:'Rien ne le ralentit', desc:'Un titan de glace : il encaisse tout à 60 % et ignore le froid.' },
   king:    { name:'Roi Gluant',    boss:true, hp:60,  spd:.3,  gold:200, dmg:20, col:'#3fae8f', split:['bigslime',4], desc:'Le maître du siège. À sa mort, il se répand en quatre gros gluants.' }
 };
-const EN_ORDER = ['slime','wolf','golem','bigslime','mini','goblin','skeleton','spider','bat','orc','shaman','ghost','beetle','imp','head','boss','dragon','lich','kraken','titan','queen','mino','wraith','hydra','vampire','warlord','king'];
+const EN_ORDER = ['slime','wolf','golem','bigslime','mini','goblin','skeleton','spider','bat','orc','shaman','ghost','beetle','imp','head','slime_moss','slime_mud','slime_sand','slime_ice','slime_ember','slime_shadow','wolf_black','wolf_white','wolf_war','golem_ice','golem_lava','toad','scorpion','mummy','yeti','ghoul','boss','hydra_sand','titan_ice','dragon','lich','kraken','titan','queen','mino','wraith','hydra','vampire','warlord','king'];
 const BOSS_POOL = ['boss','dragon','lich','kraken','titan','queen','mino','wraith','hydra','vampire','warlord'];
 const BOSS_ALL = BOSS_POOL.concat('king');
+const WORLDS = [
+  { name:'Forêt sombre',    waves:10, biome:3, off:0, gold:40,  base:'slime_moss',   mobs:['wolf_black','spider','bat','skeleton'], finals:['queen'] },
+  { name:'Marais putride',  waves:15, biome:4, off:1, gold:55,  base:'slime_mud',    mobs:['toad','bigslime','shaman','bat','skeleton'], finals:['kraken'] },
+  { name:'Désert brûlant',  waves:20, biome:5, off:2, gold:70,  base:'slime_sand',   mobs:['scorpion','beetle','mummy','imp','spider'], finals:['hydra_sand'] },
+  { name:'Pics gelés',      waves:25, biome:2, off:3, gold:85,  base:'slime_ice',    mobs:['wolf_white','golem_ice','yeti','bat','beetle'], finals:['titan_ice'] },
+  { name:'Cimetière hanté', waves:30, biome:6, off:4, gold:100, base:'skeleton',     mobs:['ghost','ghoul','bat','spider','slime_shadow','mummy'], finals:['lich','vampire'] },
+  { name:'Volcan',          waves:35, biome:7, off:5, gold:115, base:'slime_ember',  mobs:['imp','golem_lava','wolf_black','bat','scorpion','beetle'], finals:['dragon'] },
+  { name:'Citadelle orque', waves:40, biome:8, off:6, gold:130, base:'wolf_war',     mobs:['orc','shaman','golem','skeleton','imp','ghoul'], finals:['warlord'] },
+  { name:'Trône noir',      waves:40, biome:9, off:8, gold:150, base:'slime_shadow', mobs:['orc','ghost','yeti','mummy','golem_lava','ghoul','imp','wolf_war'], finals:['boss','king'] }
+];
+const maxWaves = () => S.mode === 'siege' ? SIEGE_WAVES : S.mode === 'story' ? WORLDS[S.world|0].waves : Infinity;
+const finiteMode = () => S.mode === 'siege' || S.mode === 'story';
 const MONSTER_UNLOCK = [['wolf',4],['golem',6],['bigslime',7],['skeleton',8],['bat',9],['spider',10],['orc',11],['beetle',13],['shaman',14],['ghost',16],['imp',18]];
 
 const TER = { GRASS:0, ROCK:1, HILL:2, MARSH:3, RUNE:4, TREE:5 };
@@ -1423,8 +1588,37 @@ const BIOMES = [
   { name:'Hiver', g:['#dfe7ee','#d5dee6'], gd:['#c6d1db','#bfcad5'], gl:['#f3f7fa','#eef3f7'], tuft:['#b4c3d0','#a9b9c7'],
     fl:['#9ec9e8','#c7b8e8'], stem:'#8a9aa8', dirt:['#8d7e70','#827365','#9b8c7e','#b2a598'], edge:['#5f5248','#74665a'], peb:['#c9bfb4','#6a5d52'],
     leaf:'#2f5e48', leafL:'#f4f8fb', trunk:'#5a3a22', pine:true, snow:true, rock:'#96969e', moss:'#f4f8fb',
-    water:['#7fb3cf','#94c3dc','#d8eef8'], mud:'#9fb3c2', reed:'#8a9a8a', pad:null, hill:['#eef3f7','#ffffff','#a9b8c6'] }
+    water:['#7fb3cf','#94c3dc','#d8eef8'], mud:'#9fb3c2', reed:'#8a9a8a', pad:null, hill:['#eef3f7','#ffffff','#a9b8c6'] },
+  { name:'Forêt sombre', g:['#2f4a3a','#2b4436'], gd:['#243a2e','#213629'], gl:['#3f6250','#3a5a4a'], tuft:['#4f7a5a','#456e50'],
+    fl:['#7fe3ff','#c8a0ff'], stem:'#1e3024', dirt:['#5a4a3a','#4e4032','#6a5848','#7a6a58'], edge:['#3a2e24','#4a3c2e'], peb:['#8a7a68','#3a2e24'],
+    leaf:'#1f3a2e', leafL:'#3f6a50', trunk:'#3a2a20', pine:false, snow:false, rock:'#6a6a70', moss:'#3f6a50',
+    water:['#2a3a4a','#34485a','#5a7a8a'], mud:'#1e2a24', reed:'#3a5a3a', pad:'#2f5a3a', hill:['#3a5a46','#4a6e58','#24382c'], tree:'mushroom' },
+  { name:'Marais putride', g:['#4a5a2e','#44532a'], gd:['#3a4824','#364420'], gl:['#5a6e3a','#566a36'], tuft:['#6a7a3a','#5e6e34'],
+    fl:['#c8d860','#a8c040'], stem:'#2a3418', dirt:['#6a5a3a','#5e5032','#7a6a48','#8a7a58'], edge:['#3e3420','#4e4228'], peb:['#9a8a68','#4a3e28'],
+    leaf:'#3a4a24', leafL:'#5a6e34', trunk:'#3a2e1e', pine:false, snow:false, rock:'#6a6a5a', moss:'#4a6a2a',
+    water:['#3a4a2a','#4a5a32','#7a8a5a'], mud:'#2a2a18', reed:'#5a6a2a', pad:'#4a6a2a', hill:['#566a36','#6a7e46','#34421e'], tree:'dead', trunkC:'#4a3e2a' },
+  { name:'Désert brûlant', g:['#e0c080','#d8b878'], gd:['#c8a868','#c0a060'], gl:['#f0d8a0','#ecd298'], tuft:['#b89858','#a88a4c'],
+    fl:['#e05a3a','#f0a040'], stem:'#6a8a3a', dirt:['#b8885a','#a87a4e','#c89868','#d8b080'], edge:['#8a6040','#9a7050'], peb:['#f0e0c0','#8a6a48'],
+    leaf:'#5a8a3a', leafL:'#8ab85a', trunk:'#4a6a2a', pine:false, snow:false, rock:'#b89070', moss:'#d8b878',
+    water:['#3f8aa0','#4f9ab0','#9fd8e8'], mud:'#c8a060', reed:'#5a8a3a', pad:'#5a8a3a', hill:['#e8c888','#f8e0a8','#b89058'], tree:'cactus' },
+  { name:'Cimetière hanté', g:['#4a4a52','#45454c'], gd:['#3a3a42','#36363e'], gl:['#5a5a62','#56565e'], tuft:['#5a6a5a','#4e5e4e'],
+    fl:['#e8e0f0','#a08ac8'], stem:'#3a4a3a', dirt:['#5a5048','#4e4640','#6a6058','#7a7068'], edge:['#2e2a26','#3a3530'], peb:['#8a8278','#2e2a26'],
+    leaf:'#2a2a30', leafL:'#4a4a52', trunk:'#2a2420', pine:false, snow:false, rock:'#8a8a92', moss:'#5a6a5a',
+    water:['#2a2a3a','#34344a','#6a6a8a'], mud:'#24242c', reed:'#4a5a4a', pad:null, hill:['#56565e','#6a6a72','#34343a'], tree:'dead', trunkC:'#2a2420', rockKind:'tomb' },
+  { name:'Volcan', g:['#3a2a2a','#352626'], gd:['#2a1e1e','#261b1b'], gl:['#4a3434','#463030'], tuft:['#5a3a2a','#4e3426'],
+    fl:['#ff8a2a','#ffd27a'], stem:'#2a1a14', dirt:['#4a3a34','#40322c','#5a4a42','#6a5a50'], edge:['#1e1614','#2a201c'], peb:['#7a6a60','#1e1614'],
+    leaf:'#2a2020', leafL:'#4a3a30', trunk:'#1e1614', pine:false, snow:false, rock:'#4a4048', moss:'#ff6a2a',
+    water:['#e0501a','#ff7a2a','#ffd27a'], mud:'#2a1414', reed:'#5a2a1a', pad:null, hill:['#4a3838','#5a4646','#2a1e1e'], tree:'dead', trunkC:'#1a1210' },
+  { name:'Citadelle orque', g:['#6e6a62','#68645c'], gd:['#5a564e','#56524a'], gl:['#827e76','#7e7a72'], tuft:['#5a6a4a','#4e5e40'],
+    fl:['#c8473d','#f2c14e'], stem:'#3a4a2a', dirt:['#8a7458','#7e6a4e','#9a8468','#aa9478'], edge:['#4a3e30','#5a4c3c'], peb:['#b8a888','#4a3e30'],
+    leaf:'#5a3a2a', leafL:'#8a5a3a', trunk:'#3a2a1e', pine:false, snow:false, rock:'#8a8680', moss:'#5a6a4a',
+    water:['#3a4a5a','#4a5a6a','#8a9aaa'], mud:'#3a3a3a', reed:'#5a6a4a', pad:null, hill:['#7a766e','#928e86','#4e4a44'], tree:'brazier' },
+  { name:'Trône noir', g:['#2e2638','#2a2234'], gd:['#221c2a','#1e1826'], gl:['#3e3448','#3a3044'], tuft:['#4a3a5a','#42344e'],
+    fl:['#c8a0ff','#ff6a8a'], stem:'#1e1826', dirt:['#4a3a4a','#403240','#5a4a5a','#6a5a6a'], edge:['#1a141e','#261e2a'], peb:['#7a6a7a','#1a141e'],
+    leaf:'#2a1e2a', leafL:'#5a3a6a', trunk:'#1a1418', pine:false, snow:false, rock:'#4a4058', moss:'#7a5aa0',
+    water:['#3a1a4a','#4a2a5a','#8a5aa0'], mud:'#1a1020', reed:'#4a2a5a', pad:null, hill:['#3a3046','#4a3e58','#221c2a'], tree:'brazier' }
 ];
+const BASE_BIOMES = 3;
 
 /* ---------- synergies de voisinage ---------- */
 const SYN = {
@@ -1696,7 +1890,7 @@ document.getElementById('icHammer').src = SHOP_IC.hammer;
 /* =========================================================
    État
    ========================================================= */
-let S, prefs = { sound:true, speed:1, auto:false, helped:false }, best = 0, siegeRec = { wins:0, stars:0 };
+let S, prefs = { sound:true, speed:1, auto:false, helped:false }, best = 0, siegeRec = { wins:0, stars:0 }, story = { unlocked:1, stars:[0,0,0,0,0,0,0,0] };
 let seen = new Set(), seenEn = new Set(), seenLeg = new Set(), legKills = 0, timeStop = 0, snapshot = null, hasGame = false;
 let enemies = [], projs = [], fx = [], queue = [], pendingSpawn = [], spawnT = 0, spawnGap = .8;
 let inWave = false, over = false, paused = false, waveTime = 0, herseUsed = false, waveLeaks = 0;
@@ -1707,8 +1901,8 @@ let drag = null, sel = null, quiet = true, placing = null, trapMap = new Map(), 
 
 const mk = (t,l,leg) => ({ t, l, leg: leg || null, cd:0, ab:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
 
-function freshGame(mode = 'endless'){
-  S = { mode, wave:0, gold: mode==='siege' ? 50 : 40, lives:20, cost:10,
+function freshGame(mode = 'endless', world = 0){
+  S = { mode, world, wave:0, gold: mode==='story' ? WORLDS[world].gold : mode==='siege' ? 50 : 40, lives:20, cost:10,
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
     terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
     traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 },
@@ -1718,7 +1912,7 @@ function freshGame(mode = 'endless'){
 /* ---------- sauvegarde (une seule clé) ---------- */
 function snap(){
   if (inWave || over || !hasGame) return;
-  snapshot = { mode:S.mode, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
+  snapshot = { mode:S.mode, world:S.world, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
     bless:S.bless, pending:S.pending, preview: preview || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
     bossBag:S.bossBag, streak:S.streak, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
@@ -1726,7 +1920,7 @@ function snap(){
 }
 function persist(){
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ v:3, best, siege:siegeRec, profile, stats:pstat, seen:[...seen], seenEn:[...seenEn], seenLeg:[...seenLeg], prefs, game: (over || !hasGame) ? null : snapshot }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v:3, best, siege:siegeRec, story, profile, stats:pstat, seen:[...seen], seenEn:[...seenEn], seenLeg:[...seenLeg], prefs, game: (over || !hasGame) ? null : snapshot }));
   } catch(e){}
 }
 function save(){ snap(); persist(); }
@@ -1737,6 +1931,7 @@ function load(){
   if (!d) return;
   best = d.best || 0; seen = new Set((d.seen || []).map(k => (d.v || 1) < 3 ? Math.floor(k/5)*MAXL + k%5 : k)); seenEn = new Set(d.seenEn || []); seenLeg = new Set(d.seenLeg || []);
   if (d.siege) siegeRec = Object.assign({ wins:0, stars:0 }, d.siege);
+  if (d.story){ story.unlocked = Math.max(1, Math.min(WORLDS.length, d.story.unlocked|0)); if (Array.isArray(d.story.stars)) story.stars = WORLDS.map((_,i) => d.story.stars[i]|0); }
   Object.assign(prefs, d.prefs || {});
   if (d.profile) Object.assign(profile, d.profile);
   if (d.stats) Object.assign(pstat, d.stats);
@@ -1745,7 +1940,8 @@ function load(){
   if (![1,2,3,4,5].includes(prefs.speed)) prefs.speed = 1;
   const g = d.game;
   if (g && Array.isArray(g.board) && g.board.length === COLS*ROWS && (g.lives|0) > 0){
-    S.mode = g.mode === 'siege' ? 'siege' : 'endless';
+    S.mode = ['siege','story'].includes(g.mode) ? g.mode : 'endless';
+    S.world = Math.max(0, Math.min(WORLDS.length-1, g.world|0));
     Object.assign(S, { wave:g.wave|0, gold:g.gold|0, lives:g.lives|0, cost:+g.cost || 10 });
     S.terrain = (Array.isArray(g.terrain) && g.terrain.length === COLS*ROWS) ? g.terrain.map(v => v|0) : new Array(COLS*ROWS).fill(0);
     S.biome = Math.min(BIOMES.length-1, g.biome|0);
@@ -1874,7 +2070,7 @@ function genTerrain(){
     for (let k=0;k<nRune;k++){ const i = spot(); if (i>=0) t[i] = TER.RUNE; }
     S.terrain = t;
     let walkable = 0; for (const v of t) if (WALK[v]) walkable++;
-    if (routeOK(-1,-1) && walkable >= COLS*ROWS*.7){ S.biome = rnd(BIOMES.length); return; }
+    if (routeOK(-1,-1) && walkable >= COLS*ROWS*.7){ S.biome = rnd(BASE_BIOMES); return; }
   }
   S.terrain = new Array(COLS*ROWS).fill(0); S.biome = 0;
 }
@@ -2120,6 +2316,7 @@ function resize(){
 function hash(x,y,s){ let h = (x*374761393 + y*668265263 + s*982451653) | 0; h = (h ^ (h>>>13)) * 1274126177 | 0; return ((h ^ (h>>>16)) >>> 0) / 4294967295; }
 
 function terRock(B){
+  if (B.rockKind === 'tomb') return terTomb();
   const s = new Spr(), c = B.rock, hl = shade(c,1.3), dk = shade(c,.72);
   s.hl(7,11,6,c); s.hl(6,13,7,c); s.r(5,8,10,7,c); s.r(4,10,1,4,c); s.hl(6,13,15,c);
   s.r(14,12,4,4,c); s.hl(15,16,11,c);
@@ -2130,6 +2327,10 @@ function terRock(B){
   return s.pixels();
 }
 function terTree(B){
+  if (B.tree === 'mushroom') return terMushroom();
+  if (B.tree === 'dead') return terDeadTree(B.trunkC);
+  if (B.tree === 'cactus') return terCactus();
+  if (B.tree === 'brazier') return terBrazier();
   const s = new Spr();
   if (B.pine){
     const w = { 2:[9,10],3:[8,11],4:[7,12],5:[8,11],6:[7,12],7:[6,13],8:[7,12],9:[6,13],10:[5,14],11:[6,13],12:[5,14],13:[4,15] };
@@ -2301,15 +2502,38 @@ function renderBG(){
 /* =========================================================
    Vagues
    ========================================================= */
-const blessEvery = () => S.mode === 'siege' ? 4 : 5;
+const blessEvery = () => finiteMode() ? 4 : 5;
 function waveHP(w){
+  if (S.mode === 'story') w += WORLDS[S.world].off;
   return S.mode === 'siege' ? Math.round(16*Math.pow(1.2, w-1) + 5*w) : Math.round(16*Math.pow(1.17, Math.min(w,25)-1)*Math.pow(1.11, Math.max(0, w-25)) + 4*w);
 }
 function nextBoss(){
   if (!Array.isArray(S.bossBag) || !S.bossBag.length) S.bossBag = shuffle(BOSS_POOL.slice());
   return S.bossBag.shift();
 }
+function makeStoryWave(w){
+  const W = WORLDS[S.world], q = [], last = w >= W.waves;
+  const ew = w + W.off, n = Math.min(8 + Math.floor(ew*1.4), 40);
+  const step = Math.max(1, Math.floor(W.waves / (W.mobs.length + 1)));
+  const avail = W.mobs.slice(0, Math.min(W.mobs.length, Math.floor((w - 1) / step) + 1));
+  const theme = shuffle(avail.slice()).slice(0, 2);
+  for (let i=0;i<n;i++){
+    const r = Math.random(); let k = W.base;
+    if (theme.length && r < .45) k = theme[Math.random()*theme.length|0];
+    else if (avail.length && r < .62) k = avail[Math.random()*avail.length|0];
+    q.push(k);
+    if (k === 'spider' && i < n-1){ q.push('spider'); i++; }
+  }
+  if (last) q.push(...W.finals);
+  else if (w % 5 === 0){
+    const pool = BOSS_POOL.filter(b => !W.finals.includes(b) && b !== 'boss');
+    q.push(pool[Math.random()*pool.length|0]);
+  }
+  if (w >= 3 && Math.random() < (MODS.bounty ? .6 : .2)) q.splice(2 + (Math.random()*(q.length-2)|0), 0, 'goblin');
+  return q;
+}
 function makeWave(w){
+  if (S.mode === 'story') return makeStoryWave(w);
   const q = [], siege = S.mode === 'siege';
   const n = Math.min(8 + Math.floor(w*1.4), 40);
   const avail = MONSTER_UNLOCK.filter(([k, from]) => w >= (siege ? Math.ceil(from*.7) : from)).map(a => a[0]);
@@ -2344,13 +2568,18 @@ function startWave(){
   const siege = S.mode === 'siege';
   let sub = '', col = '#f3e7cc', text = 'Vague ' + S.wave;
   const bk = queue.find(k => EN[k].boss);
-  if (siege && S.wave === SIEGE_WAVES){ text = 'Vague finale'; sub = 'Le Roi Gluant arrive'; col = '#ff7a62'; }
+  if (S.mode === 'story' && S.wave >= maxWaves()){
+    const fs = WORLDS[S.world].finals;
+    text = 'Vague finale'; sub = fs.map(k => EN[k].name).join(', puis ') + (fs.length > 1 ? '' : ' approche'); col = '#ff7a62';
+  } else if (siege && S.wave === SIEGE_WAVES){ text = 'Vague finale'; sub = 'Le Roi Gluant arrive'; col = '#ff7a62'; }
   else if (bk){ text = EN[bk].name; sub = 'Vague ' + S.wave + '. ' + EN[bk].hint; col = '#ff7a62'; }
   banner = { t:2.2, max:2.2, text, sub, col };
   sfx('wave');
 }
 function spawn(k, d = 0, hpOver){
-  const base = EN[k], hp = hpOver || waveHP(S.wave) * base.hp * MODS.hpMul;
+  const base = EN[k];
+  let hp = hpOver || waveHP(S.wave) * base.hp * MODS.hpMul;
+  if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
   const spdScale = Math.min(1.3, 1 + S.wave*.006);
   let gold = base.gold + Math.floor(S.wave/6) + MODS.goldKill;
   if (k === 'mini') gold = 1 + MODS.goldKill;
@@ -2372,6 +2601,7 @@ function endWave(){
   if (MODS.regen && waveLeaks === 0){ S.lives++; regen = true; }
   if (S.mode === 'endless') best = Math.max(best, S.wave);
   if (S.mode === 'siege' && S.wave >= SIEGE_WAVES){ victory(); return; }
+  if (S.mode === 'story' && S.wave >= maxWaves()){ storyVictory(); return; }
   const newPath = S.wave % PATH_EVERY === 0;
   let sub = '+' + bonus + ' or';
   if (intr) sub += ', +' + intr + ' d’intérêts';
@@ -2411,7 +2641,13 @@ function gameOver(){
   sfx('over');
   const done = Math.max(0, S.wave - 1);
   const fell = 'Tombé pendant la vague ' + S.wave + '.';
-  if (S.mode === 'siege'){
+  $('overRetry').style.display = S.mode === 'story' ? '' : 'none';
+  if (S.mode === 'story'){
+    const W = WORLDS[S.world];
+    $('overWave').textContent = done + '/' + W.waves;
+    $('overSub').textContent = (done > 1 ? 'vagues tenues' : 'vague tenue') + ' dans : ' + W.name + '. ' + fell;
+    $('overRetry').onclick = () => { hide('ovOver'); newGame('story', S.world); };
+  } else if (S.mode === 'siege'){
     $('overWave').textContent = done + '/' + SIEGE_WAVES;
     $('overSub').textContent = (done > 1 ? 'vagues tenues' : 'vague tenue') + ' pendant le siège. ' + fell;
   } else {
@@ -2420,7 +2656,27 @@ function gameOver(){
   }
   setTimeout(() => show('ovOver'), 700);
 }
+function storyVictory(){
+  over = true; hasGame = false;
+  const w = S.world, W = WORLDS[w], stars = S.lives >= 18 ? 3 : S.lives >= 10 ? 2 : 1;
+  const first = story.unlocked <= w + 1 && w + 1 < WORLDS.length;
+  story.stars[w] = Math.max(story.stars[w]|0, stars);
+  story.unlocked = Math.max(story.unlocked, Math.min(WORLDS.length, w + 2));
+  snapshot = null; persist();
+  sfx('win');
+  burst(COLS/2, ROWS/2, '#f2c14e', 40, 5);
+  $('winTitle').textContent = W.name;
+  $('winStars').innerHTML = [0,1,2].map(k => `<img class="px${k < stars ? '' : ' off'}" src="${STAR_URL}" alt="">`).join('');
+  $('winSub').textContent = (w === WORLDS.length - 1 ? 'Le Trône noir est tombé ! ' : 'Monde libéré ! ') + 'Il te reste ' + S.lives + (S.lives > 1 ? ' vies.' : ' vie.') + (first ? ' Nouveau monde débloqué : ' + WORLDS[w+1].name + '.' : w === WORLDS.length - 1 ? ' Tu as terminé l’histoire.' : '');
+  $('winNext').style.display = w + 1 < WORLDS.length ? '' : 'none';
+  $('winNext').textContent = w + 1 < WORLDS.length ? 'Monde suivant : ' + WORLDS[w+1].name : '';
+  $('winNext').onclick = () => { hide('ovWin'); newGame('story', w + 1); };
+  $('winMap').style.display = '';
+  setTimeout(() => show('ovWin'), 1200);
+}
 function victory(){
+  $('winTitle').textContent = 'Le siège est levé';
+  $('winNext').style.display = 'none'; $('winMap').style.display = 'none';
   over = true; hasGame = false;
   const stars = S.lives >= 18 ? 3 : S.lives >= 10 ? 2 : 1;
   siegeRec.wins++; siegeRec.stars = Math.max(siegeRec.stars, stars);
@@ -2431,18 +2687,22 @@ function victory(){
   $('winSub').textContent = 'Il te reste ' + S.lives + (S.lives > 1 ? ' vies.' : ' vie.') + ' Sièges gagnés : ' + siegeRec.wins + '.';
   setTimeout(() => show('ovWin'), 1200);
 }
-function newGame(mode){
-  freshGame(mode);
+function newGame(mode, world = 0){
+  freshGame(mode, world);
   hasGame = true; pstat.games++;
   enemies = []; projs = []; fx = []; queue = []; pendingSpawn = [];
   inWave = false; over = false; banner = null; drag = null; closeSheet();
   path = null; pathSet = new Set(); WP = null; stopPlacing(); rebuildTraps();
+  hideHome();
   genTerrain();
+  if (mode === 'story') S.biome = WORLDS[world].biome;
   computeMods(); recomputeSyn();
   makePreview();
   S.pending = drawBless(3);
   save(); hud();
-  banner = { t:2.4, max:2.4, text: mode === 'siege' ? 'Siège' : 'Sans fin', sub: BIOMES[S.biome].name, col:'#f2c14e' };
+  banner = mode === 'story'
+    ? { t:2.6, max:2.6, text: WORLDS[world].name, sub: 'Monde ' + (world+1) + ', ' + WORLDS[world].waves + ' vagues', col:'#f2c14e' }
+    : { t:2.4, max:2.4, text: mode === 'siege' ? 'Siège' : 'Sans fin', sub: BIOMES[S.biome].name, col:'#f2c14e' };
   setTimeout(openBless, 500);
 }
 
@@ -3240,11 +3500,11 @@ const hudCache = {};
 function setTxt(id, v){ if (hudCache[id] !== v){ hudCache[id] = v; $(id).textContent = v; } }
 function hud(){
   if (!S) return;
-  const siege = S.mode === 'siege';
+  const siege = finiteMode(), MW = maxWaves();
   setTxt('vLives', String(S.lives));
   setTxt('vGold', String(Math.floor(S.gold)));
-  const wn = (inWave || over) ? S.wave : Math.min(S.wave + 1, siege ? SIEGE_WAVES : 1e9);
-  setTxt('vWave', siege ? wn + '/' + SIEGE_WAVES : String(wn));
+  const wn = (inWave || over) ? S.wave : Math.min(S.wave + 1, siege ? MW : 1e9);
+  setTxt('vWave', siege ? wn + '/' + MW : String(wn));
   setTxt('vCost', String(Math.round(S.cost)));
   $('bRecruit').classList.toggle('poor', S.gold < Math.round(S.cost));
   if (over){
@@ -3256,7 +3516,7 @@ function hud(){
     setTxt('vWaveSub', left + (left > 1 ? ' ennemis' : ' ennemi'));
   } else {
     setTxt('vWaveBtn', 'Lancer');
-    setTxt('vWaveSub', (siege && S.wave + 1 >= SIEGE_WAVES) ? 'vague finale' : 'vague ' + (S.wave + 1));
+    setTxt('vWaveSub', (siege && S.wave + 1 >= MW) ? 'vague finale' : 'vague ' + (S.wave + 1));
   }
   $('bWave').classList.toggle('busy', inWave || over);
   $('bAuto').classList.toggle('on', !!prefs.auto);
@@ -3763,6 +4023,10 @@ const ACH = [
   { id:'ingenieux', name:'Ingénieux', desc:'Poser 50 pièges.', title:'Ingénieux', icon:() => TRAP_URL.pics, test:() => pstat.traps >= 50 },
   { id:'batisseur', name:'Bâtisseur', desc:'Acheter 10 aménagements de terrain.', title:'Bâtisseur', icon:() => BI.hill, test:() => pstat.terra >= 10 },
   { id:'intouchable', name:'Intouchable', desc:'Repousser 20 vagues d’affilée sans perdre de vie.', title:'Intouchable', icon:() => BI.potion, test:() => (pstat.bestStreak|0) >= 20 },
+  { id:'eclaireur', name:'Éclaireur', desc:'Libérer la Forêt sombre.', title:'Éclaireur', icon:() => WORLD_THUMB[0], test:() => story.stars[0] > 0 },
+  { id:'aventurier', name:'Aventurier', desc:'Libérer les Pics gelés.', title:'Aventurier', icon:() => WORLD_THUMB[3], test:() => story.stars[3] > 0 },
+  { id:'liberateur', name:'Libérateur', desc:'Renverser le Trône noir.', title:'Libérateur', icon:() => WORLD_THUMB[7], test:() => story.stars[7] > 0 },
+  { id:'parfait', name:'Sans faute', desc:'Obtenir les 24 étoiles du mode Histoire.', title:'Légende du royaume', icon:() => STAR_URL, test:() => story.stars.every(v => v >= 3) },
   { id:'beni', name:'Béni des dieux', desc:'Réunir 8 bénédictions dans une même partie.', title:'Béni des dieux', icon:() => BI.crit, test:() => hasGame && S.bless.length >= 8 }
 ];
 const ACH_BY = Object.fromEntries(ACH.map(a => [a.id, a]));
@@ -3938,9 +4202,10 @@ function refreshHome(){
   $('hAvatar').src = p.url; $('hName').textContent = profile.name;
   $('hRank').textContent = displayTitle();
   $('hResume').style.display = hasGame ? '' : 'none';
-  if (hasGame) $('hResumeSub').textContent = (S.mode === 'siege' ? 'Siège, vague ' + Math.min(S.wave + 1, SIEGE_WAVES) + '/' + SIEGE_WAVES : 'Sans fin, vague ' + (S.wave + 1)) + (S.legend ? ', avec ' + LEGENDS[S.legend].name : '');
+  if (hasGame) $('hResumeSub').textContent = (S.mode === 'story' ? WORLDS[S.world].name + ', vague ' + Math.min(S.wave + 1, maxWaves()) + '/' + maxWaves() : S.mode === 'siege' ? 'Siège, vague ' + Math.min(S.wave + 1, SIEGE_WAVES) + '/' + SIEGE_WAVES : 'Sans fin, vague ' + (S.wave + 1)) + (S.legend ? ', avec ' + LEGENDS[S.legend].name : '');
   $('hEndRec').textContent = best ? 'Record : vague ' + best : 'Tiens le plus longtemps possible';
-  $('hSiegeRec').textContent = siegeRec.wins ? siegeRec.wins + (siegeRec.wins > 1 ? ' victoires' : ' victoire') + ', ' + '★'.repeat(siegeRec.stars) : '20 vagues et un roi à abattre';
+  const stN = story.stars.reduce((a,b) => a+b, 0);
+  $('hSiegeRec').textContent = 'Monde ' + Math.min(story.unlocked, WORLDS.length) + ' sur ' + WORLDS.length + ', ★ ' + stN + '/' + WORLDS.length*3;
   $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
 }
 function showHome(){
@@ -3959,11 +4224,13 @@ function resumeGame(){
   else if (S.pending) openBless();
 }
 let pendingMode = null;
-function askNew(mode){
-  if (!hasGame){ hideHome(); newGame(mode); return; }
-  pendingMode = mode;
+let pendingWorld = 0;
+function askNew(mode, world = 0){
+  if (mode === 'story' && world == null) return openStoryMap();
+  if (!hasGame){ hide('ovStory'); hideHome(); newGame(mode, world); return; }
+  pendingMode = mode; pendingWorld = world;
   $('cfText').textContent = 'Ta partie en cours (' + $('hResumeSub').textContent + ') sera perdue.';
-  $('cfGo').textContent = 'Lancer ' + (mode === 'siege' ? 'le siège' : 'une partie sans fin');
+  $('cfGo').textContent = 'Lancer ' + (mode === 'story' ? WORLDS[world].name : 'une partie sans fin');
   show('ovConfirm');
 }
 function openProfile(){
@@ -4015,13 +4282,55 @@ function saveName(){
   const v = $('pName').value.replace(/\s+/g, ' ').trim().slice(0, 16);
   profile.name = v || 'Défenseur'; $('pName').value = profile.name; persist(); refreshHome();
 }
+
+/* ---------- carte des mondes ---------- */
+function worldThumb(i){
+  const W = WORLDS[i], B = BIOMES[W.biome];
+  const c = document.createElement('canvas'); c.width = 64; c.height = 30;
+  const x = c.getContext('2d'), id = x.createImageData(64, 30), cache = {};
+  const put = (px,py,col) => { if (px<0||py<0||px>=64||py>=30) return; const v = cache[col] || (cache[col] = hex2(col)); const k = (py*64+px)*4; id.data[k]=v[0]; id.data[k+1]=v[1]; id.data[k+2]=v[2]; id.data[k+3]=255; };
+  for (let y=0;y<30;y++) for (let xx=0;xx<64;xx++){
+    const n = hash(xx, y, 40 + i);
+    put(xx, y, n < .08 ? B.gd[0] : n > .95 ? B.gl[0] : B.g[(xx>>3)+(y>>3) & 1]);
+  }
+  for (let y=0;y<30;y++){ const cx = 20 + Math.round(Math.sin(y*.25)*4); for (let k=-3;k<=3;k++) put(cx+k, y, Math.abs(k) === 3 ? B.edge[0] : (hash(cx+k,y,9) > .9 ? B.dirt[2] : B.dirt[0])); }
+  const stamp = (o, X0, Y0) => { for (let k=0;k<o.px.length;k++){ const col = o.px[k]; if (col) put(X0 + k%o.w, Y0 + ((k/o.w)|0), col); } };
+  stamp(terTree(B), -4, -2); stamp(terRock(B), 2, 12); stamp(terTree(B), 26, 10);
+  x.putImageData(id, 0, 0);
+  const boss = ENS[W.finals[W.finals.length-1]].n;
+  x.drawImage(boss, 64 - boss.width - 2, 30 - boss.height);
+  return c.toDataURL();
+}
+const WORLD_THUMB = WORLDS.map((_,i) => worldThumb(i));
+function openStoryMap(){
+  $('storyBody').innerHTML = WORLDS.map((W,i) => {
+    const open = i < story.unlocked, st = story.stars[i]|0;
+    const bosses = W.finals.map(k => EN[k].name).join(', puis ');
+    return `${i ? '<div class="map-trail"></div>' : ''}<button class="world${open ? '' : ' lock'}" data-w="${i}">
+      <span class="wthumb"><img class="px" src="${WORLD_THUMB[i]}" alt="">${open ? '' : '<i></i>'}</span>
+      <span class="winfo"><em>Monde ${i+1}</em><b>${open ? W.name : '???'}</b>
+      <small>${open ? W.waves + ' vagues. Boss : ' + bosses + '.' : 'Termine le monde précédent pour l’ouvrir.'}</small>
+      <span class="wstars">${[0,1,2].map(k => `<img class="px${k < st ? '' : ' off'}" src="${STAR_URL}" alt="">`).join('')}</span></span>
+    </button>`;
+  }).join('');
+  $('storyBody').querySelectorAll('.world').forEach(b => b.onclick = () => {
+    const i = +b.dataset.w;
+    if (i >= story.unlocked){ toast('Termine le monde précédent pour l’ouvrir'); sfx('bad'); return; }
+    audio(); askNew('story', i);
+  });
+  const total = story.stars.reduce((a,b) => a+b, 0);
+  $('storyLead').textContent = 'Libère les mondes un à un. Étoiles : ' + total + ' sur ' + WORLDS.length*3 + '. Tu peux rejouer chaque monde ouvert pour améliorer ton score.';
+  show('ovStory');
+}
+$('winMap').addEventListener('click', () => { hide('ovWin'); showHome(); openStoryMap(); });
+
 $('hTitle').src = titleURL('REMPART');
 $('hiEndless').src = ENS.boss.url;
-$('hiSiege').src = ENS.king.url;
+$('hiSiege').src = ENS.dragon.url;
 $('hProfile').addEventListener('click', () => { audio(); openProfile(); });
 $('hResume').addEventListener('click', () => { audio(); resumeGame(); });
-document.querySelectorAll('[data-new]').forEach(b => b.addEventListener('click', () => { audio(); askNew(b.dataset.new); }));
-$('cfGo').addEventListener('click', () => { hide('ovConfirm'); hideHome(); newGame(pendingMode); });
+document.querySelectorAll('[data-new]').forEach(b => b.addEventListener('click', () => { audio(); if (b.dataset.new === 'story') openStoryMap(); else askNew(b.dataset.new); }));
+$('cfGo').addEventListener('click', () => { hide('ovConfirm'); hide('ovStory'); hideHome(); newGame(pendingMode, pendingWorld); });
 $('pName').addEventListener('change', saveName);
 $('pName').addEventListener('blur', saveName);
 $('pName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
