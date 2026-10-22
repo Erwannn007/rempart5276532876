@@ -196,6 +196,50 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .lcard small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);margin-top:5px}
 .lcard small img{width:30px;height:30px}
 .sh-top img.leg{border-color:#f2c14e}
+.ov.home{z-index:9;background:#1b1830;padding:0;display:none}
+.ov.home.show{display:block}
+#homeCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.home-ui{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  padding:calc(var(--st) + 10px) calc(var(--sr) + 12px) calc(var(--sb) + 14px) calc(var(--sl) + 12px)}
+.home-top{align-self:stretch;display:flex;justify-content:flex-end}
+.profile-chip{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;min-height:56px;max-width:70%;text-align:left}
+.profile-chip:active{transform:translateY(2px)}
+.profile-chip img{width:44px;height:44px;flex:none;border:3px solid var(--edge);box-shadow:0 0 0 2px #f2c14e}
+.profile-chip span{min-width:0}
+.profile-chip b{display:block;font-size:18px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-chip small{display:block;font-size:13px;color:var(--gold)}
+.home-title{width:min(84vw,380px);margin-top:3vh;filter:drop-shadow(0 4px 0 rgba(14,10,6,.55))}
+.home-menu{margin-top:auto;width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px}
+.home-resume{background:#3f6a2f;min-height:66px;flex-direction:column;gap:2px;font-size:22px;line-height:1}
+.home-resume small{font-size:14px;font-weight:600;color:#cfe3b9}
+.home-row{display:flex;gap:8px}
+.home-row .btn{flex:1}
+.home-mode{min-height:78px;justify-content:flex-start;gap:8px;padding:0 10px;text-align:left}
+.home-mode img{width:46px;height:46px;flex:none;object-fit:contain}
+.home-mode b{display:block;font-size:20px;line-height:1.05}
+.home-mode small{display:block;font-size:12.5px;font-weight:600;color:var(--dim);line-height:1.2;margin-top:2px}
+.home-mode.siege{background:#5a2f24}
+.home-row.small .btn{min-height:48px;font-size:16px}
+.prof-win{max-height:100%}
+.prof-head{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+.prof-head>img{width:88px;height:88px;flex:none;border:3px solid var(--edge);box-shadow:0 0 0 3px #f2c14e}
+.prof-head>div{flex:1;min-width:0}
+.prof-lbl{display:block;font-size:13px;color:var(--dim);font-weight:700}
+#pName{width:100%;font-family:var(--font);font-size:22px;font-weight:800;color:var(--ink);background:#1c1610;border:3px solid var(--edge);
+  padding:6px 8px;border-radius:0;-webkit-user-select:text;user-select:text;outline:none}
+#pName:focus{box-shadow:0 0 0 2px #f2c14e}
+#pRank{display:block;font-size:14px;color:var(--gold);margin-top:5px;line-height:1.3}
+.pstats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pstats div{background:#2a1e14;border:2px solid var(--edge);padding:6px 8px}
+.pstats span{display:block;font-size:13px;color:var(--dim)}
+.pstats b{display:block;font-size:19px}
+.av-h{margin:10px 0 4px;font-size:15px;font-weight:800;color:var(--dim)}
+.av-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.av{padding:0;border:3px solid var(--edge);background:#1c1610;aspect-ratio:1}
+.av img{width:100%;height:100%;display:block}
+.av.lock{opacity:.6}
+.av.on{box-shadow:0 0 0 3px #f2c14e}
+.av:active{transform:translateY(2px)}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -229,18 +273,51 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
     <button class="btn" data-act="codex">Recueil</button>
     <button class="btn" data-act="help">Comment jouer</button>
     <button class="btn" data-act="sound" id="bSound">Son : activé</button>
-    <button class="btn danger" data-act="new">Nouvelle partie</button>
+    <button class="btn danger" data-act="home">Retour à l’accueil</button>
   </div>
 </div></div>
 
-<div class="ov" id="ovMode"><div class="win plank">
-  <h2>Nouvelle partie</h2>
-  <p class="lead" id="modeLead"></p>
-  <div class="stack">
-    <button class="mode" data-mode="endless"><img class="px" id="mdEndless" alt=""><div><b>Sans fin</b><span>Tiens le plus longtemps possible. Une bénédiction toutes les 5 vagues.</span><small id="mdEndlessRec"></small></div></button>
-    <button class="mode siege" data-mode="siege"><img class="px" id="mdSiege" alt=""><div><b>Siège</b><span>20 vagues plus dures, et le Roi Gluant au bout. Une bénédiction toutes les 4 vagues.</span><small id="mdSiegeRec"></small></div></button>
+<div class="ov home" id="ovHome">
+  <canvas id="homeCv"></canvas>
+  <div class="home-ui">
+    <div class="home-top">
+      <button class="profile-chip plank" id="hProfile" aria-label="Profil"><img class="px" id="hAvatar" alt=""><span><b id="hName"></b><small id="hRank"></small></span></button>
+    </div>
+    <img class="px home-title" id="hTitle" alt="Rempart">
+    <div class="home-menu">
+      <button class="btn main home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
+      <div class="home-row">
+        <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
+        <button class="btn home-mode siege" data-new="siege"><img class="px" id="hiSiege" alt=""><span><b>Siège</b><small id="hSiegeRec"></small></span></button>
+      </div>
+      <div class="home-row small">
+        <button class="btn" data-hact="codex">Recueil</button>
+        <button class="btn" data-hact="help">Aide</button>
+        <button class="btn" data-hact="sound" id="hSoundBtn">Son</button>
+      </div>
+    </div>
   </div>
-  <div class="close-row" id="modeCancel"><button class="btn" data-close>Annuler</button></div>
+</div>
+
+<div class="ov" id="ovProfile"><div class="win plank prof-win">
+  <div class="prof-head">
+    <img class="px" id="pAvatar" alt="">
+    <div><label class="prof-lbl" for="pName">Pseudo</label><input id="pName" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><small id="pRank"></small></div>
+  </div>
+  <div class="scroll">
+    <h3 class="cx-h">Statistiques</h3>
+    <div class="pstats" id="pStats"></div>
+    <h3 class="cx-h">Portrait</h3>
+    <p class="cx-note" id="pAvNote"></p>
+    <div id="pAvatars"></div>
+  </div>
+  <div class="close-row"><button class="btn" data-close>Fermer</button></div>
+</div></div>
+
+<div class="ov" id="ovConfirm"><div class="win plank" style="text-align:center">
+  <h2>Nouvelle partie ?</h2>
+  <p class="lead" id="cfText"></p>
+  <div class="stack"><button class="btn main" id="cfGo">Lancer</button><button class="btn" data-close>Annuler</button></div>
 </div></div>
 
 <div class="ov" id="ovBless"><div class="win plank">
@@ -297,14 +374,14 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
   <h2>Le rempart est tombé</h2>
   <div class="over-score" id="overWave">0</div>
   <p class="lead" id="overSub">vagues repoussées</p>
-  <div class="stack"><button class="btn main" data-act="again">Nouvelle partie</button></div>
+  <div class="stack"><button class="btn main" data-act="again">Retour à l’accueil</button></div>
 </div></div>
 
 <div class="ov" id="ovWin"><div class="win plank" style="text-align:center">
   <h2 class="title">Le siège est levé</h2>
   <div class="stars" id="winStars"></div>
   <p class="lead" id="winSub"></p>
-  <div class="stack"><button class="btn main" data-act="again">Nouvelle partie</button></div>
+  <div class="stack"><button class="btn main" data-act="again">Retour à l’accueil</button></div>
 </div></div>
 
 <script>
@@ -1333,7 +1410,7 @@ function snap(){
 }
 function persist(){
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ v:2, best, siege:siegeRec, seen:[...seen], seenEn:[...seenEn], seenLeg:[...seenLeg], prefs, game: (over || !hasGame) ? null : snapshot }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v:2, best, siege:siegeRec, profile, stats:pstat, seen:[...seen], seenEn:[...seenEn], seenLeg:[...seenLeg], prefs, game: (over || !hasGame) ? null : snapshot }));
   } catch(e){}
 }
 function save(){ snap(); persist(); }
@@ -1345,6 +1422,9 @@ function load(){
   best = d.best || 0; seen = new Set(d.seen || []); seenEn = new Set(d.seenEn || []); seenLeg = new Set(d.seenLeg || []);
   if (d.siege) siegeRec = Object.assign({ wins:0, stars:0 }, d.siege);
   Object.assign(prefs, d.prefs || {});
+  if (d.profile) Object.assign(profile, d.profile);
+  if (d.stats) Object.assign(pstat, d.stats);
+  if (!pstat.legPick) pstat.legPick = {};
   if (![1,2,3].includes(prefs.speed)) prefs.speed = 1;
   const g = d.game;
   if (g && Array.isArray(g.board) && g.board.length === COLS*ROWS && (g.lives|0) > 0){
@@ -1961,7 +2041,7 @@ function endWave(){
   inWave = false;
   const bonus = Math.round((8 + S.wave*2) * MODS.waveBonus);
   const intr = MODS.interest ? Math.min(25, Math.floor(S.gold*.1)) : 0;
-  S.gold += bonus + intr;
+  S.gold += bonus + intr; addGold(bonus + intr); pstat.waves++;
   let regen = false;
   if (MODS.regen && waveLeaks === 0){ S.lives++; regen = true; }
   if (S.mode === 'endless') best = Math.max(best, S.wave);
@@ -2027,7 +2107,7 @@ function victory(){
 }
 function newGame(mode){
   freshGame(mode);
-  hasGame = true;
+  hasGame = true; pstat.games++;
   enemies = []; projs = []; fx = []; queue = []; pendingSpawn = [];
   inWave = false; over = false; banner = null; drag = null; closeSheet();
   path = null; pathSet = new Set(); WP = null; stopPlacing(); rebuildTraps();
@@ -2117,8 +2197,10 @@ function hit(e, dmg){
   if (e.hp <= 0){
     e.dead = true; legKills++;
     const gv = Math.round(e.gold * (e.markT > 0 ? 1 + e.markB : 1));
-    S.gold += gv;
+    S.gold += gv; addGold(gv); pstat.kills++;
+    if (isBoss(e)) pstat.bosses++;
     const gob = e.k === 'goblin';
+    if (gob) pstat.goblins++;
     if (e.markT > 0) burst(e.x, e.y-.3, '#f2c14e', 6, 2);
     fx.push({ k:'t', x:e.x, y:e.y-.5, s:'+'+gv, col:'#f6c94a', life: gob ? 1.4 : .8, max: gob ? 1.4 : .8, big:gob });
     burst(e.x, e.y-.2, EN[e.k].col, e.k==='boss' || e.k==='king' ? 26 : 9);
@@ -2438,6 +2520,8 @@ let last = performance.now();
 function frame(now){
   let dt = Math.min(.05, (now-last)/1000); last = now;
   const running = !paused && !anyOverlay() && !placing;
+  if (running && hasGame && !over) pstat.time += dt;
+  if (homeOn && !paused) drawHome(dt);
   if (placing) clock += dt;
   if (running){
     clock += dt;
@@ -2867,7 +2951,7 @@ function applyDrop(src, dst, r){
     fx.push({ k:'t', x:(X-ox)/CS + .5, y:(Y-oy)/CS, s:'+'+v, col:'#f6c94a', life:.9, max:.9 });
     sfx('sell');
   } else if (r.kind === 'merge'){
-    const b = getT(dst);
+    const b = getT(dst); pstat.merges++;
     const jump = b.l <= 3 && MODS.skip && Math.random() < MODS.skip;
     b.l = Math.min(5, b.l + (jump ? 2 : 1)); b.pop = .35; b.cd = 0; setT(src, null);
     if (jump) markSeen(b.t, b.l-1);
@@ -2878,7 +2962,7 @@ function applyDrop(src, dst, r){
     fx.push({ k:'t', x:cx, y:cy-.6, s:(jump ? 'Bond ! Niv. ' : 'Niv. ') + b.l, col: b.l===5 || jump ? '#f2c14e' : '#f3e7cc', life:1, max:1, big:true });
     sfx('merge');
   } else if (r.kind === 'offer'){
-    const b = getT(dst), lgT = a.leg ? a : b;
+    const b = getT(dst), lgT = a.leg ? a : b; pstat.offers++;
     setT(src, null); setT(dst, lgT);
     lgT.l++; lgT.pop = .45; lgT.cd = 0;
     markSeenLeg(lgT.leg, lgT.l);
@@ -3104,7 +3188,7 @@ function openLegendOffer(){
 function pickLegend(id){
   if (!S.legendOffer || !LEGENDS[id]) return;
   const L = LEGENDS[id], tw = mk(L.fam, 1, id);
-  S.legend = id; S.legendOffer = null;
+  S.legend = id; S.legendOffer = null; pstat.legPick[id] = (pstat.legPick[id] || 0) + 1;
   let slot = S.legendSlot;
   if (!(slot >= 0 && slot < BENCH_N) || S.bench[slot]) slot = S.bench.findIndex(x => !x);
   if (slot < 0){
@@ -3165,13 +3249,6 @@ function openMenu(){
   $('bBlessN').textContent = S.bless.length ? '(' + S.bless.length + ')' : '';
   show('ovMenu');
 }
-function openMode(){
-  $('mdEndlessRec').textContent = best ? 'Record : vague ' + best : 'Pas encore de record';
-  $('mdSiegeRec').textContent = siegeRec.wins ? 'Gagnés : ' + siegeRec.wins + ', meilleur : ' + siegeRec.stars + (siegeRec.stars > 1 ? ' étoiles' : ' étoile') : 'Jamais gagné';
-  $('modeLead').textContent = hasGame ? 'La partie en cours sera perdue. Le terrain change à chaque partie.' : 'Le terrain et la saison changent à chaque partie.';
-  $('modeCancel').style.display = hasGame ? '' : 'none';
-  show('ovMode');
-}
 function buildCodex(){
   $('cxCount').textContent = seen.size + ' soldats découverts sur 25';
   const troops = TYPES.map((ty,t) => `
@@ -3218,18 +3295,301 @@ document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click',
   else if (a === 'help'){ hide('ovMenu'); show('ovHelp'); }
   else if (a === 'bless'){ hide('ovMenu'); openBlessList(); }
   else if (a === 'sound'){ prefs.sound = !prefs.sound; persist(); b.textContent = 'Son : ' + (prefs.sound ? 'activé' : 'coupé'); }
-  else if (a === 'new'){ hide('ovMenu'); openMode(); }
-  else if (a === 'again'){ hide('ovOver'); hide('ovWin'); openMode(); }
-}));
-document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
-  audio(); hide('ovMode'); newGame(b.dataset.mode);
+  else if (a === 'home'){ hide('ovMenu'); showHome(); }
+  else if (a === 'again'){ hide('ovOver'); hide('ovWin'); showHome(); }
 }));
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
   const ov = b.closest('.ov'); ov.classList.remove('show');
   if (ov.id === 'ovHelp' && !prefs.helped){ prefs.helped = true; persist(); }
 }));
-$('mdEndless').src = ENS.boss.url;
-$('mdSiege').src = ENS.king.url;
+/* =========================================================
+   Profil, portraits et écran d'accueil
+   ========================================================= */
+const RANKS = [[0,'Recrue'],[25,'Sentinelle'],[75,'Sergent'],[150,'Capitaine'],[300,'Commandant'],[600,'Maréchal'],[1000,'Légende du rempart']];
+function rankOf(w){ let r = RANKS[0], next = null; for (const k of RANKS){ if (w >= k[0]) r = k; else { next = k; break; } } return { name:r[1], next }; }
+
+/* ---------- portraits 20×20 ---------- */
+const PORTRAITS = [];   // { key, url, sil, unlock(), label }
+function portraitURL(src, bg, offx, offy){
+  const c = document.createElement('canvas'); c.width = 20; c.height = 20;
+  const x = c.getContext('2d');
+  const top = shade(bg, .62), low = shade(bg, .42);
+  for (let y=0;y<20;y++) for (let i=0;i<20;i++){
+    let col = y < 11 ? top : low;
+    if (y >= 9 && y <= 12 && (i + y) % 2 === 0) col = y < 11 ? low : top;
+    x.fillStyle = col; x.fillRect(i, y, 1, 1);
+  }
+  x.fillStyle = shade(bg, .78);
+  for (let k=0;k<6;k++) x.fillRect((k*7 + 3) % 19, (k*5 + 2) % 8, 1, 1);
+  x.drawImage(src, offx, offy);
+  return c.toDataURL();
+}
+for (let t=0;t<5;t++) for (let l=1;l<=5;l++){
+  const o = troopPixels(t,l);
+  PORTRAITS.push({ key:`s:${t}:${l}`, label:TYPES[t].ranks[l-1],
+    url: portraitURL(SPR[t][l-1], TYPES[t].col, 0, 4),
+    sil: portraitURL(pxCanvas(o,'sil'), '#5a4a38', 0, 4),
+    unlock: () => l === 1 || seen.has(t*5 + l - 1) });
+}
+for (const id of LEG_ORDER) for (let l=1;l<=5;l++){
+  const o = legendPixels(id,l);
+  PORTRAITS.push({ key:`l:${id}:${l}`, label:LEGENDS[id].ranks[l-1], legend:id,
+    url: portraitURL(LSPR[id][l-1], '#9a7428', -2, 1),
+    sil: portraitURL(pxCanvas(o,'sil'), '#5a4a38', -2, 1),
+    unlock: () => seenLeg.has(id + ':' + l) });
+}
+const PORTRAIT_BY = Object.fromEntries(PORTRAITS.map(p => [p.key, p]));
+function avatarSprite(key){
+  const [k, a, l] = String(key).split(':');
+  if (k === 'l' && LSPR[a]) return LSPR[a][(+l||1)-1];
+  return SPR[+a || 0][(+l||1)-1];
+}
+
+/* ---------- statistiques ---------- */
+let pstat = { games:0, waves:0, kills:0, bosses:0, goblins:0, merges:0, offers:0, gold:0, time:0, legPick:{} };
+let profile = { name:'Défenseur', avatar:'s:0:1' };
+const addGold = n => { pstat.gold += n; };
+function fmtTime(s){ s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return h ? h + ' h ' + String(m).padStart(2,'0') : m + ' min'; }
+const fmtN = n => Math.floor(n).toLocaleString('fr-FR');
+
+/* ---------- titre en lettres pixel ---------- */
+const FONT = {
+  R:['####.','#...#','#...#','####.','#.#..','#..#.','#...#'],
+  E:['#####','#....','#....','####.','#....','#....','#####'],
+  M:['#...#','##.##','#.#.#','#.#.#','#...#','#...#','#...#'],
+  P:['####.','#...#','#...#','####.','#....','#....','#....'],
+  A:['.###.','#...#','#...#','#####','#...#','#...#','#...#'],
+  T:['#####','..#..','..#..','..#..','..#..','..#..','..#..']
+};
+function titleURL(word){
+  const s = new Spr(word.length*6 + 2, 11);
+  [...word].forEach((ch, n) => FONT[ch].forEach((row, y) => [...row].forEach((v, x) => { if (v === '#') s.p(1 + n*6 + x, 1 + y + 2, '#5a2a10', 1); })));
+  [...word].forEach((ch, n) => FONT[ch].forEach((row, y) => [...row].forEach((v, x) => {
+    if (v !== '#') return;
+    const col = y === 0 ? '#fff0a0' : y >= 5 ? '#d9932a' : '#f2c14e';
+    s.p(1 + n*6 + x, 1 + y, col, 1);
+  })));
+  return pxCanvas(s.pixels()).toDataURL();
+}
+
+/* ---------- scène animée ---------- */
+let homeOn = false, hcv = null, hctx = null, hP = 3, hAW = 0, hAH = 0, hBG = null, hFG = null, hLay = null;
+const FLIES = Array.from({ length:9 }, () => ({ x:Math.random(), y:.6 + Math.random()*.35, p:Math.random()*6.28, s:.4 + Math.random()*.6 }));
+function buildHome(){
+  hcv = $('homeCv'); hctx = hcv.getContext('2d');
+  const r = hcv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 3);
+  hcv.width = Math.max(1, Math.round(r.width*d)); hcv.height = Math.max(1, Math.round(r.height*d));
+  hP = Math.max(2, Math.floor(hcv.width / 100));
+  const aw = hAW = Math.ceil(hcv.width / hP), ah = hAH = Math.ceil(hcv.height / hP);
+  const mk2 = () => { const c = document.createElement('canvas'); c.width = aw; c.height = ah; const x = c.getContext('2d'); return { c, x, id:x.createImageData(aw, ah) }; };
+  const B = mk2(), F = mk2(), cache = {};
+  const put = (L, px, py, col) => { px |= 0; py |= 0; if (px<0||py<0||px>=aw||py>=ah) return; const v = cache[col] || (cache[col] = hex2(col)); const i = (py*aw + px)*4; L.id.data[i]=v[0]; L.id.data[i+1]=v[1]; L.id.data[i+2]=v[2]; L.id.data[i+3]=255; };
+
+  const horizon = Math.round(ah*.57), wallY = horizon - 4, cx = Math.round(aw/2), towerTop = wallY - 15;
+  hLay = { horizon, wallY, cx, towerTop };
+  // ciel du soir en bandes tramées
+  const bands = ['#1b1830','#221d3a','#2c2446','#3a2b50','#4f3356','#6a3d59','#8a4a5a','#ad5a58','#cc6f56','#e48b58','#f2ab64'];
+  for (let y=0;y<horizon;y++){
+    const t = y / horizon * (bands.length - 1), b0 = Math.floor(t), fr = t - b0;
+    for (let x=0;x<aw;x++){
+      let col = bands[b0];
+      if ((fr > .66 && (x+y)%2 === 0) || (fr > .33 && fr <= .66 && x%2 === 0 && y%2 === 0)) col = bands[Math.min(b0+1, bands.length-1)];
+      put(B, x, y, col);
+    }
+  }
+  for (let k=0;k<40;k++){ const x = hash(k,1,77)*aw|0, y = hash(k,2,77)*horizon*.45|0; put(B, x, y, hash(k,3,77) > .5 ? '#fff3c4' : '#b9b2dc'); }
+  // soleil rayé
+  const sr = Math.max(8, Math.round(aw*.11)), sy = horizon - 3;
+  for (let y=-sr;y<=0;y++) for (let x=-sr;x<=sr;x++){
+    if (x*x + y*y > sr*sr) continue;
+    const yy = sy + y, stripe = (y > -sr*.55) && ((-y) % 3 === 1);
+    if (stripe) continue;
+    put(B, cx + x, yy, x*x + y*y < (sr-2)*(sr-2) ? '#ffd27a' : '#ffb85e');
+  }
+  // montagnes
+  for (let x=0;x<aw;x++){
+    const h1 = 8 + Math.round(6*Math.sin(x*.09) + 4*Math.sin(x*.23 + 1) + 3*hash(x,0,5));
+    for (let y=horizon-h1;y<horizon;y++) put(B, x, y, y < horizon-h1+1 ? '#5a3e60' : '#3b2b4d');
+    const h2 = 3 + Math.round(3*Math.sin(x*.15 + 2) + 2*hash(x,1,5));
+    for (let y=horizon-h2;y<horizon;y++) put(B, x, y, '#2c2338');
+  }
+  // sol
+  for (let y=horizon;y<ah;y++) for (let x=0;x<aw;x++){
+    const n = hash(x,y,11);
+    let col = (y - horizon) < 3 ? '#2a3a28' : '#304a2a';
+    if (n > .94) col = '#3f5e34'; else if (n < .05) col = '#26391f';
+    put(B, x, y, col);
+  }
+  for (let k=0;k<60;k++){ const x = hash(k,4,13)*aw|0, y = horizon + 14 + (hash(k,5,13)*(ah-horizon-14)|0); put(B, x, y, '#4f7a3e'); put(B, x+2, y, '#4f7a3e'); put(B, x+1, y+1, '#3f6232'); }
+  // chemin vers la porte
+  for (let y=horizon+10;y<ah;y++){
+    const half = 4 + Math.round((y - horizon - 10)*.35);
+    for (let x=cx-half;x<=cx+half;x++){
+      const edge = x === cx-half || x === cx+half, n = hash(x,y,21);
+      put(B, x, y, edge ? '#3e2e22' : n > .92 ? '#8a6a4a' : n < .1 ? '#5a4232' : '#6a5038');
+    }
+  }
+  // muraille
+  const stone = (x,y) => { const row = ((y - wallY)/3)|0, off = row%2 ? 3 : 0; return ((x+off)%6 === 0 || (y - wallY)%3 === 2) ? '#45404c' : (hash(((x+off)/6)|0, row, 3) > .5 ? '#6e6874' : '#625d6a'); };
+  for (let y=wallY;y<horizon+10;y++) for (let x=0;x<aw;x++) put(B, x, y, stone(x,y));
+  for (let x=0;x<aw;x++) put(B, x, wallY, '#c98a6a');
+  // tour
+  const tw2 = 11;
+  for (let y=towerTop;y<horizon+10;y++) for (let x=cx-tw2;x<=cx+tw2;x++){
+    let col = stone(x,y);
+    if (x === cx-tw2) col = '#c98a6a'; else if (x === cx+tw2) col = '#3a3540';
+    put(B, x, y, col);
+  }
+  for (let x=cx-tw2;x<=cx+tw2;x++) put(B, x, towerTop, '#d99a74');
+  for (let y=towerTop+5;y<towerTop+10;y++){ put(B, cx-1, y, '#1a1420'); put(B, cx, y, '#1a1420'); }
+  put(B, cx-1, towerTop+9, '#e8a050'); put(B, cx, towerTop+9, '#e8a050');
+  // porte
+  for (let y=horizon-2;y<horizon+10;y++) for (let x=cx-5;x<=cx+5;x++){
+    const ay = y - (horizon-2), arch = ay < 3 && Math.abs(x-cx) > 2 + ay;
+    if (arch) continue;
+    put(B, x, y, ((x - cx) % 2 === 0 || (y % 3 === 0)) ? '#2a2420' : '#14101a');
+  }
+  // créneaux (premier plan, devant les soldats)
+  const merlons = (y0, x0, x1) => {
+    for (let x=x0;x<=x1;x++){
+      const tall = ((x - x0) % 6) < 4;
+      for (let y=y0-(tall ? 4 : 1); y<=y0+1; y++){
+        let col = stone(x, y + 30);
+        if (y === y0-(tall ? 4 : 1)) col = '#d99a74';
+        put(F, x, y, col);
+      }
+    }
+  };
+  merlons(wallY, 0, cx-tw2-1); merlons(wallY, cx+tw2+1, aw-1); merlons(towerTop, cx-tw2, cx+tw2);
+  B.x.putImageData(B.id, 0, 0); F.x.putImageData(F.id, 0, 0);
+  hBG = B.c; hFG = F.c;
+}
+function drawHome(dt){
+  if (!hBG) buildHome();
+  const g = hctx, P_ = hP, { wallY, cx, towerTop, horizon } = hLay;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(hBG, 0, 0, hAW*P_, hAH*P_);
+  const t = performance.now()/1000;
+  // étoiles qui scintillent
+  for (let k=0;k<6;k++){ if (Math.sin(t*2 + k*1.7) < .6) continue; g.fillStyle = '#ffffff'; g.fillRect((hash(k,9,7)*hAW|0)*P_, (hash(k,8,7)*horizon*.4|0)*P_, P_, P_); }
+  // drapeau
+  const fx_ = cx + 7, fy = towerTop - 14;
+  g.fillStyle = '#4a3020'; g.fillRect(fx_*P_, fy*P_, P_, 14*P_);
+  const wave = Math.floor(t*3) % 2;
+  for (let y=0;y<5;y++) for (let x=0;x<8;x++){
+    const off = (wave && x > 3) ? 1 : 0;
+    g.fillStyle = (x === 3 && y === 2) || (x === 4 && y === 2) ? '#f2c14e' : y === 0 ? '#e0574a' : '#b8323a';
+    g.fillRect((fx_ + 1 + x)*P_, (fy + 1 + y + off)*P_, P_, P_);
+  }
+  // soldats sur les créneaux, profil sur la tour
+  const bob = k => (Math.floor(t*1.6 + k) % 2) ? P_ : 0;
+  const guards = [[.12, SPR[1][3]], [.28, SPR[0][4]], [.72, SPR[3][4]], [.88, SPR[2][3]]];
+  guards.forEach(([fx2, can], k) => { const x = Math.round(hAW*fx2) - 10; g.drawImage(can, x*P_, (wallY - 18)*P_ - bob(k), 20*P_, 20*P_); });
+  const av = avatarSprite(profile.avatar), sz = av.width;
+  g.drawImage(av, (cx - Math.round(sz/2))*P_, (towerTop - sz + 2)*P_ - bob(5), sz*P_, sz*P_);
+  g.drawImage(hFG, 0, 0, hAW*P_, hAH*P_);
+  // lucioles
+  for (const f of FLIES){
+    f.p += dt*f.s;
+    const x = (f.x*hAW + Math.sin(f.p)*6)|0, y = (f.y*hAH + Math.cos(f.p*1.3)*3)|0;
+    if (Math.sin(f.p*3) < -.2) continue;
+    g.fillStyle = '#fff3a0'; g.fillRect(x*P_, y*P_, P_, P_);
+    g.globalAlpha = .35; g.fillRect((x-1)*P_, y*P_, P_*3, P_); g.fillRect(x*P_, (y-1)*P_, P_, P_*3); g.globalAlpha = 1;
+  }
+}
+
+/* ---------- écrans ---------- */
+function refreshHome(){
+  const p = PORTRAIT_BY[profile.avatar] || PORTRAITS[0];
+  $('hAvatar').src = p.url; $('hName').textContent = profile.name;
+  $('hRank').textContent = rankOf(pstat.waves).name;
+  $('hResume').style.display = hasGame ? '' : 'none';
+  if (hasGame) $('hResumeSub').textContent = (S.mode === 'siege' ? 'Siège, vague ' + Math.min(S.wave + 1, SIEGE_WAVES) + '/' + SIEGE_WAVES : 'Sans fin, vague ' + (S.wave + 1)) + (S.legend ? ', avec ' + LEGENDS[S.legend].name : '');
+  $('hEndRec').textContent = best ? 'Record : vague ' + best : 'Tiens le plus longtemps possible';
+  $('hSiegeRec').textContent = siegeRec.wins ? siegeRec.wins + (siegeRec.wins > 1 ? ' victoires' : ' victoire') + ', ' + '★'.repeat(siegeRec.stars) : '20 vagues et un roi à abattre';
+  $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
+}
+function showHome(){
+  closeSheet(); stopPlacing(); drag = null;
+  ['ovMenu','ovOver','ovWin','ovBless','ovLegend','ovShop'].forEach(hide);
+  if (hasGame && !inWave) save(); else persist();
+  homeOn = true; hBG = null;
+  refreshHome();
+  show('ovHome');
+  requestAnimationFrame(() => { hBG = null; });
+}
+function hideHome(){ homeOn = false; hide('ovHome'); }
+function resumeGame(){
+  hideHome();
+  if (S.legendOffer) openLegendOffer();
+  else if (S.pending) openBless();
+}
+let pendingMode = null;
+function askNew(mode){
+  if (!hasGame){ hideHome(); newGame(mode); return; }
+  pendingMode = mode;
+  $('cfText').textContent = 'Ta partie en cours (' + $('hResumeSub').textContent + ') sera perdue.';
+  $('cfGo').textContent = 'Lancer ' + (mode === 'siege' ? 'le siège' : 'une partie sans fin');
+  show('ovConfirm');
+}
+function openProfile(){
+  const p = PORTRAIT_BY[profile.avatar] || PORTRAITS[0];
+  $('pAvatar').src = p.url; $('pName').value = profile.name;
+  const rk = rankOf(pstat.waves);
+  $('pRank').textContent = rk.name + (rk.next ? '. Prochain grade : ' + rk.next[1] + ', dans ' + (rk.next[0] - pstat.waves) + ' vagues.' : '. Grade le plus haut.');
+  let fav = null, favN = 0; for (const id in pstat.legPick) if (pstat.legPick[id] > favN){ favN = pstat.legPick[id]; fav = id; }
+  const metN = LEG_ORDER.filter(id => [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l))).length;
+  const cells = [
+    ['Parties jouées', fmtN(pstat.games)], ['Vagues repoussées', fmtN(pstat.waves)],
+    ['Record sans fin', best ? 'vague ' + best : '—'], ['Sièges gagnés', siegeRec.wins ? siegeRec.wins + ' ' + '★'.repeat(siegeRec.stars) : '0'],
+    ['Ennemis vaincus', fmtN(pstat.kills)], ['Boss abattus', fmtN(pstat.bosses)],
+    ['Gobelins d’or', fmtN(pstat.goblins)], ['Or gagné', fmtN(pstat.gold)],
+    ['Fusions', fmtN(pstat.merges)], ['Offrandes', fmtN(pstat.offers)],
+    ['Soldats découverts', seen.size + '/25'], ['Légendes rencontrées', metN + '/' + LEG_ORDER.length],
+    ['Légende favorite', fav ? LEGENDS[fav].name : '—'], ['Temps de jeu', fmtTime(pstat.time)]
+  ];
+  $('pStats').innerHTML = cells.map(([k,v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+  const unl = PORTRAITS.filter(p => p.unlock()).length;
+  $('pAvNote').textContent = unl + ' portraits débloqués sur ' + PORTRAITS.length + '. Découvre de nouveaux soldats et fais monter tes légendes pour en gagner d’autres.';
+  const block = (title, list) => `<p class="av-h">${title}</p><div class="av-grid">${list.map(p => {
+    const ok = p.unlock(), on = p.key === profile.avatar;
+    return `<button class="av${ok ? '' : ' lock'}${on ? ' on' : ''}" data-key="${p.key}" aria-label="${ok ? p.label : 'Portrait verrouillé'}"><img class="px" src="${ok ? p.url : p.sil}" alt=""></button>`;
+  }).join('')}</div>`;
+  $('pAvatars').innerHTML = TYPES.map((ty,t) => block(ty.name, PORTRAITS.filter(p => p.key.startsWith('s:' + t + ':')))).join('')
+    + LEG_ORDER.map(id => block(LEGENDS[id].name, PORTRAITS.filter(p => p.legend === id))).join('');
+  $('pAvatars').querySelectorAll('.av').forEach(b => b.onclick = () => {
+    const p = PORTRAIT_BY[b.dataset.key];
+    if (!p.unlock()){ toast(p.legend ? 'Fais monter cette légende jusqu’à ce rang pour le débloquer' : 'Découvre ce soldat pour débloquer son portrait'); sfx('bad'); return; }
+    profile.avatar = p.key; persist(); sfx('recruit');
+    $('pAvatar').src = p.url;
+    $('pAvatars').querySelectorAll('.av.on').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    refreshHome();
+  });
+  show('ovProfile');
+  document.querySelector('#ovProfile .scroll').scrollTop = 0;
+}
+function saveName(){
+  const v = $('pName').value.replace(/\s+/g, ' ').trim().slice(0, 16);
+  profile.name = v || 'Défenseur'; $('pName').value = profile.name; persist(); refreshHome();
+}
+$('hTitle').src = titleURL('REMPART');
+$('hiEndless').src = ENS.boss.url;
+$('hiSiege').src = ENS.king.url;
+$('hProfile').addEventListener('click', () => { audio(); openProfile(); });
+$('hResume').addEventListener('click', () => { audio(); resumeGame(); });
+document.querySelectorAll('[data-new]').forEach(b => b.addEventListener('click', () => { audio(); askNew(b.dataset.new); }));
+$('cfGo').addEventListener('click', () => { hide('ovConfirm'); hideHome(); newGame(pendingMode); });
+$('pName').addEventListener('change', saveName);
+$('pName').addEventListener('blur', saveName);
+$('pName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+document.querySelectorAll('[data-hact]').forEach(b => b.addEventListener('click', () => {
+  audio();
+  const a = b.dataset.hact;
+  if (a === 'codex'){ buildCodex(); show('ovCodex'); }
+  else if (a === 'help') show('ovHelp');
+  else if (a === 'sound'){ prefs.sound = !prefs.sound; persist(); refreshHome(); }
+}));
+window.addEventListener('resize', () => { hBG = null; });
 
 /* ---------- cycle de vie ---------- */
 document.addEventListener('visibilitychange', () => {
@@ -3257,9 +3617,7 @@ delete S.savedPreview; delete S.savedTraps;
 rebuildTraps();
 snap(); persist();
 hud();
-if (!hasGame) openMode();
-else if (S.legendOffer) openLegendOffer();
-else if (S.pending) openBless();
+showHome();
 if (!prefs.helped) show('ovHelp');
 requestAnimationFrame(t => { last = t; frame(t); });
 
