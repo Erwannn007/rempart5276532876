@@ -286,6 +286,10 @@ html{background:#1c1610}
 .wstars img.off{opacity:.2;filter:grayscale(1)}
 .world.lock{opacity:.7}
 .map-trail{height:16px;margin-left:66px;border-left:4px dotted #8a6a3a}
+.sh-xp{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;color:var(--dim)}
+.sh-xp i{flex:1;height:10px;background:#1c1610;border:2px solid var(--edge);display:block}
+.sh-xp i b{display:block;height:100%;background:#7fd6ff}
+.sh-xp small{font-size:13px;color:#7fd6ff;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 </style>
 </head>
@@ -401,6 +405,7 @@ html{background:#1c1610}
     <p><b>Recruter</b> envoie un soldat au hasard dans ta réserve, en bas, derrière le mur.</p>
     <p>Fais-le <b>glisser sur l’herbe</b> pour le poster. Seuls les soldats sur le terrain se battent.</p>
     <p>Tes recrues s’aguerrissent : elles arrivent au niveau 2 dès la vague 6, puis 3, 4 et 5 aux vagues 14, 24 et 36. Elles coûtent un peu plus cher, mais bien moins que les fusions qu’elles t’épargnent.</p>
+    <p>Lâche un soldat sur un soldat <b>du même type mais d’un autre niveau</b> : le plus faible est absorbé et le plus fort gagne de l’expérience. Quand sa jauge bleue est pleine, il monte d’un niveau.</p>
     <p>Lâche un soldat sur un <b>soldat identique</b> (même type, même niveau) : ils fusionnent en un soldat du niveau suivant. Huit niveaux par type : après le niveau 5 viennent le mythril, l’obsidienne et le céleste.</p>
     <p>Le mode <b>Histoire</b> traverse huit mondes, de la Forêt sombre au Trône noir. Chacun a ses monstres, son décor et son boss final. Gagne pour ouvrir le suivant, et rejoue les autres pour décrocher trois étoiles.</p>
     <p>Toutes les 5 vagues, un <b>boss</b> attaque, chacun avec son pouvoir. Le Bestiaire du Recueil détaille chaque monstre.</p>
@@ -408,7 +413,7 @@ html{background:#1c1610}
     <p>Le <b>terrain</b> change à chaque partie. Une colline donne de la portée, une pierre runique des dégâts. Le marais ralentit les ennemis. On ne bâtit ni sur les rochers ni sur les arbres.</p>
     <p>Les points qui défilent montrent le <b>chemin des ennemis</b>. Il reste le même pendant 5 vagues, et personne ne peut s’y poster. Toutes les 5 vagues, un nouveau chemin est tracé : les soldats qui se trouvent dessus sont déplacés à côté.</p>
     <p>Régulièrement, tu choisis une <b>bénédiction</b> parmi trois. Elle dure toute la partie.</p>
-    <p>À partir de la vague 5, un recrutement peut faire apparaître des <b>légendes</b>. Tu en choisis une, pour toute la partie. Pour la faire monter, offre-lui un soldat de son niveau.</p>
+    <p>À partir de la vague 5, un recrutement peut faire apparaître des <b>légendes</b>. Tu en choisis une, pour toute la partie. Pour la faire monter, offre-lui un soldat d’au moins un niveau de plus qu’elle : elle prend le niveau du soldat offert. Elle arrive au niveau de tes recrues du moment.</p>
     <p>L’<b>Atelier</b> transforme ton or : des pièges à poser sur le chemin, qui durent une vague, et des aménagements de terrain permanents (dynamite, colline, marais, pierre runique).</p>
     <p>Glisse un soldat sur la <b>pièce</b> pour le revendre. Chaque ennemi qui passe le rempart te coûte des vies.</p>
   </div>
@@ -1736,7 +1741,15 @@ function baseMods(){
     elite:1, low:1, crit:0, hpMul:1, runeMul:1 };
 }
 let MODS = baseMods();
-const sellValue = l => Math.round(5 * (1 << (l-1)) * MODS.sellMul);
+const sellValue = (l, xp = 0) => Math.round(5 * ((1 << (l-1)) + xp) * MODS.sellMul);
+const troopSell = t => sellValue(t.l, t.xp || 0);
+/* Absorption : l'expérience se compte en recrues de niveau 1. Passer du niveau l au niveau l+1 en demande 2^(l-1),
+   exactement ce qu'apporterait un jumeau à fusionner. */
+const xpNeed = l => 1 << (l-1);
+function xpLevel(t){
+  while (t.l < MAXL && (t.xp || 0) >= xpNeed(t.l)){ t.xp -= xpNeed(t.l); t.l++; markSeen(t.t, t.l); }
+  if (t.l >= MAXL) t.xp = 0;
+}
 
 /* =========================================================
    Rendu des sprites en canvas
@@ -1904,7 +1917,7 @@ let preview = null, previewSet = new Set(), WPprev = null;
 let autoT = 0, shake = 0, gateFlash = 0, banner = null, clock = 0;
 let drag = null, sel = null, quiet = true, placing = null, trapMap = new Map(), trapSeq = 0;
 
-const mk = (t,l,leg) => ({ t, l, leg: leg || null, cd:0, ab:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
+const mk = (t,l,leg,xp) => ({ t, l, leg: leg || null, xp: xp || 0, cd:0, ab:0, anim:0, face:1, pop:.3, seed:Math.random()*10, syn:null });
 
 function freshGame(mode = 'endless', world = 0){
   S = { mode, world, wave:0, gold: mode==='story' ? WORLDS[world].gold : mode==='siege' ? 50 : 40, lives:20, cost:10,
@@ -1921,7 +1934,7 @@ function snap(){
     bless:S.bless, pending:S.pending, preview: preview || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
     bossBag:S.bossBag, streak:S.streak, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
-    board:S.board.map(t => t ? [t.t,t.l,t.leg||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0] : 0) };
+    board:S.board.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0) };
 }
 function persist(){
   try {
@@ -1963,8 +1976,8 @@ function load(){
     S.legendPity = g.legendPity|0;
     S.bossBag = Array.isArray(g.bossBag) ? g.bossBag.filter(k => BOSS_POOL.includes(k)) : null;
     S.streak = g.streak|0;
-    S.board = g.board.map(a => a ? mk(a[0],a[1],okLeg(a[2])) : null);
-    S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1],okLeg(a[2])) : null);
+    S.board = g.board.map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
+    S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
     while (S.bench.length < BENCH_N) S.bench.push(null);
     hasGame = true;
   }
@@ -2171,9 +2184,9 @@ function relocateOff(set){
     if (b >= 0){ S.bench[b] = tw; toBench++; continue; }
     if (tw.leg){
       let k = -1; for (let j=0;j<BENCH_N;j++) if (!S.bench[j].leg && (k < 0 || S.bench[j].l < S.bench[k].l)) k = j;
-      if (k >= 0){ S.gold += sellValue(S.bench[k].l); S.bench[k] = tw; toBench++; sold++; continue; }
+      if (k >= 0){ S.gold += troopSell(S.bench[k]); S.bench[k] = tw; toBench++; sold++; continue; }
     }
-    S.gold += sellValue(tw.l); sold++;
+    S.gold += troopSell(tw); sold++;
   }
   if (moved || toBench || sold){
     const parts = [];
@@ -3219,6 +3232,12 @@ function drawTroop(tw, X, Y, alpha=1, scale=1){
     ctx.fillStyle = '#120d08'; ctx.fillRect(px0-P, py0-P, (w+2)*P, 5*P);
     for (let k=0;k<n;k++){ const qx = px0 + k*4*P; ctx.fillStyle = col; ctx.fillRect(qx+P, py0, P, 3*P); ctx.fillRect(qx, py0+P, 3*P, P); }
   }
+  if (!lg && tw.xp > 0 && tw.l < MAXL){
+    const f = Math.min(1, tw.xp / xpNeed(tw.l)), bx = X + 4*P, by = Y + (tw.l > 5 ? 15 : 16)*P;
+    ctx.fillStyle = '#120d08'; ctx.fillRect(bx - P, by - P, 14*P, 3*P);
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(bx, by, 12*P, P);
+    ctx.fillStyle = '#7fd6ff'; ctx.fillRect(bx, by, Math.max(P, Math.round(12*f)*P), P);
+  }
   if (tw.l === 5 || (lg && tw.l >= 3)){
     ctx.fillStyle = '#fff1a8';
     for (let k=0;k<3;k++){
@@ -3371,17 +3390,19 @@ function draw(){
     const a = drag.troop, pulse = (Math.sin(clock*8)+1)/2;
     const mark = ref => {
       const t = getT(ref); if (!t || t === a) return;
-      const combo = (!t.leg && !a.leg && t.t===a.t && t.l===a.l && a.l<MAXL) || (!!t.leg !== !!a.leg && t.l===a.l && a.l<5);
-      if (combo){
+      const lgx = a.leg ? a : t, sox = a.leg ? t : a;
+      const combo = (!t.leg && !a.leg && t.t===a.t && t.l===a.l && a.l<MAXL) || (!!t.leg !== !!a.leg && sox.l >= lgx.l + OFFER_GAP && lgx.l < 5);
+      const absorb = !combo && !t.leg && !a.leg && t.t === a.t && t.l !== a.l && Math.max(t.l, a.l) < MAXL;
+      if (combo || absorb){
         const { X, Y } = cellXY(ref);
-        ctx.globalAlpha = .45 + pulse*.5; ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 2*P;
+        ctx.globalAlpha = .45 + pulse*.5; ctx.strokeStyle = combo ? '#f2c14e' : '#7fd6ff'; ctx.lineWidth = 2*P;
         ctx.strokeRect(X+P, Y+P, CS-2*P, CS-2*P); ctx.globalAlpha = 1;
       }
     };
     S.board.forEach((_,i) => mark({k:'b',i})); S.bench.forEach((_,i) => mark({k:'n',i}));
     if (drag.over){
       const { X, Y } = cellXY(drag.over), r = drag.eval;
-      ctx.fillStyle = !r.ok ? 'rgba(224,82,63,.4)' : r.kind==='merge' ? 'rgba(242,193,78,.35)' : r.kind==='sell' ? 'rgba(242,193,78,.25)' : 'rgba(255,255,255,.18)';
+      ctx.fillStyle = !r.ok ? 'rgba(224,82,63,.4)' : r.kind==='merge' ? 'rgba(242,193,78,.35)' : r.kind==='absorb' ? 'rgba(127,214,255,.3)' : r.kind==='sell' ? 'rgba(242,193,78,.25)' : 'rgba(255,255,255,.18)';
       ctx.fillRect(X, Y, CS, CS);
     }
   }
@@ -3561,9 +3582,12 @@ function evalDrop(src, dst){
   if (dst.k === 'sell') return a.leg ? { ok:false, why:'Une légende ne se vend pas' } : { ok:true, kind:'sell' };
   const b = getT(dst);
   if (b && (a.leg || b.leg)){
-    if (a.l === b.l && !(a.leg && b.leg)){
-      if (a.l >= 5) return { ok:false, why:'Ta légende est déjà au sommet' };
-      return { ok:true, kind:'offer' };
+    if (!(a.leg && b.leg)){
+      const lg = a.leg ? a : b, so = a.leg ? b : a;
+      if (so.l >= lg.l + OFFER_GAP){
+        if (lg.l >= 5) return { ok:false, why:'Ta légende est déjà au sommet' };
+        return { ok:true, kind:'offer' };
+      }
     }
     return { ok:true, kind:'swap' };
   }
@@ -3572,6 +3596,7 @@ function evalDrop(src, dst){
       if (a.l >= MAXL) return { ok:false, why:'Niveau maximum déjà atteint' };
       return { ok:true, kind:'merge' };
     }
+    if (b.t===a.t && Math.max(a.l, b.l) < MAXL) return { ok:true, kind:'absorb' };
     return { ok:true, kind:'swap' };
   }
   if (dst.k === 'b'){
@@ -3598,7 +3623,7 @@ function dropPreview(src, dst, r){
 function applyDrop(src, dst, r){
   const a = getT(src);
   if (r.kind === 'sell'){
-    const v = sellValue(a.l); S.gold += v; setT(src, null);
+    const v = troopSell(a); S.gold += v; setT(src, null);
     const { X, Y } = cellXY(dst);
     fx.push({ k:'t', x:(X-ox)/CS + .5, y:(Y-oy)/CS, s:'+'+v, col:'#f6c94a', life:.9, max:.9 });
     sfx('sell');
@@ -3606,6 +3631,7 @@ function applyDrop(src, dst, r){
     const b = getT(dst); pstat.merges++;
     const jump = b.l <= 3 && MODS.skip && Math.random() < MODS.skip;
     b.l = Math.min(MAXL, b.l + (jump ? 2 : 1)); b.pop = .35; b.cd = 0; setT(src, null);
+    b.xp = (b.xp || 0) + (a.xp || 0); xpLevel(b);
     if (jump) markSeen(b.t, b.l-1);
     markSeen(b.t, b.l);
     const { X, Y } = cellXY(dst), cx = (X-ox)/CS + .5, cy = (Y-oy)/CS + .5;
@@ -3613,11 +3639,28 @@ function applyDrop(src, dst, r){
     fx.push({ k:'ring', x:cx, y:cy, r:.7, life:.35, max:.35, col:'#fff3c4' });
     fx.push({ k:'t', x:cx, y:cy-.6, s:(jump ? 'Bond ! Niv. ' : 'Niv. ') + b.l, col: b.l===5 || jump ? '#f2c14e' : '#f3e7cc', life:1, max:1, big:true });
     sfx('merge');
+  } else if (r.kind === 'absorb'){
+    const b = getT(dst), hi = a.l > b.l ? a : b, lo = hi === a ? b : a;
+    setT(src, null); setT(dst, hi);
+    const gain = xpNeed(lo.l) + (lo.xp || 0), before = hi.l;
+    hi.xp = (hi.xp || 0) + gain; hi.pop = .25; xpLevel(hi);
+    pstat.merges++;
+    const { X, Y } = cellXY(dst), cx = (X-ox)/CS + .5, cy = (Y-oy)/CS + .5;
+    burst(cx, cy, '#7fd6ff', 10, 2.2);
+    if (hi.l > before){
+      burst(cx, cy, '#fff3c4', 14, 3); fx.push({ k:'ring', x:cx, y:cy, r:.7, life:.35, max:.35, col:'#fff3c4' });
+      fx.push({ k:'t', x:cx, y:cy-.6, s:'Niv. ' + hi.l, col:'#f2c14e', life:1, max:1, big:true });
+      sfx('merge');
+    } else {
+      fx.push({ k:'t', x:cx, y:cy-.6, s:'+' + Math.round(gain / xpNeed(hi.l) * 100) + ' %', col:'#7fd6ff', life:.9, max:.9 });
+      sfx('recruit');
+    }
   } else if (r.kind === 'offer'){
-    const b = getT(dst), lgT = a.leg ? a : b; pstat.offers++;
+    const b = getT(dst), lgT = a.leg ? a : b, so = a.leg ? b : a; pstat.offers++;
     setT(src, null); setT(dst, lgT);
-    lgT.l++; lgT.pop = .45; lgT.cd = 0;
-    markSeenLeg(lgT.leg, lgT.l);
+    const from = lgT.l;
+    lgT.l = Math.min(5, Math.max(lgT.l + 1, so.l + 1 - OFFER_GAP)); lgT.pop = .45; lgT.cd = 0;
+    for (let l = from + 1; l <= lgT.l; l++) markSeenLeg(lgT.leg, l);
     const { X, Y } = cellXY(dst), cx = (X-ox)/CS + .5, cy = (Y-oy)/CS + .5;
     burst(cx, cy, '#f2c14e', 22, 3.5); burst(cx, cy, '#fff3c4', 12, 2.5);
     fx.push({ k:'ring', x:cx, y:cy, r:.9, life:.45, max:.45, col:'#f2c14e' });
@@ -3686,10 +3729,10 @@ function openSheet(ref){
   const NP = LG ? 5 : MAXL, PIPC = ['','','','','','#4fc0d4','#ff6a2a','#fff3a0'];
   const pips = Array.from({length:NP}, (_,k) => `<i style="background:${k<L ? (LG ? '#f2c14e' : k>=5 ? PIPC[k] : L>=5 ? '#f2c14e' : ty.col) : ''}"></i>`).join('');
   const next = LG ? (L < 5
-    ? `<div class="sh-next"><img class="px" src="${LURL[tw.leg][L]}" alt="">Prochain rang : ${LG.ranks[L]}. Offrande : un soldat de niveau ${L}.</div>`
+    ? `<div class="sh-next"><img class="px" src="${LURL[tw.leg][L]}" alt="">Prochain rang : ${LG.ranks[L]}. Offrande : un soldat de niveau ${L + OFFER_GAP} ou plus. Elle prend le niveau du soldat offert.</div>`
     : `<div class="sh-next">Sommet de sa légende.</div>`)
     : L < MAXL
-    ? `<div class="sh-next"><img class="px" src="${URL_[tw.t][L]}" alt="">Fusionné avec un soldat identique, il devient ${ty.ranks[L]}.</div>`
+    ? `<div class="sh-next"><img class="px" src="${URL_[tw.t][L]}" alt="">Fusionné avec un soldat identique, il devient ${ty.ranks[L]}. Il peut aussi absorber un ${ty.name.toLowerCase()} d’un autre niveau pour gagner de l’expérience.</div>`
     : `<div class="sh-next">Rang le plus haut de sa lignée.</div>`;
   let syn = '';
   if (i != null){
@@ -3711,11 +3754,12 @@ function openSheet(ref){
       <div>Portée<b>${st.range.toFixed(1)}</b></div>
       <div>Cadence<b>${st.rate.toFixed(2)} s</b></div>
     </div>
+    ${!LG && L < MAXL ? `<div class="sh-xp"><span>Expérience</span><i><b style="width:${Math.round(Math.min(1,(tw.xp||0)/xpNeed(L))*100)}%"></b></i><small>${tw.xp||0} / ${xpNeed(L)}</small></div>` : ''}
     <p class="sh-note">${LG ? LG.power(L) + (ref.k==='n' ? ' En réserve, les légendes ne combattent pas.' : '') : ty.desc + ' ' + specialText(tw.t, L) + (ref.k==='n' ? ' En réserve, il ne combat pas.' : '')}</p>
     ${syn}
     ${next}
     <div class="sh-btns">
-      ${LG ? '' : `<button class="btn sell" id="shSell"><img class="px" src="${COIN_URL}" alt="">Vendre ${sellValue(L)}</button>`}
+      ${LG ? '' : `<button class="btn sell" id="shSell"><img class="px" src="${COIN_URL}" alt="">Vendre ${troopSell(tw)}</button>`}
       <button class="btn" id="shClose">Fermer</button>
     </div>`;
   $('sheet').classList.add('show');
@@ -3840,16 +3884,16 @@ function openLegendOffer(){
 }
 function pickLegend(id){
   if (!S.legendOffer || !LEGENDS[id]) return;
-  const L = LEGENDS[id], tw = mk(L.fam, 1, id);
+  const L = LEGENDS[id], lv0 = Math.min(5, recruitLevel()), tw = mk(L.fam, lv0, id);
   S.legend = id; S.legendOffer = null; pstat.legPick[id] = (pstat.legPick[id] || 0) + 1;
   let slot = S.legendSlot;
   if (!(slot >= 0 && slot < BENCH_N) || S.bench[slot]) slot = S.bench.findIndex(x => !x);
   if (slot < 0){
     let k = 0; for (let j=1;j<BENCH_N;j++) if (S.bench[j] && S.bench[j].l < S.bench[k].l) k = j;
-    S.gold += sellValue(S.bench[k].l); slot = k;
+    S.gold += troopSell(S.bench[k]); slot = k;
   }
   S.bench[slot] = tw; S.legendSlot = -1;
-  markSeenLeg(id, 1);
+  for (let l = 1; l <= lv0; l++) markSeenLeg(id, l);
   hide('ovLegend');
   burst(slot + .5, BENCH_Y/T + .5, '#f2c14e', 26, 3.5);
   banner = { t:2.4, max:2.4, text:L.name, sub:'rejoint ton rempart', col:'#f2c14e' };
@@ -3861,6 +3905,7 @@ function pickLegend(id){
 /* ---------- boutons ---------- */
 /* Recrues aguerries : à partir de la vague at[i], les recrues arrivent au niveau i+2.
    price[n] multiplie le prix du recrutement pour une recrue de niveau n+1. */
+let OFFER_GAP = 1;
 let RECRUIT = { at:[6,14,24,36], price:[1,1.6,2.6,4.2,6.8] };
 function recruitLevel(){
   const w = nextWaveN() + (S.mode === 'story' ? WORLDS[S.world].off : 0);
@@ -3945,7 +3990,7 @@ function buildCodex(){
   }).join('');
   const metN = LEG_ORDER.filter(id => [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l))).length;
   $('cxBody').innerHTML = troops +
-    `<h3 class="cx-h">Panthéon</h3><p class="cx-note">${metN} légendes rencontrées sur ${LEG_ORDER.length}. À partir de la vague 5, un recrutement peut faire apparaître trois légendes : tu en choisis une pour toute la partie. Offre-lui un soldat de son niveau pour la faire monter.</p>${pantheon}` +
+    `<h3 class="cx-h">Panthéon</h3><p class="cx-note">${metN} légendes rencontrées sur ${LEG_ORDER.length}. À partir de la vague 5, un recrutement peut faire apparaître trois légendes : tu en choisis une pour toute la partie. Offre-lui un soldat d’au moins un niveau de plus qu’elle : la légende prend le niveau du soldat offert (5 au maximum).</p>${pantheon}` +
     `<h3 class="cx-h">Synergies</h3><p class="cx-note">Deux soldats posés côte à côte (haut, bas, gauche, droite) se renforcent. Un losange apparaît entre eux.</p>${syns}` +
     `<h3 class="cx-h">Bestiaire</h3>${beasts}`;
 }
