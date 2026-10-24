@@ -181,7 +181,7 @@ function endWave(){
   if (dThreat > 1.001) sub += ', les monstres se renforcent'; else if (dThreat < .999) sub += ', les monstres faiblissent';
   const lt = S.board.find(t => t && t.leg);
   if (lt && lt.leg === 'cesar' && lt.l === 5){ S.gold += 25; sub += ', +25 or de César'; }
-  if (lt && lt.leg === 'jeanne'){
+  if (lt && lt.leg === 'jeanne' && livesFree()){
     const n = lt.l >= 5 ? 2 : lt.l >= 3 ? 1 : (S.wave % 2 === 0 ? 1 : 0);
     if (n){ S.lives += n; sub += ', +' + n + (n > 1 ? ' vies' : ' vie') + ' de Jeanne'; }
   }

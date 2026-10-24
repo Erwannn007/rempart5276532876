@@ -46,7 +46,7 @@ function castUltimate(){
       for (const e of near(ground, 3.2)){ e.frozenT = Math.max(e.frozenT || 0, isBoss(e) ? 1.5 : 3); }
       fx.push({ k:'ring', x:cx, y:cy, r:3.2, life:.5, max:.5, col:'#c42a35' }); sfx('clang'); break;
     case 'jeanne':
-      S.lives += 3; buffT = 8; buffDmg = 0; buffRate = .4; break;
+      if (livesFree()) S.lives += 3; buffT = 8; buffDmg = 0; buffRate = .4; break;
     case 'hannibal':
       for (const e of ground){ hit(e, D*4); e.frozenT = Math.max(e.frozenT || 0, isBoss(e) ? .75 : 1.5); burst(e.x, e.y, '#b39b7a', 4, 2); }
       shake = .5; sfx('stomp'); break;
@@ -110,6 +110,7 @@ Object.assign(ULTS, {
   hercule:  ['Douzième travail', 'Un coup colossal sur l’ennemi le plus résistant de la zone : douze fois ses dégâts, assommé 2 s.']
 });
 for (const id in ULTS){ LEGENDS[id].ult = ULTS[id][0]; LEGENDS[id].ultDesc = ULTS[id][1]; }
+Object.defineProperty(LEGENDS.jeanne, 'ultDesc', { get:() => livesFree() ? ULTS.jeanne[1] : ULTS.jeanne[1].replace(', rend 3 vies au rempart', '') });
 
 let aiming = null, ulx = [];
 const EAGLE = pxCanvas(patt([
@@ -153,7 +154,7 @@ function castAt(x, y){
     case 'cesar':
       ulx.push({ k:'cesar', x, y, t:10, max:10 }); burst(x, y, '#f2c14e', 30, 4); break;
     case 'jeanne':
-      S.lives += 3;
+      if (livesFree()) S.lives += 3;
       for (let j=0;j<S.board.length;j++){
         const tw = S.board[j]; if (!tw) continue;
         const cx = j%COLS + .5, cy = ((j/COLS)|0) + .5;

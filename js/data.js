@@ -345,7 +345,7 @@ const LEGENDS = {
     power:l => 'Toutes les ' + LEO_CD[l-1] + ' s, son bouclier arrête net sa cible pendant ' + fr1(LEO_STUN[l-1]) + ' s (moitié pour les boss).' },
   jeanne:   { name:'Jeanne d’Arc', fam:4, kind:'Historique', era:'France, XVe siècle', range:2.5, dmg:7, rate:.8,
     ranks:['Bergère de Domrémy','Pucelle','Chef de guerre','Libératrice d’Orléans','Sainte'],
-    power:l => 'Les soldats sur les 8 cases autour d’elle frappent ' + Math.round(JEANNE_AURA[l-1]*100) + ' % plus vite. ' + (l>=5 ? 'Rend 2 vies à chaque vague repoussée.' : l>=3 ? 'Rend 1 vie à chaque vague repoussée.' : 'Rend 1 vie toutes les deux vagues.') },
+    power:l => 'Les soldats sur les 8 cases autour d’elle frappent ' + Math.round(JEANNE_AURA[l-1]*100) + ' % plus vite. ' + (!livesFree() ? '' : l>=5 ? 'Rend 2 vies à chaque vague repoussée.' : l>=3 ? 'Rend 1 vie à chaque vague repoussée.' : 'Rend 1 vie toutes les deux vagues.') },
   hannibal: { name:'Hannibal', fam:2, kind:'Historique', era:'Carthage, IIIe siècle av. J.-C.', range:1.8, dmg:18, rate:1.6,
     ranks:['Fils d’Hamilcar','Cornac','Général carthaginois','Passeur des Alpes','Terreur de Rome'],
     power:l => 'Son éléphant piétine tous les ennemis autour de sa cible et les étourdit ' + fr1(.3+.1*l) + ' s (pas les boss).' },
@@ -366,6 +366,8 @@ const LEGENDS = {
     power:l => 'Sa massue écrase tous les ennemis autour de sa cible et les assomme ' + fr1(.2+.1*l) + ' s (pas les boss).' }
 };
 const LEG_ORDER = Object.keys(LEGENDS);
+/* En Sans fin, seules les bénédictions rendent des vies. */
+const livesFree = () => !S || S.mode !== 'endless';
 const BLESS_BY = Object.fromEntries(BLESS.map(b => [b.id, b]));
 /* Bénédictions propres à un type : proposées seulement s'il est dans le deck de la partie. */
 const BLESS_TY = { lames:0, tourbillon:0, carquois:1, perforant:1, poudre:2, fragment:2, hiver:3, gel:3, conducteur:4, surcharge:4, barbe:5, forteresse:5 };
