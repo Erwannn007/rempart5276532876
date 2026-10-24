@@ -76,25 +76,33 @@ function makeWave(w){
   return q;
 }
 /* ---------- menace : les ennemis s'adaptent aux résultats du joueur ---------- */
-/* Après chaque vague, on regarde la part du chemin qui restait à l'ennemi le plus avancé.
+/* Après chaque vague, on regarde la part du chemin qui restait au monstre le plus avancé.
    Vague écrasée loin de la porte : la suivante est plus solide. Seules de vraies fuites l'adoucissent,
    et jamais sous keep × son record (pas de triche en défendant à la porte ou en laissant passer exprès).
+   Les boss ont leur propre menace, mesurée sur eux seuls : un boss qui frôle la porte ne doit pas
+   faire croire que les monstres ordinaires, eux, ont résisté.
    La menace multiplie la vie des ennemis, et leurs coups par sa racine carrée. */
-/* steps : [part du chemin qui restait au plus avancé, multiplicateur], du plus facile au plus serré. */
-let THREAT = { from:5, steps:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [0, 1]], leak:[.07, 3], keep:.75,
+/* steps / boss : [part du chemin qui restait au plus avancé, multiplicateur], du plus facile au plus serré.
+   Les monstres meurent souvent d'un coup : il faut de gros paliers pour rattraper une armée fusionnée. */
+let THREAT = { from:5, keep:.75, leak:[.07, 3],
+  steps:[[.9, 1.35], [.75, 1.2], [.55, 1.1], [.35, 1.04], [0, 1]],
+  boss:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [0, 1]],
   endless:[.75, 50], story:[1, 1.5] };
-let waveMinRem = INF;
+let waveMinRem = INF, waveBossRem = INF, waveBossLeaks = 0;
 const threat = () => S.threat || 1;
-const threatHit = () => Math.sqrt(threat());
+const bossThreat = () => S.bossThreat || 1;
+function nudgeThreat(cur, peak, far, leaks, steps, lo, hi){
+  const C = THREAT, k = leaks ? 1 - C.leak[0] * Math.min(leaks, C.leak[1]) : steps.find(([f]) => far >= f)[1];
+  const next = Math.max(Math.min(cur, Math.max(lo, (peak || 1) * C.keep)), Math.min(hi, cur * k));
+  return [next, Math.max(peak || 1, next)];
+}
 function updThreat(){
   if (S.mode === 'siege' || S.wave < THREAT.from || !NET) return 1;
   const C = THREAT, [lo, hi] = C[S.mode === 'story' ? 'story' : 'endless'];
   const path = Math.max(1, Math.min(...NET.ents.map(i => NET.distB[i] + 1)));
-  const far = Math.min(1, waveMinRem / path);
-  const k = waveLeaks ? 1 - C.leak[0] * Math.min(waveLeaks, C.leak[1]) : C.steps.find(([f]) => far >= f)[1];
-  const before = threat(), floor = Math.max(lo, (S.threatPeak || 1) * C.keep);
-  S.threat = Math.max(Math.min(before, floor), Math.min(hi, before * k));
-  S.threatPeak = Math.max(S.threatPeak || 1, S.threat);
+  const before = threat(), leaks = waveLeaks - waveBossLeaks;
+  if (waveMinRem < INF || leaks) [S.threat, S.threatPeak] = nudgeThreat(before, S.threatPeak, Math.min(1, waveMinRem / path), leaks, C.steps, lo, hi);
+  if (waveBossRem < INF || waveBossLeaks) [S.bossThreat, S.bossPeak] = nudgeThreat(bossThreat(), S.bossPeak, Math.min(1, waveBossRem / path), waveBossLeaks, C.boss, lo, hi);
   return S.threat / before;
 }
 function startWave(){
@@ -105,7 +113,7 @@ function startWave(){
   const hasNext = Array.isArray(S.nextQ) && S.nextQ.length;
   queue = hasNext ? S.nextQ : makeWave(S.wave);
   queueEnt = (hasNext && Array.isArray(S.nextE) && S.nextE.length === queue.length) ? S.nextE.map(v => Math.min(v|0, NET.ents.length - 1)) : assignEntrances(queue);
-  S.nextQ = null; S.nextE = null; spawnT = .3; pendingSpawn = []; waveMinRem = INF;
+  S.nextQ = null; S.nextE = null; spawnT = .3; pendingSpawn = []; waveMinRem = waveBossRem = INF; waveBossLeaks = 0;
   for (const b of S.bars) if (b.hp == null) b.hp = barMaxHp();
   { const reg = queue.filter(k => !EN[k].boss && k !== 'goblin'); const wt = reg.reduce((a,k) => a + EN[k].hp, 0);
     waveNorm = reg.length ? Math.max(.5, Math.min(2, reg.length * WAVE_W / wt)) : 1; }
@@ -130,14 +138,15 @@ function spawn(k, opt = {}){
   let hp = hpOver || waveHP(S.wave) * base.hp * MODS.hpMul * (base.boss || k === 'goblin' ? 1 : waveNorm);
   if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
   if (!hpOver && base.boss) hp *= BOSS_HPM;
-  if (!hpOver) hp *= threat();
+  const thr = base.boss ? bossThreat() : threat();
+  if (!hpOver) hp *= thr;
   if (!hpOver && base.boss){ const ew = S.wave + (S.mode === 'story' ? WORLDS[S.world].off : 0); hp *= Math.min(1, .3 + ew*.045); }
   const spdScale = Math.min(1.3, 1 + S.wave*.006);
   let gold = base.gold + Math.floor(S.wave/GOLDW) + MODS.goldKill;
   if (k === 'mini') gold = 1 + MODS.goldKill;
   if (k === 'goblin') gold = Math.round((30 + S.wave*2) * (MODS.bounty ? 1.5 : 1));
   const e = { k, hp, max:hp, spd:base.spd*spdScale, cell:-1, next:-1, rem:99, seedR:Math.random()*8|0, vx:0, vy:1, x:0, y:0, slow:0, slowT:0, stunT:0, flash:0,
-    gold, ox:(Math.random()-.5)*.22, dead:false,
+    gold, ox:(Math.random()-.5)*.22, dead:false, thr, child:!!opt.from,
     phT: base.phase ? Math.random()*base.phase[0] : 0, ph:false, blT: base.blink || 0, smT: base.summon ? 2 : 0, hlT: 1.5, rage:false };
   if (opt.from){ const f = opt.from; e.x = f.x + (Math.random()-.5)*.2; e.y = f.y; e.cell = f.cell; e.next = f.next; e.bash = f.bash || null; }
   else { const ent = NET.ents[Math.min(opt.ent || 0, NET.ents.length - 1)]; e.x = ent%COLS + .5; e.y = -.7; e.cell = -1; e.next = ent; }
@@ -188,7 +197,7 @@ function leak(e){
   if (MODS.herse && !herseUsed){
     herseUsed = true; gateFlash = .35; toast('La herse a retenu un ennemi'); sfx('bad'); return;
   }
-  waveLeaks++;
+  waveLeaks++; if (EN[e.k].boss) waveBossLeaks++;
   S.lives = Math.max(0, S.lives - dmg);
   shake = .25; gateFlash = .35; sfx('leak');
   const el = $('sLives'); el.classList.remove('hurt'); void el.offsetWidth; el.classList.add('hurt');
