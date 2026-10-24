@@ -154,15 +154,16 @@ function drawEntranceTags(){
     text('×' + tot, X + CS*.72, Y + Math.max(h, CS*.45)/2 + P, Math.round(CS*.24), EN[top].boss ? '#ff7a62' : '#f3e7cc');
   });
 }
-function drawNextWave(){
+/* Bandeau au-dessus du terrain : la vague suivante entre deux vagues, les ennemis restants pendant la vague. */
+function drawNextWave(list = S.nextQ, l1 = 'Vague', l2 = 'suivante'){
   const cnt = {};
-  for (const k of S.nextQ) cnt[k] = (cnt[k] || 0) + 1;
+  for (const k of list) cnt[k] = (cnt[k] || 0) + 1;
   const kinds = Object.keys(cnt).sort((a,b) => (EN[b].boss ? 1e3 : 0) + cnt[b] - (EN[a].boss ? 1e3 : 0) - cnt[a]).slice(0, 6);
   const ps = Math.max(1, Math.floor(P*.55)), cell = 20*ps, h = cell + 4*P;
   const y0 = Math.max(0, oy - h - 3*P), x0 = ox;
   ctx.globalAlpha = .82; ctx.fillStyle = '#120d08'; ctx.fillRect(x0, y0, ART_W*P, h); ctx.globalAlpha = 1;
-  text('Vague', x0 + Math.round(CS*.55), y0 + h/2 - Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
-  text('suivante', x0 + Math.round(CS*.55), y0 + h/2 + Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
+  text(l1, x0 + Math.round(CS*.55), y0 + h/2 - Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
+  text(l2, x0 + Math.round(CS*.55), y0 + h/2 + Math.round(CS*.13), Math.round(CS*.22), '#e8dcc0');
   let x = x0 + Math.round(CS*1.15);
   for (const k of kinds){
     const o = ENS[k], sc = Math.min(ps, Math.floor(cell / Math.max(o.w, o.h)) || 1);
@@ -411,6 +412,10 @@ function draw(){
   }
 
   if (!inWave && !over && hasGame && Array.isArray(S.nextQ) && S.nextQ.length){ drawNextWave(); drawEntranceTags(); }
+  else if (inWave && !over){
+    const left = queue.concat(enemies.filter(e => !e.dead).map(e => e.k), pendingSpawn.map(p => p.k));
+    if (left.length) drawNextWave(left, 'Restants', String(left.length));
+  }
   if (timeStop > 0){
     ctx.globalAlpha = Math.min(.22, timeStop*.2); ctx.fillStyle = '#bfe9ff';
     ctx.fillRect(ox, oy, ART_W*P, ROWS*CS); ctx.globalAlpha = 1;
