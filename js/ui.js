@@ -311,6 +311,14 @@ function specialText(t,l){
       + (l>=4 ? 'Ses spores ralentissent de 20 %. ' : 'Au niveau 4, ses spores ralentiront. ') + (l>=6 ? 'Poison 50 % plus fort.' : 'Au niveau 6, son poison sera plus fort.');
     case 9: return 'Le carreau traverse tous les monstres alignés. '
       + (l>=4 ? 'Il ignore la moitié de l’armure. ' : 'Au niveau 4, il ignorera la moitié de l’armure. ') + (l>=6 ? 'Il ralentit chaque monstre touché.' : 'Au niveau 6, il ralentira.');
+    case 10: return 'Double dégâts contre les squelettes, fantômes, momies, goules, spectres, liches et vampires. '
+      + (l>=4 ? 'Soigne ses voisins de ' + Math.round(SPEC.palaHeal*100) + ' % de leur vie par seconde. ' : 'Au niveau 4, elle soignera ses voisins. ') + (l>=6 ? 'Ses coups touchent aussi les monstres collés à sa cible.' : 'Au niveau 6, ses coups toucheront aussi les voisins de sa cible.');
+    case 11: return 'Vise d’abord les volants (dégâts ×' + SPEC.flyMul + '), puis les fantômes, même intangibles. '
+      + (l>=4 ? 'Le faucon enchaîne sur une deuxième proie. ' : 'Au niveau 4, le faucon enchaînera deux proies. ') + (l>=6 ? 'Il étourdit les volants qu’il attrape.' : 'Au niveau 6, il étourdira les volants.');
+    case 12: return 'Ignore l’armure et touche tous les monstres au sol alignés derrière sa cible. '
+      + (l>=4 ? 'Les monstres touchés perdent leur armure 3 s, pour tous tes soldats. ' : 'Au niveau 4, il brisera l’armure des monstres touchés. ') + (l>=6 ? 'Portée de frappe allongée, ×1,5 contre les boss.' : 'Au niveau 6, ×1,5 contre les boss.');
+    case 13: return Math.round(SPEC.assaCrit[l-1]*100) + ' % de coups critiques (×2,5). Achève tout monstre sous ' + Math.round(SPEC.execute[l-1]*100) + ' % de sa vie (pas les boss). Les monstres ne la frappent jamais. '
+      + (l>=6 ? 'Chaque monstre achevé lui rend son attaque tout de suite.' : 'Au niveau 6, chaque monstre achevé lui rendra son attaque.');
   }
 }
 

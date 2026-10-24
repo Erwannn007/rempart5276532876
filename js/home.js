@@ -410,14 +410,18 @@ window.addEventListener('resize', () => { hBG = null; });
    Deck : cinq soldats choisis pour la bataille
    ========================================================= */
 const DECK_N = 5;
-const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur','Feu','Artillerie','Poison','Perforant'];
+const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur','Feu','Artillerie','Poison','Perforant','Sacré','Anti-air','Perce-armure','Exécution'];
 /* Cartes à gagner : elles ne peuvent sortir d'un coffre qu'une fois leur condition remplie. */
 const CARD_REQ = [null, null, null, null, null,
   { test:() => best >= 10 || story.unlocked >= 2, txt:'Atteins la vague 10 en Sans fin, ou termine la Forêt sombre.' },
   { test:() => pstat.waves >= 50, txt:() => 'Repousse 50 vagues au total (' + Math.min(50, pstat.waves) + '/50).' },
   { test:() => pstat.kills >= 1000, txt:() => 'Abats 1 000 monstres au total (' + fmtN(Math.min(1000, pstat.kills)) + '/1 000).' },
   { test:() => best >= 20 || story.unlocked >= 3, txt:'Atteins la vague 20 en Sans fin, ou termine le Marais putride.' },
-  { test:() => pstat.bosses >= 5, txt:() => 'Abats 5 boss au total (' + Math.min(5, pstat.bosses) + '/5).' }];
+  { test:() => pstat.bosses >= 5, txt:() => 'Abats 5 boss au total (' + Math.min(5, pstat.bosses) + '/5).' },
+  { test:() => best >= 25 || story.unlocked >= 4, txt:'Atteins la vague 25 en Sans fin, ou libère le Désert brûlant.' },
+  { test:() => pstat.games >= 10, txt:() => 'Joue 10 parties (' + Math.min(10, pstat.games) + '/10).' },
+  { test:() => pstat.merges >= 100, txt:() => 'Réussis 100 fusions (' + Math.min(100, pstat.merges) + '/100).' },
+  { test:() => pstat.kills >= 3000, txt:() => 'Abats 3 000 monstres au total (' + fmtN(Math.min(3000, pstat.kills)) + '/3 000).' }];
 const reqTxt = t => { const x = CARD_REQ[t].txt; return typeof x === 'function' ? x() : x; };
 const cardBest = t => { let b = 0; for (let l=1;l<=MAXL;l++) if (seen.has(t*MAXL + l - 1)) b = l; return b; };
 const cardOpen = t => !CARD_REQ[t] || (profile.cards || []).includes(t) || cardBest(t) > 0;

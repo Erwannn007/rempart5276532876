@@ -14,12 +14,13 @@ function findTarget(cx, cy, range, not, air = true, minR = 0){
   }
   return bestE;
 }
-let hitDT = '';
+let hitDT = '', hitGhost = false;
 function hit(e, dmg){
-  if (e.dead || e.ph) return;
+  if (e.dead || (e.ph && !hitGhost)) return;
   const B = EN[e.k];
-  if (B.armor){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom' || hitDT === 'pierce') dmg *= 1 - B.armor/2; }
+  if (B.armor && !(e.shredT > 0)){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom' || hitDT === 'pierce') dmg *= 1 - B.armor/2; }
   if (B.mres && hitDT === 'magic') dmg *= 1 - B.mres;
+  if (hitDT === 'holy' && UNDEAD.has(e.k)) dmg *= 2;
   if (B.armorAll) dmg *= B.armorAll;
   e.hp -= dmg; e.flash = .07;
   if (B.bats && !e.batsDone && e.hp > 0 && e.hp < e.max*.4){
@@ -76,6 +77,24 @@ function updFires(dt){
     if (Math.random() < dt*8) fx.push({ k:'p', x:f.x+(Math.random()-.5)*f.r*1.6, y:f.y-.1, vx:0, vy:-.9, life:.35, max:.35, col: Math.random() < .5 ? '#ff8a2a' : '#ffd23f', s:1 });
   }
   if (fires.some(f => f.t <= 0)) fires = fires.filter(f => f.t > 0);
+}
+/* Spécialistes : cibles préférées. */
+function falconTarget(cx, cy, range){
+  let best = null, r2 = range*range;
+  for (const e of enemies){
+    if (e.dead || e.y < -.2 || (e.x-cx)**2 + (e.y-cy)**2 > r2) continue;
+    const pri = (EN[e.k].fly ? 2 : 0) + (e.ph ? 1 : 0);
+    if (!best || pri > best.pri || (pri === best.pri && e.rem < best.e.rem)) best = { e, pri };
+  }
+  return best && best.e;
+}
+function weakestTarget(cx, cy, range){
+  let best = null, r2 = range*range;
+  for (const e of enemies){
+    if (e.dead || e.ph || e.y < -.2 || EN[e.k].fly || (e.x-cx)**2 + (e.y-cy)**2 > r2) continue;
+    if (!best || e.hp/e.max < best.hp/best.max) best = e;
+  }
+  return best;
 }
 /* Myconide : nuage de spores autour de lui. */
 function sporeCloud(tw, cx, cy, D, r){
@@ -272,6 +291,42 @@ function fireInner(tw, cx, cy, tg, st){
       projs.push({ k:'ballista', x:cx + tw.face*.3, y:cy-.3, ux:dx/dl, uy:dy/dl, a:Math.atan2(dy,dx), left:st.range + .5, spd:16, dmg:D, hitSet:new Set(), L, dt: L>=4 ? 'pierce' : 'phys' });
       sfx('arrow'); break;
     }
+    case 10: {
+      hit(tg, D);
+      if (L>=6) for (const e of enemies) if (e !== tg && !e.dead && !EN[e.k].fly && d2(e,tg) < .36) hit(e, D*.5);
+      fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.18, max:.18, col:'#fff3b0' });
+      if (UNDEAD.has(tg.k)) burst(tg.x, tg.y-.3, '#fff3b0', 6, 2);
+      sfx('clang'); break;
+    }
+    case 11: {
+      projs.push({ k:'falcon', x:cx - .3*tw.face, y:cy-.6, tg, spd:7.5, dmg:D, left: L>=4 ? 2 : 1, hitSet:new Set(), L, a:0, flap:0, face:1 });
+      sfx('arrow'); break;
+    }
+    case 12: {
+      const dx = tg.x-cx, dy = tg.y-cy, dl = Math.hypot(dx,dy) || 1, ux = dx/dl, uy = dy/dl, reach = dl + (L>=6 ? 1.8 : 1.2);
+      for (const e of enemies){
+        if (e.dead || EN[e.k].fly) continue;
+        const vx = e.x-cx, vy = e.y-cy, pr = vx*ux + vy*uy, pe = Math.abs(vx*uy - vy*ux);
+        if (pr <= 0 || pr > reach || pe > .42) continue;
+        hit(e, D * (L>=6 && isBoss(e) ? 1.5 : 1));
+        if (L>=4 && !e.dead) e.shredT = 3;
+      }
+      fx.push({ k:'beam', x0:cx+ux*.3, y0:cy-.3+uy*.3, x1:cx+ux*reach, y1:cy-.3+uy*reach, life:.16, max:.16, col: L>=5 ? '#fff3b0' : '#dfe6ec' });
+      sfx('slash'); break;
+    }
+    case 13: {
+      const crit = Math.random() < SPEC.assaCrit[L-1], vs = slowed(tg) ? 1 + sy.vsSlow : 1;
+      hit(tg, D * vs * (crit ? 2.5 : 1));
+      if (crit && !tg.dead) fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'Critique', col:'#ff7ae0', life:.5, max:.5 });
+      if (!tg.dead && !isBoss(tg) && tg.hp < tg.max*SPEC.execute[L-1]){
+        tg.hp = 1e-6; hit(tg, 1);
+        fx.push({ k:'t', x:tg.x, y:tg.y-.8, s:'Achevé', col:'#ff7ae0', life:.7, max:.7 });
+        burst(tg.x, tg.y-.3, '#a03a8a', 10, 2.5);
+        if (L>=6) tw.cd = 0;
+      }
+      fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.12, max:.12, col:'#ff7ae0' });
+      sfx('slash'); break;
+    }
     case 5: {
       hit(tg, D);
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L>=5 ? '#fff3b0' : '#c3cbd3' });
@@ -319,6 +374,23 @@ function updProj(p, dt){
   hitDT = prevDT;
 }
 function updProjInner(p, dt){
+  if (p.k === 'falcon'){
+    p.flap += dt*14;
+    if (p.tg.dead){
+      let nx = null, bd = 9; for (const e of enemies){ if (e.dead || p.hitSet.has(e)) continue; const dd = (e.x-p.x)**2 + (e.y-p.y)**2; if (dd < bd){ bd = dd; nx = e; } }
+      if (!nx){ p.done = true; return; } p.tg = nx;
+    }
+    const tg = p.tg, dx = tg.x-p.x, dy = tg.y-.3-p.y, dist = Math.hypot(dx,dy), step = p.spd*dt;
+    p.face = dx < 0 ? -1 : 1;
+    if (dist > step){ p.x += dx/dist*step; p.y += dy/dist*step; return; }
+    const fly = EN[tg.k].fly; hitGhost = true; hit(tg, p.dmg * (fly ? SPEC.flyMul : 1)); hitGhost = false;
+    if (fly && p.L >= 6 && !tg.dead) tg.stunT = Math.max(tg.stunT, .5);
+    burst(tg.x, tg.y-.3, '#c9a27a', 5, 2); p.hitSet.add(tg); p.left--;
+    let nx = null, bd = 4;
+    if (p.left > 0) for (const e of enemies){ if (e.dead || p.hitSet.has(e)) continue; const dd = d2(e,tg); if (dd < bd){ bd = dd; nx = e; } }
+    if (nx) p.tg = nx; else p.done = true;
+    return;
+  }
   if (p.k === 'ballista'){
     const step = Math.min(p.left, p.spd*dt); p.x += p.ux*step; p.y += p.uy*step; p.left -= step;
     for (const e of enemies){
@@ -413,6 +485,7 @@ function update(dt){
     if (e.slowT > 0) e.slowT -= dt;
     if (e.stunT > 0) e.stunT -= dt;
     if (e.markT > 0) e.markT -= dt;
+    if (e.shredT > 0) e.shredT -= dt;
     if (e.flash > 0) e.flash -= dt;
     if (e.frozenT > 0) e.frozenT -= dt;
     let sp = (e.stunT > 0 || e.frozenT > 0) ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
@@ -508,6 +581,11 @@ function update(dt){
     }
     tw.cd -= dt;
     if (tw.t === 8 && !tw.leg && tw.ab > 0) tw.ab -= dt;
+    if (tw.t === 10 && !tw.leg && tw.l >= 4 && inWave) for (const j of neighbors(i)){
+      const o = S.board[j]; if (!o || o.ko || o.hp == null) continue;
+      o.hp += troopMax(o) * SPEC.palaHeal * dt; if (o.hp >= troopMax(o)) o.hp = null;
+      if (Math.random() < dt*2) fx.push({ k:'p', x:j%COLS + .5 + (Math.random()-.5)*.5, y:((j/COLS)|0) + .3, vx:0, vy:-.7, life:.4, max:.4, col:'#fff3b0', s:1 });
+    }
     if (isWarden(tw) && tw.l >= 6 && inWave){
       if (tw.ab > 0) tw.ab -= dt;
       else {
@@ -524,7 +602,8 @@ function update(dt){
     }
     if (tw.cd <= 0 && inWave){
       const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5, st = stats(tw, i);
-      const tg = findTarget(cx, cy, st.range, null, canHitAir(tw.t), tw.leg ? 0 : TYPES[tw.t].minRange || 0);
+      const tg = tw.leg ? findTarget(cx, cy, st.range) : tw.t === 11 ? falconTarget(cx, cy, st.range) : tw.t === 13 ? weakestTarget(cx, cy, st.range)
+        : findTarget(cx, cy, st.range, null, canHitAir(tw.t), TYPES[tw.t].minRange || 0);
       if (tg){ fire(tw, cx, cy, tg, st); tw.cd = st.rate; } else tw.cd = 0;
     }
   }

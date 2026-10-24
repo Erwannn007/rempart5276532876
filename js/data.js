@@ -33,7 +33,19 @@ const TYPES = [
     desc:'Souffle des spores qui empoisonnent tout autour. Quand on le frappe, il en relâche un nuage.' },
   { name:'Baliste',       col:'#7a8a9a', range:3.2,  dmg:20, rate:2.2,
     ranks:['Arbalète lourde','Scorpion','Baliste','Baliste de siège','Perce-titans','Baliste de mythril','Baliste d’obsidienne','Lance céleste'],
-    desc:'Son carreau traverse tous les monstres alignés, volants compris.' }
+    desc:'Son carreau traverse tous les monstres alignés, volants compris.' },
+  { name:'Paladine',      col:'#f0e2a8', range:1.4,  dmg:10, rate:.8,
+    ranks:['Novice','Écuyère','Paladine','Lame de l’aube','Championne solaire','Paladine de mythril','Aube d’obsidienne','Sainte céleste'],
+    desc:'Frappe d’une lumière sacrée que la magie noire n’arrête pas. Les morts-vivants la craignent.' },
+  { name:'Fauconnier',    col:'#7aa0c0', range:2.8,  dmg:7,  rate:.9,  air:true,
+    ranks:['Oiseleur','Fauconnier','Maître-fauconnier','Chasseur des cimes','Seigneur des serres','Fauconnier de mythril','Serre d’obsidienne','Aigle céleste'],
+    desc:'Son faucon fond d’abord sur les volants, et attrape même les fantômes intangibles.' },
+  { name:'Hallebardier',  col:'#3a4a9a', range:2.0,  dmg:13, rate:1.0,
+    ranks:['Piquier','Hallebardier','Garde suisse','Capitaine des piques','Rempart vivant','Hallebardier de mythril','Pique d’obsidienne','Garde céleste'],
+    desc:'Sa hallebarde perce l’armure et tous les monstres alignés derrière sa cible.' },
+  { name:'Assassin',      col:'#a03a8a', range:1.5,  dmg:9,  rate:.5,
+    ranks:['Tire-laine','Lame furtive','Assassin','Ombre mortelle','Maître des ombres','Assassin de mythril','Lame d’obsidienne','Ombre céleste'],
+    desc:'Frappe le monstre le plus affaibli, en coups critiques, et achève les blessés. Les monstres ne la voient pas.' }
 ];
 /* Familles : deux voisins de la même famille (et de types différents) se renforcent. */
 const FAM = {
@@ -43,7 +55,7 @@ const FAM = {
   machine: { name:'Machine',  col:'#d9a066', fx:{range:.3},         txt:'+0,3 de portée' },
   sylve:   { name:'Sylve',    col:'#9ed36a', fx:{dmg:.06, rate:.06},txt:'+6 % de dégâts et de cadence' }
 };
-['garnison','garnison','montagne','arcane','arcane','montagne','arcane','machine','sylve','machine'].forEach((f,t) => { TYPES[t].fam = f; });
+['garnison','garnison','montagne','arcane','arcane','montagne','arcane','machine','sylve','machine','garnison','sylve','garnison','sylve'].forEach((f,t) => { TYPES[t].fam = f; });
 [1,3,4,6,9].forEach(t => { TYPES[t].air = true; });
 const MAXL = 8;
 const DMUL = [1, 2.2, 4.8, 10.5, 23, 50, 108, 235];
@@ -107,16 +119,16 @@ Object.assign(EN.scorpion, { desc:'Sa carapace arrête une bonne partie des coup
 Object.assign(EN.titan, { desc:'Lourdement cuirassé, insensible au froid, il encaisse tout.' });
 Object.assign(EN.titan_ice, { desc:'Un titan de glace lourdement cuirassé, qui ignore le froid.' });
 Object.assign(EN.wolf_war, { desc:'Harnaché par les orcs, il encaisse mieux les coups physiques.' });
-const TYPE_DT = ['phys','phys','boom','magic','magic','phys','magic','boom','poison','phys'];
+const TYPE_DT = ['phys','phys','boom','magic','magic','phys','magic','boom','poison','phys','holy','phys','sunder','phys'];
 /* Combat au contact : certains monstres s'arrêtent pour frapper les soldats voisins du chemin.
    Un soldat à zéro est KO jusqu'à la fin de la vague. */
 const ATK = { wolf:.5, skeleton:.6, golem:1.2, orc:1, wolf_war:.8, ghoul:1, yeti:1.2, golem_ice:1.2, golem_lava:1.3, mummy:.9, scorpion:.9, beetle:.7, imp:.6, head:.8,
   boss:2.5, titan:3, titan_ice:3, warlord:2, mino:2, hydra:2, hydra_sand:2, kraken:2, vampire:2, dragon:2, lich:1.5, queen:1.5, wraith:1.5, king:3 };
 for (const k in ATK) if (EN[k]) EN[k].atk = ATK[k];
-const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5, 1.1, 1.6, 2.2, 1.4], LEG_HPT = 2.4;
+const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5, 1.1, 1.6, 2.2, 1.4, 2.4, 1.2, 1.8, 1.2], LEG_HPT = 2.4;
 /* Gardien nain : posté sur la route, il arrête les monstres au sol. Armure, riposte (niv. 4+), coup de bouclier (niv. 6+). */
 const WARD_T = 5;
-const WARD = { armor:[.2,.25,.3,.35,.4,.45,.5,.55], thorns:[0,0,0,.3,.35,.4,.45,.5], bashCd:6, bashStun:.8, recruit:.6, taunt:.5 };
+const WARD = { armor:[.2,.25,.3,.35,.4,.45,.5,.55], thorns:[0,0,0,.3,.35,.4,.45,.5], bashCd:6, bashStun:.8, recruit:1, taunt:.5 };
 const isWarden = tw => !!tw && tw.t === WARD_T && !tw.leg;
 const wardArmor = tw => Math.min(.8, WARD.armor[tw.l-1] + (tw.syn ? tw.syn.armor : 0));
 const wardThorns = tw => WARD.thorns[tw.l-1] + (tw.syn ? tw.syn.thorns : 0);
@@ -127,7 +139,7 @@ function findPrey(e){
   const c0 = Math.floor(e.x), r0 = Math.floor(e.y); let best = -1, bd = 1.1;
   for (let r=r0-1;r<=r0+1;r++) for (let c=c0-1;c<=c0+1;c++){
     if (c<0||r<0||c>=COLS||r>=ROWS) continue;
-    const j = idx(c,r), tw = S.board[j]; if (!tw || tw.ko) continue;
+    const j = idx(c,r), tw = S.board[j]; if (!tw || tw.ko || (tw.t === 13 && !tw.leg)) continue;
     const d = Math.hypot(c + .5 - e.x, r + .5 - e.y) - (isWarden(tw) ? WARD.taunt : 0); if (d < bd){ bd = d; best = j; }
   }
   return best;
@@ -152,7 +164,10 @@ function hurtTroop(j, dmg, from){
 }
 let koCount = 0, spawnHP = 0;
 function reviveAll(){ for (const tw of S.board.concat(S.bench)) if (tw){ tw.hp = null; tw.ko = false; tw.hurtT = 0; } }
-const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques', poison:'de poison (ignorent l’armure et la résistance magique)' };
+const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques', poison:'de poison (ignorent l’armure et la résistance magique)', holy:'sacrés (ignorent la résistance magique, doublés contre les morts-vivants)', sunder:'perforants (ignorent l’armure)' };
+const UNDEAD = new Set(['skeleton','ghost','mummy','ghoul','lich','wraith','vampire']);
+/* Spécialistes : seuils et bonus par niveau. */
+const SPEC = { flyMul:3, execute:[.15,.15,.15,.2,.2,.22,.24,.26], assaCrit:[.25,.25,.25,.35,.35,.4,.45,.5], palaHeal:.02 };
 const canHitAir = t => !!TYPES[t].air;
 function resText(B){
   const r = [];
@@ -250,7 +265,11 @@ const SYN = {
   '6-8': { name:'Spores ardentes',     fx:{6:{rate:.15}, 8:{dmg:.25}},           txt:{6:'+15 % de cadence', 8:'+25 % de dégâts'} },
   '2-7': { name:'Poudrière',           fx:{2:{rate:.15}, 7:{splash:.25}},        txt:{2:'+15 % de cadence', 7:'+0,25 de rayon d’explosion'} },
   '1-9': { name:'Tir croisé',          fx:{1:{range:.3}, 9:{rate:.15}},          txt:{1:'+0,3 de portée', 9:'+15 % de cadence'} },
-  '5-8': { name:'Tapis de mousse',     fx:{5:{hp:.2}, 8:{dmg:.2}},               txt:{5:'+20 % de vie', 8:'+20 % de dégâts'} }
+  '5-8': { name:'Tapis de mousse',     fx:{5:{hp:.2}, 8:{dmg:.2}},               txt:{5:'+20 % de vie', 8:'+20 % de dégâts'} },
+  '1-11':{ name:'Ciel de chasse',      fx:{1:{range:.2}, 11:{dmg:.25}},          txt:{1:'+0,2 de portée', 11:'+25 % de dégâts'} },
+  '5-12':{ name:'Hérisson',            fx:{5:{thorns:.2}, 12:{dmg:.2}},          txt:{5:'+20 % de riposte', 12:'+20 % de dégâts'} },
+  '3-13':{ name:'Proie gelée',         fx:{3:{slow:.08}, 13:{vsSlow:.5}},        txt:{3:'+8 % de ralentissement', 13:'+50 % contre les ralentis'} },
+  '5-10':{ name:'Serment d’acier',     fx:{5:{armor:.1}, 10:{dmg:.2}},           txt:{5:'+10 % d’armure', 10:'+20 % de dégâts'} }
 };
 const FORMATION = .08;
 const synKey = (a,b) => a < b ? a+'-'+b : b+'-'+a;
@@ -264,8 +283,8 @@ function synLink(a, b){
 
 /* ---------- bénédictions ---------- */
 const RAR = { c:{ name:'Commune', col:'#b9a684', w:62 }, r:{ name:'Rare', col:'#5ea0e0', w:30 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
-const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne','du feu','du siège','des spores','du carreau'];
-const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains','pyromanciennes','catapultes','myconides','balistes'];
+const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne','du feu','du siège','des spores','du carreau','de la lumière','de la fauconnerie','de la pique','de l’ombre'];
+const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains','pyromanciennes','catapultes','myconides','balistes','paladines','fauconniers','hallebardiers','assassins'];
 const BLESS = [
   { id:'lames', rar:'c', icon:'sword', max:3, name:'Lames affûtées', desc:'Épéistes : +25 % de dégâts.', mod:M => { M.dmgType[0] *= 1.25; } },
   { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 60 % de leurs dégâts.', mod:M => { M.whirl = true; } },

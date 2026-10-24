@@ -333,6 +333,92 @@ function drawBal(s,l){
   if (l===5){ s.p(12,12,GEM,1); s.p(15,8,GEM,1); }
 }
 
+/* ---- Paladine : tabard blanc au soleil d'or, marteau rayonnant ---- */
+function drawPala(s,l){
+  const m = MET[l-1], c = '#f2ead6', cd = '#c8bfa6', sun = l>=4 ? GOLD : '#e0a93a', hair = '#f0c94a';
+  if (l>=4){ s.r(5,10,10,7, l===5 ? '#4f2a74' : '#8a2a3a'); if (l===5) s.hl(5,14,16,GOLD); }
+  s.r(7,15,2,2,m.m); s.r(11,15,2,2,m.m); s.r(6,17,3,1,m.m); s.r(11,17,3,1,m.m);
+  s.r(6,10,8,5,c); s.v(9,10,14,cd); s.v(10,10,14,cd);
+  s.r(8,11,4,2,sun,1); s.r(9,10,2,4,sun,1); s.r(9,11,2,2, l>=3 ? '#fff3b0' : '#f6c94a', 1);
+  s.hl(6,13,14,'#6b4a2e'); s.r(9,14,2,1,GOLD,1);
+  s.r(4,9,3,2,m.m); s.r(13,9,3,2,m.m); s.hl(4,6,9,m.h,1); s.hl(13,15,9,m.h,1);
+  s.r(5,11,1,2,m.m); s.p(5,13,SK);
+  s.p(14,11,m.m); s.p(15,12,SK);
+  s.r(7,4,6,6,SK); s.p(8,7,EYE,1); s.p(11,7,EYE,1); s.hl(9,10,9,SKD,1);
+  s.v(6,5,10,hair); s.v(13,5,9,hair);
+  if (l===1){ s.r(7,3,6,2,hair); }
+  else { s.r(7,2,6,3,m.m); s.hl(8,11,2,m.h,1); s.p(7,5,m.m); s.p(12,5,m.m); s.v(9,0,1,l>=3 ? '#ffffff' : '#c4473d'); s.v(10,0,1,l>=3 ? '#ffffff' : '#c4473d'); }
+  sline(s,15,14,17,7,'#6b4a2e');
+  const hm = l===5 ? '#f2ead6' : m.m; s.r(15,3,4,4,hm); s.hl(15,18,3,m.h,1);
+  if (l>=3){ s.p(14,4,'#fff3b0',1); s.p(19,5,'#fff3b0',1); s.p(17,2,'#fff3b0',1); s.p(16,5,'#fff3b0',1); }
+  if (l===5){ s.hl(7,12,0,'#fff3a0',1); s.p(6,1,'#fff3a0',1); s.p(13,1,'#fff3a0',1); s.p(17,5,GEM,1); }
+}
+
+/* ---- Fauconnier : cape de voyage, faucon sur le poing ---- */
+function drawFauc(s,l){
+  const m = MET[l-1], c = l===5 ? '#4a6a8a' : '#7aa0c0', cd = '#3a5a7a', bird = l===5 ? '#f2ead6' : '#8a5a33', bw = l===5 ? '#ffffff' : '#c9a27a';
+  s.r(5,10,10,7, l>=4 ? (l===5 ? '#2a3a5a' : cd) : c);
+  s.r(7,15,2,2,'#4b3a2e'); s.r(11,15,2,2,'#4b3a2e'); s.r(6,17,3,1,'#3a2a1f'); s.r(11,17,3,1,'#3a2a1f');
+  s.r(6,10,8,5,'#5a7a4a'); s.hl(6,13,13,'#4b3020'); s.r(9,13,2,1, l>=4 ? GOLD : m.m, 1);
+  s.r(6,9,8,2,c); s.p(9,11,c); s.p(10,11,c);
+  if (l>=3){ s.r(13,9,3,2,m.m); s.hl(13,15,9,m.h,1); }
+  s.r(14,11,1,3,'#5a7a4a'); s.p(14,14,SK);
+  s.p(5,10,'#5a7a4a'); s.v(4,9,10,'#5a7a4a'); s.r(3,8,2,1,'#8a5a33');
+  s.r(7,4,6,6,SK); s.p(8,7,EYE,1); s.p(11,7,EYE,1); s.hl(9,10,9,SKD,1);
+  s.p(6,6,SK); s.p(5,5,SK); s.p(13,6,SK); s.p(14,5,SK);
+  s.r(7,2,6,3,c); s.p(6,4,c); s.p(13,4,c); s.p(7,5,'#c8a060'); s.p(12,5,'#c8a060');
+  if (l>=2){ s.p(9,2,m.h,1); s.p(10,2,m.h,1); }
+  // le faucon, perché sur le gant
+  const wg = shade(bird, .7);
+  s.r(2,4,3,4,bird); s.r(3,2,2,2,bird); s.v(4,4,6,bw); s.v(2,4,6,wg); s.p(1,7,wg); s.p(1,8,wg);
+  s.p(4,2,EYE,1); s.p(5,3,'#e0a93a',1); s.p(3,7,'#e0a93a',1); s.p(4,7,'#e0a93a',1);
+  if (l>=2){ s.p(1,4,wg); s.p(1,3,wg); }
+  if (l>=3){ s.p(0,2,wg); s.p(0,3,wg); s.p(1,2,wg); }
+  if (l>=4){ s.hl(3,4,1,GOLD,1); }
+  if (l===5){ s.p(3,1,GEM,1); }
+}
+
+/* ---- Hallebardier : manches bouffantes rayées, morion, hallebarde ---- */
+function drawHalb(s,l){
+  const m = MET[l-1], c = l===5 ? '#2a2a6a' : '#3a4a9a', st = '#e8c050';
+  if (l>=4){ s.r(5,10,10,7, l===5 ? '#7a1a2a' : '#24305a'); if (l===5) s.hl(5,14,16,GOLD); }
+  s.r(7,15,2,2,c); s.r(11,15,2,2,st); s.r(6,17,3,1,'#2a2238'); s.r(11,17,3,1,'#2a2238');
+  s.r(6,10,8,5,c); for (let x=7;x<=12;x+=2) s.v(x,10,14,st);
+  if (l>=2){ s.r(7,10,6,2,m.m); s.hl(7,12,10,m.h,1); }
+  s.hl(6,13,14,'#4b3020'); s.r(9,14,2,1, l>=4 ? GOLD : m.h, 1);
+  s.r(4,10,2,3,c); s.p(4,11,st); s.p(5,12,st); s.p(5,13,SK);
+  s.r(14,10,1,2,st); s.p(14,12,SK);
+  s.r(7,4,6,6,SK); s.p(8,7,EYE,1); s.p(11,7,EYE,1); s.hl(8,11,9,'#8a5a3a',1);
+  const hm = l===1 ? '#6b4a2e' : m.m;
+  s.hl(6,13,4,hm); s.r(7,2,6,2,hm); s.p(5,4,hm); s.p(14,4,hm);
+  if (l>=2){ s.hl(8,11,1,hm); s.hl(8,10,2,m.h,1); }
+  if (l>=3){ s.v(9,0,0,'#c4473d'); s.v(10,0,0,'#c4473d'); s.p(11,0,'#c4473d'); }
+  if (l===5){ s.p(9,3,GEM,1); s.p(10,3,GEM,1); }
+  s.v(15,3,17,'#6b4a2e');
+  const bl = l===5 ? '#f2ead6' : l>=4 ? GOLD : '#c3cbd3';
+  s.v(15,0,2,bl); s.r(16,2,2,3,bl); s.p(18,3,bl); s.p(14,3,bl); s.p(13,2,bl);
+  if (l>=3) s.p(17,3,'#ffffff',1);
+}
+
+/* ---- Assassin : capuche, masque, deux dagues ---- */
+function drawAssa(s,l){
+  const m = MET[l-1], c = l===5 ? '#6a1a5a' : '#a03a8a', dk = '#2a2234', dk2 = '#3a3046';
+  if (l>=4){ s.r(5,9,10,8, l===5 ? '#1a1420' : '#3a1a3a'); }
+  s.r(7,15,2,2,dk2); s.r(11,15,2,2,dk2); s.r(6,17,3,1,dk); s.r(11,17,3,1,dk);
+  s.r(6,10,8,5,dk2); sline(s,6,10,13,14,c); sline(s,6,11,12,14,c);
+  s.hl(6,13,14,dk); s.r(9,14,2,1, l>=4 ? GOLD : m.m, 1);
+  s.r(5,10,1,3,dk2); s.p(5,13,SK); s.r(14,10,1,3,dk2); s.p(14,13,SK);
+  const bl = l===5 ? '#f2ead6' : l>=3 ? '#dfe6ec' : '#a8b0b8';
+  s.v(4,12,15,bl); s.p(4,11,'#4b3020'); s.v(15,12,15,bl); s.p(15,11,'#4b3020');
+  if (l>=4){ s.p(4,16,c,1); s.p(15,16,c,1); }
+  s.r(7,4,6,6,SK); s.r(7,8,6,2,c); s.p(7,7,c); s.p(12,7,c);
+  const eye = l>=3 ? '#ff7ae0' : EYE; s.p(8,6,eye,1); s.p(11,6,eye,1);
+  s.r(6,2,8,3,dk); s.v(6,5,9,dk); s.v(13,5,9,dk); s.p(7,5,dk); s.p(12,5,dk);
+  s.p(9,1,dk); s.p(10,1,dk); if (l>=2) s.p(10,0,dk);
+  if (l>=3){ s.p(12,3,c,1); s.p(7,3,c,1); }
+  if (l===5){ s.hl(7,12,2,GOLD,1); s.p(9,2,GEM,1); s.p(10,2,GEM,1); }
+}
+
 /* ---- Ennemis ---- */
 function enSlime(s){
   const c = '#79c25b';
@@ -787,7 +873,7 @@ function terBrazier(){
 }
 
 const STORY_EN_DRAW = { toad:enToad, scorpion:enScorpion, mummy:enMummy, yeti:enYeti, ghoul:enGhoul };
-const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre, drawNain, drawPyro, drawCata, drawMyco, drawBal];
+const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre, drawNain, drawPyro, drawCata, drawMyco, drawBal, drawPala, drawFauc, drawHalb, drawAssa];
 function troopPixels(t,l){ const s = new Spr(); drawSoldier(s,t,l); return s.pixels(); }
 const EN_DRAW = { slime:enSlime, wolf:enWolf, golem:enGolem, boss:enBoss, bigslime:enBigSlime, mini:enMini, goblin:enGoblin, king:enKing };
 function enemyPixels(k){

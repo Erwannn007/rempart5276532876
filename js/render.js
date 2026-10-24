@@ -396,6 +396,13 @@ function draw(){
         ctx.fillStyle = p.L >= 5 ? '#f2ead6' : '#c9b48a'; ctx.fillRect(-6*P, 0, 10*P, P);
         ctx.fillStyle = '#eef4f8'; ctx.fillRect(4*P, -P, 2*P, 3*P); ctx.fillRect(6*P, 0, P, P);
         ctx.fillStyle = '#c4473d'; ctx.fillRect(-6*P, -P, 2*P, P); ctx.fillRect(-6*P, P, 2*P, P);
+      } else if (p.k === 'falcon'){
+        if (p.face < 0) ctx.scale(-1, 1);
+        const up = Math.floor(p.flap) % 2, br = p.L >= 5 ? '#f2ead6' : '#8a5a33';
+        ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -2*P, 7*P, 4*P); ctx.fillRect(-2*P, up ? -5*P : P, 4*P, 4*P);
+        ctx.fillStyle = br; ctx.fillRect(-2*P, -P, 5*P, 2*P); ctx.fillRect(-P, up ? -4*P : P, 2*P, 3*P);
+        ctx.fillStyle = '#c9a27a'; ctx.fillRect(P, -P, P, P);
+        ctx.fillStyle = '#e0a93a'; ctx.fillRect(3*P, 0, P, P);
       } else if (p.k === 'fire'){
         const fl = Math.floor(clock*16) % 2;
         ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -3*P, 6*P, 6*P);

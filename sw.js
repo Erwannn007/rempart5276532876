@@ -1,5 +1,5 @@
 // Rempart — service worker (cache-first)
-const CACHE = 'rempart-merge-td-v29';
+const CACHE = 'rempart-merge-td-v30';
 const ASSETS = [
   './',
   './index.html',
