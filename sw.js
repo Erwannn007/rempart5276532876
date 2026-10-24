@@ -1,8 +1,25 @@
 // Rempart — service worker (cache-first)
-const CACHE = 'rempart-merge-td-v22';
+const CACHE = 'rempart-merge-td-v23';
 const ASSETS = [
   './',
   './index.html',
+  './style.css',
+  './js/config.js',
+  './js/sprites.js',
+  './js/data.js',
+  './js/assets.js',
+  './js/game.js',
+  './js/audio.js',
+  './js/background.js',
+  './js/waves.js',
+  './js/combat.js',
+  './js/render.js',
+  './js/ui.js',
+  './js/home.js',
+  './js/music.js',
+  './js/weather.js',
+  './js/ultimates.js',
+  './js/main.js',
   './manifest.json',
   './icon-180.png',
   './icon-192.png',

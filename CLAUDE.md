@@ -1,15 +1,32 @@
 # Rempart — fusion et défense
 
 Tower defense / merge en PWA pour iPhone (portrait), entièrement en français.
-Tout le jeu tient dans `index.html` (HTML + CSS + JS vanilla dans une IIFE, aucune dépendance, aucun build).
+HTML + CSS + JS vanilla, aucune dépendance, aucun build : on pousse sur `main`, GitHub Pages sert le jeu tel quel.
+Dépôt : `git@github.com:Erwannn007/rempart5276532876.git` — chaque push sur `main` est en ligne.
 
 ## Fichiers
-- `index.html` — le jeu complet (~5500 lignes).
-- `sw.js` — service worker cache-first. **Incrémenter `CACHE` (`rempart-merge-td-vNN`) à chaque modification livrée**, sinon l'iPhone garde l'ancienne version.
+- `index.html` — uniquement le balisage (HUD, canvas, fenêtres `.ov`) + les `<script>` dans l'ordre.
+- `style.css` — tout le CSS.
+- `js/*.js` — scripts classiques (pas de modules) qui partagent la portée globale. **L'ordre de chargement compte** : le code exécuté au chargement ne peut utiliser que ce qui est déclaré dans un fichier précédent (les fonctions appelées plus tard, en jeu, peuvent être n'importe où).
+  1. `config.js` — réglages (`STORE_KEY`, `COLS`/`ROWS`, `WALL`, `BENCH_N`)
+  2. `sprites.js` — classe `Spr`, soldats, ennemis, boss, variantes, décors, Légendes 24×24
+  3. `data.js` — `TYPES`, `EN`, `WORLDS`, `BIOMES`, `SYN`, `BLESS`, `LEGENDS`
+  4. `assets.js` — rendu des sprites en canvas (`pxCanvas`, `patt`, caches `SPR`/`ENS`/`LSPR`, icônes)
+  5. `game.js` — état et sauvegarde (`freshGame`, `snap`, `persist`, `load`, clé `localStorage` `rempart-merge-td`, format `v:3`), synergies, terrain, réseau de routes
+  6. `audio.js` — effets sonores WebAudio
+  7. `background.js` — canvas et décor (`resize`, `renderBG`)
+  8. `waves.js` — vagues, fin de partie, bénédictions
+  9. `combat.js` — ciblage, tirs, projectiles, boucle `update`/`frame`
+  10. `render.js` — dessin des troupes, ennemis, effets
+  11. `ui.js` — interface DOM (emplacements, glisser-déposer, fiche, atelier, boutons)
+  12. `home.js` — profil, portraits, succès, écran d'accueil, carte des mondes
+  13. `music.js` — musique chiptune
+  14. `weather.js` — météo d'ambiance
+  15. `ultimates.js` — ultimes des Légendes
+  16. `main.js` — cycle de vie et démarrage (doit rester en dernier)
+- Chaque fichier commence par `'use strict';`. Ne pas déclarer de nom global qui existe déjà sur `window` (`name`, `top`, `close`, `open`, `stop`, `find`…).
+- `sw.js` — service worker cache-first. **Incrémenter `CACHE` (`rempart-merge-td-vNN`) à chaque modification livrée**, sinon l'iPhone garde l'ancienne version. **Tout nouveau fichier doit être ajouté à `ASSETS`**, sinon le jeu ne marche plus hors ligne.
 - `manifest.json`, `icon-*.png` — PWA.
-
-## Carte de `index.html` (sections `/* ===== Titre ===== */`)
-Réglages → `<SPRITES>` (classe `Spr`, soldats, ennemis, boss, variantes, décors, Légendes 24×24) → Données de jeu (`TYPES`, `EN`, `WORLDS`, `BIOMES`, `SYN`, `BLESS`, `LEGENDS`) → Rendu des sprites en canvas (`pxCanvas`, `patt`, caches `SPR`/`ENS`/`LSPR`) → état/sauvegarde (`freshGame`, `snap`, `persist`, `load`, clé `localStorage` `rempart-merge-td`, format `v:3`) → stats/synergies → terrain et chemins → audio (SFX WebAudio) → Canvas & décor (`renderBG`) → vagues → bénédictions → combat → boucle `update`/`frame` → Dessin → Interface DOM → Profil/accueil/succès → musique chiptune → météo → ultimes des Légendes → cycle de vie.
 
 ## Direction artistique pixel art — À RESPECTER
 - **Tout est dessiné en code**, pixel par pixel, avec la classe `Spr` : `s.p(x,y,c,flat)`, `s.r(x,y,w,h,c,f)`, `s.hl(x0,x1,y,c,f)`, `s.v(x,y0,y1,c,f)`, `sline(...)`, `recolor(s,map)`. Pas d'images externes, pas d'emoji dans le jeu.
