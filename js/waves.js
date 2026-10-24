@@ -75,6 +75,26 @@ function makeWave(w){
   if (Math.random() < gob) q.splice(2 + (Math.random()*(q.length-2)|0), 0, 'goblin');
   return q;
 }
+/* ---------- menace : les ennemis s'adaptent aux résultats du joueur ---------- */
+/* Après chaque vague, on regarde la part du chemin qui restait à l'ennemi le plus avancé.
+   Vague écrasée loin de la porte : la suivante est plus solide. Des fuites : elle s'adoucit.
+   La menace multiplie la vie des ennemis, et leurs coups par sa racine carrée. */
+/* steps : [part du chemin qui restait au plus avancé, multiplicateur], du plus facile au plus serré. */
+let THREAT = { from:5, steps:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [.12, 1], [0, .98]], leak:[.07, 3],
+  endless:[.75, 50], story:[1, 1.5] };
+let waveMinRem = INF;
+const threat = () => S.threat || 1;
+const threatHit = () => Math.sqrt(threat());
+function updThreat(){
+  if (S.mode === 'siege' || S.wave < THREAT.from || !NET) return 1;
+  const C = THREAT, [lo, hi] = C[S.mode === 'story' ? 'story' : 'endless'];
+  const path = Math.max(1, Math.min(...NET.ents.map(i => NET.distB[i] + 1)));
+  const far = Math.min(1, waveMinRem / path);
+  const k = waveLeaks ? 1 - C.leak[0] * Math.min(waveLeaks, C.leak[1]) : C.steps.find(([f]) => far >= f)[1];
+  const before = threat();
+  S.threat = Math.max(lo, Math.min(hi, before * k));
+  return S.threat / before;
+}
 function startWave(){
   if (inWave || over || !hasGame) return;
   if (!NET) makeNet(null);
@@ -83,7 +103,7 @@ function startWave(){
   const hasNext = Array.isArray(S.nextQ) && S.nextQ.length;
   queue = hasNext ? S.nextQ : makeWave(S.wave);
   queueEnt = (hasNext && Array.isArray(S.nextE) && S.nextE.length === queue.length) ? S.nextE.map(v => Math.min(v|0, NET.ents.length - 1)) : assignEntrances(queue);
-  S.nextQ = null; S.nextE = null; spawnT = .3; pendingSpawn = [];
+  S.nextQ = null; S.nextE = null; spawnT = .3; pendingSpawn = []; waveMinRem = INF;
   for (const b of S.bars) if (b.hp == null) b.hp = barMaxHp();
   { const reg = queue.filter(k => !EN[k].boss && k !== 'goblin'); const wt = reg.reduce((a,k) => a + EN[k].hp, 0);
     waveNorm = reg.length ? Math.max(.5, Math.min(2, reg.length * WAVE_W / wt)) : 1; }
@@ -108,6 +128,7 @@ function spawn(k, opt = {}){
   let hp = hpOver || waveHP(S.wave) * base.hp * MODS.hpMul * (base.boss || k === 'goblin' ? 1 : waveNorm);
   if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
   if (!hpOver && base.boss) hp *= BOSS_HPM;
+  if (!hpOver) hp *= threat();
   if (!hpOver && base.boss){ const ew = S.wave + (S.mode === 'story' ? WORLDS[S.world].off : 0); hp *= Math.min(1, .3 + ew*.045); }
   const spdScale = Math.min(1.3, 1 + S.wave*.006);
   let gold = base.gold + Math.floor(S.wave/GOLDW) + MODS.goldKill;
@@ -132,6 +153,7 @@ function endWave(){
   S.streak = waveLeaks === 0 ? (S.streak|0) + 1 : 0; pstat.bestStreak = Math.max(pstat.bestStreak|0, S.streak);
   let regen = false;
   if (MODS.regen && waveLeaks === 0){ S.lives++; regen = true; }
+  const dThreat = updThreat();
   if (S.mode === 'endless'){ best = Math.max(best, S.wave); bestBy[S.size || 0] = Math.max(bestBy[S.size || 0], S.wave); }
   if (S.mode === 'siege' && S.wave >= SIEGE_WAVES){ victory(); return; }
   if (S.mode === 'story' && S.wave >= maxWaves()){ storyVictory(); return; }
@@ -139,6 +161,7 @@ function endWave(){
   let sub = '+' + bonus + ' or';
   if (intr) sub += ', +' + intr + ' d’intérêts';
   if (regen) sub += ', +1 vie';
+  if (dThreat > 1.001) sub += ', les monstres se renforcent'; else if (dThreat < .999) sub += ', les monstres faiblissent';
   const lt = S.board.find(t => t && t.leg);
   if (lt && lt.leg === 'cesar' && lt.l === 5){ S.gold += 25; sub += ', +25 or de César'; }
   if (lt && lt.leg === 'jeanne'){

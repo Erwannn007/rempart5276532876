@@ -45,3 +45,7 @@ Dépôt : `git@github.com:Erwannn007/rempart5276532876.git` — chaque push sur 
 - Tout ajout à l'état persistant doit passer par `snap()` / `load()` et rester compatible avec les anciennes sauvegardes.
 - Textes joueur en français soigné (apostrophes typographiques `’`, espaces avant `%`).
 - Cible : Safari iOS, tactile, safe-areas (`--st`, `--sb`…), 60 fps sur iPhone.
+
+## Équilibrage
+- Courbe de base : `waveHP`/`HPG` (vie par vague), `RECRUIT.at` (niveau des recrues), `K_ENEMY`/`KE_RAMP` (coups des ennemis), `DMUL` (dégâts par niveau).
+- Menace adaptative (`THREAT` dans `js/waves.js`) : après chaque vague dès la vague 5, `S.threat` monte si l'ennemi le plus avancé est resté loin de la porte, et baisse en cas de fuites. Elle multiplie la vie des ennemis (et leurs coups par sa racine). Bornes : Sans fin ×0,75 à ×50, Histoire ×1 à ×1,5, Siège non concerné. Sauvegardée dans `snap()`/`load()`.

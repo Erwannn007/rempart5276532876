@@ -337,7 +337,7 @@ function update(dt){
         sp = 0;
         if (!(e.stunT > 0 || e.frozenT > 0)){
           e.atkT -= dt;
-          if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.eng, waveHP(S.wave) * B.atk * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP)); }
+          if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.eng, waveHP(S.wave) * B.atk * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * threatHit()); }
         }
       }
     }
@@ -386,7 +386,7 @@ function update(dt){
           if (e.atkT <= 0){
             e.atkT = 1; e.bump = .15;
             if (b.hp == null) b.hp = barMaxHp();
-            b.hp -= waveHP(S.wave) * Math.max(.6, B.atk || .6) * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * 1.4;
+            b.hp -= waveHP(S.wave) * Math.max(.6, B.atk || .6) * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * 1.4 * threatHit();
             const c = cellC(b.i); burst(c.x, c.y, '#8a5a32', 4, 1.8);
             if (b.hp <= 0){ b.hp = 0; b.broken = true; burst(c.x, c.y, '#c9a27a', 16, 3); sfx('boom'); toast('Une barricade a cédé'); rerouteAfterToggle(b.i); e.bash = null; }
           }
@@ -396,6 +396,7 @@ function update(dt){
     moveEnemy(e, sp * dt);
     if (e.out){ e.dead = true; leak(e); if (over) return; continue; }
     e.rem = remOf(e);
+    if (e.k !== 'goblin' && e.rem < waveMinRem) waveMinRem = e.rem;
     if (e.k === 'goblin' && Math.random() < dt*12) fx.push({ k:'p', x:e.x+(Math.random()-.5)*.4, y:e.y-.3, vx:0, vy:-.6, life:.4, max:.4, col: Math.random()<.5 ? '#fbe08a' : '#ffffff', s:1 });
   }
   for (let i=0;i<S.board.length;i++){

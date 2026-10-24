@@ -174,7 +174,13 @@ function drawNextWave(list = S.nextQ, l1 = 'Vague', l2 = 'suivante'){
       ctx.fillStyle = B.fly ? '#f2c14e' : B.armor ? '#c3cbd3' : '#8aa8ff'; ctx.fillRect(x + cell - P, y0 + 2*P, 2*P, 2*P);
     }
     x += cell + Math.round(CS*.32);
-    if (x > ox + ART_W*P - cell) break;
+    if (x > ox + ART_W*P - cell*2) break;
+  }
+  const th = threat();
+  if (Math.abs(th - 1) > .005){
+    const xr = ox + ART_W*P - Math.round(CS*.6), up = th > 1;
+    text('Menace', xr, y0 + h/2 - Math.round(CS*.13), Math.round(CS*.2), '#e8dcc0');
+    text((up ? '+' : '−') + Math.round(Math.abs(th - 1)*100) + ' %', xr, y0 + h/2 + Math.round(CS*.13), Math.round(CS*.22), up ? '#ff7a62' : '#8fd08a');
   }
 }
 function drawBolt(f){
