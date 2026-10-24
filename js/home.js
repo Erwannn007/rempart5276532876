@@ -477,9 +477,19 @@ function worldModel(i){
     const mob = ENS[W.base].n; x.drawImage(mob, 20, 46 - mob.height);
     const boss = ENS[W.finals[W.finals.length-1]].n; x.drawImage(boss, 50, 45 - boss.height);
   }
-  return c.toDataURL();
+  return c;
 }
-const WORLD_MODEL = WORLDS.map((_,i) => worldModel(i)), ENDLESS_MODEL = worldModel(-1);
+/* Version verrouillée : la même maquette en gris très sombre, calculée une fois. */
+function darkModel(c){
+  const d = document.createElement('canvas'); d.width = c.width; d.height = c.height;
+  const x = d.getContext('2d'); x.drawImage(c, 0, 0);
+  const im = x.getImageData(0, 0, d.width, d.height), a = im.data;
+  for (let i=0;i<a.length;i+=4){ const v = (a[i]*.3 + a[i+1]*.59 + a[i+2]*.11)*.32; a[i] = a[i+1] = a[i+2] = v; }
+  x.putImageData(im, 0, 0);
+  return d.toDataURL();
+}
+const WORLD_MODEL = WORLDS.map((_,i) => { const c = worldModel(i); return { url:c.toDataURL(), dark:darkModel(c) }; });
+const ENDLESS_MODEL = worldModel(-1).toDataURL();
 function openStoryMap(){
   $('storyBody').innerHTML = WORLDS.map((W,i) => {
     const open = i < story.unlocked, st = story.stars[i]|0;
@@ -511,17 +521,15 @@ function renderModel(){
   if (hWorld < 0 || hWorld >= WORLDS.length) hWorld = Math.min(story.unlocked, WORLDS.length) - 1;
   const st = hMode === 'story', open = !st || hWorld < story.unlocked;
   document.querySelectorAll('#hModeSw button').forEach(b => b.classList.toggle('on', b.dataset.mode === hMode));
-  $('mdlImg').src = st ? WORLD_MODEL[hWorld] : ENDLESS_MODEL;
+  $('mdlImg').src = st ? WORLD_MODEL[hWorld][open ? 'url' : 'dark'] : ENDLESS_MODEL;
   $('mdlFig').classList.toggle('lock', !open);
-  $('mdlPrev').style.visibility = st && hWorld > 0 ? '' : 'hidden';
-  $('mdlNext').style.visibility = st && hWorld < WORLDS.length - 1 ? '' : 'hidden';
   if (st){
     const W = WORLDS[hWorld], n = story.stars[hWorld] | 0;
     $('mdlKicker').textContent = 'Monde ' + (hWorld + 1) + ' sur ' + WORLDS.length;
     $('mdlName').textContent = open ? W.name : '???';
     $('mdlStars').innerHTML = [0,1,2].map(k => `<img class="px${k < n ? '' : ' off'}" src="${STAR_URL}" alt="">`).join('');
     $('mdlSub').textContent = open ? W.waves + ' vagues. Boss : ' + W.finals.map(k => EN[k].name).join(', puis ') + '.' : 'Libère ' + WORLDS[hWorld - 1].name + ' pour l’ouvrir.';
-    $('mdlDots').innerHTML = WORLDS.map((_,k) => `<i class="${k === hWorld ? 'on' : k >= story.unlocked ? 'lock' : ''}"></i>`).join('');
+    $('mdlDots').innerHTML = WORLDS.map((_,k) => `<i data-w="${k}" class="${k === hWorld ? 'on' : k >= story.unlocked ? 'lock' : ''}"></i>`).join('');
   } else {
     $('mdlKicker').textContent = 'Mode libre';
     $('mdlName').textContent = 'Sans fin';
@@ -537,8 +545,7 @@ function stepWorld(d){
   hWorld = n; sfx('arrow'); renderModel();
   const f = $('mdlFig'); f.classList.remove('swap', 'swapL'); void f.offsetWidth; f.classList.add(d > 0 ? 'swap' : 'swapL');
 }
-$('mdlPrev').addEventListener('click', () => { audio(); stepWorld(-1); });
-$('mdlNext').addEventListener('click', () => { audio(); stepWorld(1); });
+$('mdlDots').addEventListener('click', e => { const d = e.target.closest('[data-w]'); if (d){ audio(); stepWorld(+d.dataset.w - hWorld); } });
 document.querySelectorAll('#hModeSw button').forEach(b => b.addEventListener('click', () => { audio(); if (hMode !== b.dataset.mode){ hMode = b.dataset.mode; sfx('arrow'); renderModel(); } }));
 $('mdlGo').addEventListener('click', () => {
   audio();

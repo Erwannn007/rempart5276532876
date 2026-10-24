@@ -79,15 +79,13 @@
           <button data-mode="story">Histoire</button><button data-mode="endless">Sans fin</button>
         </div>
         <div class="model-stage" id="hModel">
-          <button class="mdl-arrow left" id="mdlPrev" aria-label="Monde précédent"><i></i></button>
-          <figure class="model" id="mdlFig"><img class="px" id="mdlImg" alt=""><span class="mdl-lock"></span></figure>
-          <button class="mdl-arrow right" id="mdlNext" aria-label="Monde suivant"><i></i></button>
+          <figure class="model" id="mdlFig"><img class="px" id="mdlImg" alt="" draggable="false"><span class="mdl-lock"></span></figure>
         </div>
         <div class="model-info">
+          <span class="mdl-dots" id="mdlDots"></span>
           <em id="mdlKicker"></em><b id="mdlName"></b>
           <span class="mdl-stars" id="mdlStars"></span>
           <small id="mdlSub"></small>
-          <span class="mdl-dots" id="mdlDots"></span>
         </div>
         <div class="play-actions">
           <button class="btn main mdl-go" id="mdlGo">Lancer</button>
