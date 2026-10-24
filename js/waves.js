@@ -296,7 +296,7 @@ function drawBless(n){
     let r = Math.random() * avail.reduce((a,b) => a + RAR[b.rar].w, 0), pick = avail[0];
     for (const b of avail){ r -= RAR[b.rar].w; if (r <= 0){ pick = b; break; } }
     used.add(pick.id);
-    out.push(pick.id === 'ecole' ? 'ecole:' + (Math.random()*5|0) : pick.id);
+    out.push(pick.id === 'ecole' ? 'ecole:' + (Math.random()*TYPES.length|0) : pick.id);
   }
   return out;
 }

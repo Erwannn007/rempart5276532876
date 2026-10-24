@@ -22,7 +22,7 @@ function portraitURL(src, bg, offx, offy){
   x.drawImage(src, offx, offy);
   return c.toDataURL();
 }
-for (let t=0;t<5;t++) for (let l=1;l<=MAXL;l++){
+for (let t=0;t<TYPES.length;t++) for (let l=1;l<=MAXL;l++){
   const o = troopPixels(t,l);
   PORTRAITS.push({ key:`s:${t}:${l}`, label:TYPES[t].ranks[l-1],
     url: portraitURL(SPR[t][l-1], TYPES[t].col, 0, 4),
@@ -305,7 +305,7 @@ function openProfile(){
     ['Ennemis vaincus', fmtN(pstat.kills)], ['Boss abattus', fmtN(pstat.bosses)],
     ['Gobelins d’or', fmtN(pstat.goblins)], ['Or gagné', fmtN(pstat.gold)],
     ['Fusions', fmtN(pstat.merges)], ['Offrandes', fmtN(pstat.offers)],
-    ['Soldats découverts', seen.size + '/' + 5*MAXL], ['Légendes rencontrées', metN + '/' + LEG_ORDER.length],
+    ['Soldats découverts', seen.size + '/' + TYPES.length*MAXL], ['Légendes rencontrées', metN + '/' + LEG_ORDER.length],
     ['Légende favorite', fav ? LEGENDS[fav].name : '—'], ['Temps de jeu', fmtTime(pstat.time)]
   ];
   $('pStats').innerHTML = cells.map(([k,v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');

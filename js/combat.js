@@ -78,6 +78,7 @@ function lightning(x0, y0, tg, dmg, jumps, decay, vsSlow, L, col){
   hitDT = prevDT;
 }
 const isBoss = e => !!EN[e.k].boss;
+const enemyHit = (e, a) => waveHP(S.wave) * a * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * Math.sqrt(e.thr || 1);
 function legendFire(tw, cx, cy, tg, st, D){
   const L = tw.l, id = tw.leg;
   fx.push({ k:'ring', x:tg.x, y:tg.y - .2, r:.45, life:.22, max:.22, col:LEG_FXC[id] });
@@ -146,6 +147,15 @@ function legendFire(tw, cx, cy, tg, st, D){
     }
   }
 }
+/* Gardien nain niv. 6+ : son bouclier sonne tous les monstres qu'il retient. */
+function wardBash(tw, i, held){
+  const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5;
+  for (const e of held) if (!EN[e.k].noSlow) e.stunT = Math.max(e.stunT, WARD.bashStun * (isBoss(e) ? .5 : 1));
+  tw.anim = .2;
+  fx.push({ k:'ring', x:cx, y:cy - .2, r:1, life:.3, max:.3, col:'#7fe3ff' });
+  fx.push({ k:'t', x:cx, y:cy - .9, s:'Bouclier !', col:'#7fe3ff', life:.8, max:.8 });
+  burst(cx, cy - .3, '#c3cbd3', 8, 2); shake = Math.max(shake, .06); sfx('clang');
+}
 function merlinFreeze(tw, cx, cy){
   const dur = MERLIN_DUR[tw.l-1];
   for (const e of enemies) if (!e.dead && e.y >= 0) e.frozenT = Math.max(e.frozenT || 0, dur * (isBoss(e) ? .5 : 1));
@@ -203,6 +213,11 @@ function fireInner(tw, cx, cy, tg, st){
     case 4: {
       lightning(cx + .3*tw.face, cy-.55, tg, D, 1 + L + sy.chain + M.chainAdd, M.decay, sy.vsSlow, L);
       sfx('zap'); break;
+    }
+    case 5: {
+      hit(tg, D);
+      fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L>=5 ? '#fff3b0' : '#c3cbd3' });
+      sfx('clang'); break;
     }
   }
 }
@@ -330,14 +345,21 @@ function update(dt){
     const ci = (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? idx(c,r) : -1;
     const inMarsh = ci >= 0 && S.terrain[ci] === TER.MARSH;
     if (inMarsh && !B.fly) sp *= 1 - MARSH_SLOW;
-    if (B.atk && K_ENEMY > 0 && e.y >= 0 && !e.ph){
+    if (e.wall != null && (e.ph || !wardAt(e.wall))) e.wall = null;
+    if (e.wall != null){
+      sp = 0; e.eng = null;
+      if (!(e.stunT > 0 || e.frozenT > 0)){
+        e.atkT -= dt;
+        if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.wall, enemyHit(e, Math.max(.5, B.atk || 0)), e); }
+      }
+    } else if (B.atk && K_ENEMY > 0 && e.y >= 0 && !e.ph){
       if (e.eng != null){ const tw = S.board[e.eng]; if (!tw || tw.ko || Math.hypot(e.eng%COLS + .5 - e.x, ((e.eng/COLS)|0) + .5 - e.y) > 1.2) e.eng = null; }
       if (e.eng == null){ e.engCd = (e.engCd || 0) - dt; if (e.engCd <= 0){ e.engCd = .25; const j = findPrey(e); if (j >= 0){ e.eng = j; e.atkT = .35; } } }
       if (e.eng != null){
         sp = 0;
         if (!(e.stunT > 0 || e.frozenT > 0)){
           e.atkT -= dt;
-          if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.eng, waveHP(S.wave) * B.atk * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * Math.sqrt(e.thr || 1)); }
+          if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.eng, enemyHit(e, B.atk), e); }
         }
       }
     }
@@ -353,7 +375,7 @@ function update(dt){
     }
     if (B.blink && e.y >= 0 && !(e.frozenT > 0)){
       e.blT -= dt;
-      if (e.blT <= 0 && !e.bash && e.eng == null){ e.blT = B.blink; burst(e.x, e.y-.3, '#a83a5a', 8, 2); moveEnemy(e, 1.2); if (e.out){ e.dead = true; leak(e); if (over) return; continue; } }
+      if (e.blT <= 0 && !e.bash && e.eng == null && e.wall == null){ e.blT = B.blink; burst(e.x, e.y-.3, '#a83a5a', 8, 2); moveEnemy(e, 1.2); if (e.out){ e.dead = true; leak(e); if (over) return; continue; } }
     }
     if (B.regen && e.hp < e.max){ e.hp = Math.min(e.max, e.hp + e.max*B.regen*(inMarsh ? 3 : 1)*dt); if (Math.random() < dt*4) fx.push({ k:'t', x:e.x+(Math.random()-.5)*.5, y:e.y-.6, s:'+', col:'#7bd34f', life:.5, max:.5 }); }
     if (B.heal && e.y >= 0){
@@ -386,7 +408,7 @@ function update(dt){
           if (e.atkT <= 0){
             e.atkT = 1; e.bump = .15;
             if (b.hp == null) b.hp = barMaxHp();
-            b.hp -= waveHP(S.wave) * Math.max(.6, B.atk || .6) * K_ENEMY * Math.min(1, .35 + S.wave/KE_RAMP) * 1.4 * Math.sqrt(e.thr || 1);
+            b.hp -= enemyHit(e, Math.max(.6, B.atk || .6)) * 1.4;
             const c = cellC(b.i); burst(c.x, c.y, '#8a5a32', 4, 1.8);
             if (b.hp <= 0){ b.hp = 0; b.broken = true; burst(c.x, c.y, '#c9a27a', 16, 3); sfx('boom'); toast('Une barricade a cédé'); rerouteAfterToggle(b.i); e.bash = null; }
           }
@@ -403,8 +425,19 @@ function update(dt){
     const tw = S.board[i]; if (!tw) continue;
     if (tw.anim > 0) tw.anim -= dt; if (tw.pop > 0) tw.pop -= dt; if (tw.hitFx > 0) tw.hitFx -= dt;
     if (tw.ko) continue;
-    if (tw.hp != null){ tw.hurtT = (tw.hurtT || 0) + dt; if (tw.hurtT > 3){ tw.hp += troopMax(tw) * .05 * dt; if (tw.hp >= troopMax(tw)) tw.hp = null; } }
+    if (tw.hp != null){
+      tw.hurtT = (tw.hurtT || 0) + dt;
+      const rg = (tw.hurtT > 3 ? .05 : 0) + (MODS.wardRegen && isWarden(tw) ? MODS.wardRegen : 0);
+      if (rg){ tw.hp += troopMax(tw) * rg * dt; if (tw.hp >= troopMax(tw)) tw.hp = null; }
+    }
     tw.cd -= dt;
+    if (isWarden(tw) && tw.l >= 6 && inWave){
+      if (tw.ab > 0) tw.ab -= dt;
+      else {
+        const held = enemies.filter(e => !e.dead && e.wall === i);
+        if (held.length){ tw.ab = WARD.bashCd; wardBash(tw, i, held); }
+      }
+    }
     if (tw.leg){
       if (tw.ab > 0) tw.ab -= dt;
       if (tw.leg === 'merlin' && inWave && tw.ab <= 0){

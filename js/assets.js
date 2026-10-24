@@ -24,7 +24,7 @@ function patt(rows, map, shaded){
   return s.pixels();
 }
 const SPR = [], SIL = [], URL_ = [];
-for (let t=0;t<5;t++){
+for (let t=0;t<TYPES.length;t++){
   SPR[t]=[]; SIL[t]=[]; URL_[t]=[];
   for (let l=1;l<=MAXL;l++){
     const o = troopPixels(t,l);

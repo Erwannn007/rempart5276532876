@@ -62,11 +62,25 @@ function markSeen(t, l){
   const key = t*MAXL + l - 1;
   if (!seen.has(key)){ seen.add(key); if (l > 1 && !quiet) setTimeout(() => toast('Nouveau : ' + TYPES[t].ranks[l-1]), 250); }
 }
+/* Sur la route, seul un gardien nain peut se poster, entre les vagues. */
+const onRoad = ref => ref.k === 'b' && netHas(ref.i);
+function roadWhy(tw, i){
+  if (!isWarden(tw)) return 'Seul le gardien nain peut se poster sur la route';
+  if (inWave) return 'Le gardien se poste sur la route entre les vagues';
+  if (!wardSpot(i)) return 'Ni sur une entrée, ni devant la porte';
+  if (barAt(i) || trapMap.has(i)) return 'La place est déjà prise';
+  return '';
+}
 function evalDrop(src, dst){
   if (!dst || sameRef(src,dst)) return { ok:false, none:true };
   const a = getT(src);
   if (dst.k === 'sell') return a.leg ? { ok:false, why:'Une légende ne se vend pas' } : { ok:true, kind:'sell' };
   const b = getT(dst);
+  if (b && (b.t !== a.t || !!a.leg !== !!b.leg)){
+    const offer = !!a.leg !== !!b.leg && (a.leg ? b : a).l >= (a.leg ? a : b).l + OFFER_GAP;
+    const w = (onRoad(dst) && roadWhy(offer ? (a.leg ? a : b) : a, dst.i)) || (!offer && onRoad(src) && roadWhy(b, src.i));
+    if (w) return { ok:false, why:w };
+  }
   if (b && (a.leg || b.leg)){
     if (!(a.leg && b.leg)){
       const lg = a.leg ? a : b, so = a.leg ? b : a;
@@ -87,8 +101,12 @@ function evalDrop(src, dst){
   }
   if (dst.k === 'b'){
     const tt = S.terrain[dst.i];
+    if (netHas(dst.i)){
+      if (!isWarden(a)) return { ok:false, why:'Une route passe ici jusqu’au prochain changement' };
+      const w = roadWhy(a, dst.i);
+      return w ? { ok:false, why:w } : { ok:true, kind:'move' };
+    }
     if (!BUILD[tt]) return { ok:false, why:TER_WHY[tt] };
-    if (netHas(dst.i)) return { ok:false, why:'Une route passe ici jusqu’au prochain changement' };
     if (!routeOK(dst.i, src.k==='b' ? src.i : -1)) return { ok:false, why:'Il faut laisser un passage aux ennemis' };
   }
   return { ok:true, kind:'move' };
@@ -249,8 +267,9 @@ function openSheet(ref){
     </div>
     <div class="stats">
       <div>Dégâts<b>${Math.round(st.dmg)}</b></div>
-      <div>Portée<b>${st.range.toFixed(1)}</b></div>
-      <div>Cadence<b>${st.rate.toFixed(2)} s</b></div>
+      ${isWarden(tw) ? `<div>Vie<b>${Math.round(troopHp(tw))}</b></div>
+      <div>Armure<b>${Math.round(wardArmor(tw)*100)} %</b></div>` : `<div>Portée<b>${st.range.toFixed(1)}</b></div>
+      <div>Cadence<b>${st.rate.toFixed(2)} s</b></div>`}
     </div>
     ${!LG && L < MAXL ? `<div class="sh-xp"><span>Expérience</span><i><b style="width:${Math.round(Math.min(1,(tw.xp||0)/xpNeed(L))*100)}%"></b></i><small>${fmtXp(tw.xp||0)} / ${xpNeed(L)}</small></div>` : ''}
     ${LG ? `<p class="sh-ult"><b>Ultime : ${LG.ult}.</b> ${LG.ultDesc}</p>` : ''}
@@ -279,6 +298,10 @@ function specialText(t,l){
     case 2: return 'Explosion d’un rayon de ' + (TYPES[2].splash + .08*(l-1)).toFixed(1).replace('.', ',') + ' case.';
     case 3: return 'Ralentit de ' + Math.round(Math.min(.6, .3+.07*(l-1)+MODS.slowAdd)*100) + ' %' + (l>=4 ? ', et tout le groupe autour de la cible.' : '. Au niveau 4, le froid touchera tout un groupe.');
     case 4: return 'L’éclair rebondit sur ' + (1+l+MODS.chainAdd) + ' ennemis de plus' + ', en perdant ' + Math.round((1-MODS.decay)*100) + ' % à chaque saut.';
+    case 5: return 'Armure : −' + Math.round(WARD.armor[l-1]*100) + ' % de dégâts subis. Les monstres tout proches le frappent en priorité. '
+      + (l>=4 ? 'Riposte : renvoie ' + Math.round(WARD.thorns[l-1]*100) + ' % des coups reçus. ' : 'Au niveau 4, il renverra une partie des coups reçus. ')
+      + (l>=6 ? 'Toutes les ' + WARD.bashCd + ' s, son bouclier étourdit les monstres qu’il retient.' : 'Au niveau 6, son bouclier étourdira les monstres qu’il retient.')
+      + ' Les volants et les fantômes intangibles passent.';
   }
 }
 
@@ -293,7 +316,7 @@ function placeSpots(kind, id){
   for (let i=0;i<COLS*ROWS;i++){
     const t = S.terrain[i];
     if (kind === 'bar'){ if (NET && barSpot(i)) out.push(i); }
-    else if (kind === 'trap'){ if (lock.has(i) && !trapMap.has(i) && !barAt(i)) out.push(i); }
+    else if (kind === 'trap'){ if (lock.has(i) && !trapMap.has(i) && !barAt(i) && !S.board[i]) out.push(i); }
     else if (id === 'dyn'){ if (t === TER.ROCK || t === TER.TREE) out.push(i); }
     else if (id === 'marsh'){ if (t === TER.GRASS && !S.board[i] && !trapMap.has(i)) out.push(i); }
     else if (t === TER.GRASS && !lock.has(i) && (S.board[i] || routeOK(i, -1))) out.push(i);
@@ -319,7 +342,7 @@ function openShop(){
       const lv = recruitLevel(), price = recruitPrice()*2, free = S.bench.some(x => !x);
       const why = !free ? 'Réserve pleine' : S.gold < price ? 'Il te manque ' + (price - Math.floor(S.gold)) + ' or' : '';
       return `<button class="shop-item${why ? ' off' : ''}" data-kind="hire" data-id="${t}" data-why="${why}">
-        <img class="px" src="${URL_[t][lv-1]}" alt=""><div><b>${ty.name}, niveau ${lv}</b><span>Dégâts ${DT_NAME[TYPE_DT[t]].split(' (')[0]}${canHitAir(t) ? ', touche les volants' : ''}.</span>${why ? `<small>${why}</small>` : ''}</div>
+        <img class="px" src="${URL_[t][lv-1]}" alt=""><div><b>${ty.name}, niveau ${lv}</b><span>${t === WARD_T ? 'Se poste sur la route et bloque les monstres' : 'Dégâts ' + DT_NAME[TYPE_DT[t]].split(' (')[0] + (canHitAir(t) ? ', touche les volants' : '')}.</span>${why ? `<small>${why}</small>` : ''}</div>
         <em><img class="px" src="${COIN_URL}" alt="">${price}</em></button>`;
     }).join('') +
     `<h3 class="cx-h">Terrain</h3><p class="cx-note">Chaque achat rend le suivant du même genre plus cher.</p>` +
@@ -457,9 +480,9 @@ function recruit(){
     }
     S.legendPity++;
   }
-  const w = [0,1,2,3,4].map(t => 1 + MODS.school[t]);
+  const w = TYPES.map((_,t) => (t === WARD_T ? WARD.recruit : 1) + MODS.school[t]);
   let r = Math.random() * w.reduce((a,b) => a+b, 0), t = 0;
-  for (; t<4; t++){ r -= w[t]; if (r <= 0) break; }
+  for (; t<TYPES.length-1; t++){ r -= w[t]; if (r <= 0) break; }
   const vet = MODS.vet && Math.random() < MODS.vet, lvl = base + (vet ? 1 : 0);
   S.bench[i] = mk(t, lvl); markSeen(t, lvl);
   burst(i + .5, BENCH_Y/T + .5, TYPES[t].col, lvl > 1 ? 18 : 10, 2.5);
@@ -491,7 +514,7 @@ function openMenu(){
   show('ovMenu');
 }
 function buildCodex(){
-  $('cxCount').textContent = seen.size + ' soldats découverts sur ' + 5*MAXL;
+  $('cxCount').textContent = seen.size + ' soldats découverts sur ' + TYPES.length*MAXL;
   const troops = TYPES.map((ty,t) => `
     <div class="cx-type">
       <h3><i style="background:${ty.col}"></i>${ty.name}</h3>

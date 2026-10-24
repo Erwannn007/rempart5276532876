@@ -98,7 +98,7 @@ function computeMods(){
   for (const k of (S.bless || [])){ const { b, p } = blessInfo(k); if (b && b.mod) b.mod(M, p); }
   MODS = M;
 }
-function emptySyn(){ return { dmg:0, rate:0, range:0, splash:0, slow:0, vsSlow:0, zap:0, arrowSlow:0, bombSlow:0, chain:0, list:[] }; }
+function emptySyn(){ return { dmg:0, rate:0, range:0, splash:0, slow:0, vsSlow:0, zap:0, arrowSlow:0, bombSlow:0, chain:0, hp:0, armor:0, thorns:0, list:[] }; }
 const NOSYN = emptySyn();
 const D4 = [[0,1],[-1,0],[1,0],[0,-1]];
 const idx = (c,r) => r*COLS + c;
@@ -164,7 +164,7 @@ const isWalk = i => !!WALK[S.terrain[i]];
 const isBuild = i => !!BUILD[S.terrain[i]];
 
 function routeOK(add, rem){
-  const occ = i => i===add || (i!==rem && !!S.board[i]) || !WALK[S.terrain[i]];
+  const occ = i => i===add || (i!==rem && !!S.board[i] && !netHas(i)) || !WALK[S.terrain[i]];
   const seenB = new Uint8Array(COLS*ROWS), q = [];
   for (let c=0;c<COLS;c++){ const i=idx(c,0); if (!occ(i)){ seenB[i]=1; q.push(i); } }
   while (q.length){
@@ -265,8 +265,9 @@ function overlapRatio(p, set){ if (!set || !set.size) return 0; let n = 0; for (
    (les soldats concernés seront déplacés). */
 function relocateOff(set){
   let moved = 0, toBench = 0, sold = 0;
+  for (let i=0;i<COLS*ROWS;i++) if (isWarden(S.board[i]) && !set.has(i) && !isBuild(i)){ set = new Set(set); set.add(i); }
   for (const i of set){
-    const tw = S.board[i]; if (!tw) continue;
+    const tw = S.board[i]; if (!tw || (isWarden(tw) && wardSpot(i))) continue;
     S.board[i] = null;
     let bestJ = -1, bd = Infinity;
     for (let j=0;j<COLS*ROWS;j++){
@@ -323,6 +324,9 @@ function bfsDist(cells, exit, blocked){
 }
 const barAt = i => (S.bars || []).find(b => b.i === i) || null;
 const barClosed = i => { const b = barAt(i); return !!b && !b.open && !b.broken; };
+/* Case de route où un gardien nain peut se poster, et gardien debout qui barre le passage. */
+const wardSpot = i => !!NET && NET.cells.has(i) && !NET.ents.includes(i) && i !== NET.exit;
+const wardAt = i => { const tw = S.board[i]; return isWarden(tw) && !tw.ko && netHas(i); };
 function recomputeDist(){
   if (!NET) return;
   NET.dist = bfsDist(NET.cells, NET.exit, barClosed);
@@ -428,7 +432,7 @@ function makeNet(oldCells){
 function restoreNet(o){
   if (!o || !Array.isArray(o.cells) || !Array.isArray(o.ents)) return false;
   const cells = new Set(o.cells);
-  for (const i of cells) if (!(i >= 0 && i < COLS*ROWS) || S.board[i] || !isWalk(i)) return false;
+  for (const i of cells) if (!(i >= 0 && i < COLS*ROWS) || (S.board[i] && !(isWarden(S.board[i]) && !o.ents.includes(i) && i !== o.exit)) || !isWalk(i)) return false;
   if (!cells.has(o.exit) || ((o.exit/COLS)|0) !== ROWS-1) return false;
   if (!o.ents.every(e => cells.has(e) && ((e/COLS)|0) === 0)) return false;
   const N = { cells, ents:o.ents.slice(), exit:o.exit };
@@ -455,12 +459,13 @@ function chooseNext(e){
 function moveEnemy(e, step){
   let guard = 0;
   while (step > 1e-6 && guard++ < 10){
-    let tx, ty, stopAtBar = false;
+    let tx, ty, stopAtBar = false, stopAtWard = false;
     if (e.next === GONE){ const c = cellC(NET.exit); tx = c.x; ty = ROWS + .3; }
     else {
       const c = cellC(e.next); tx = c.x; ty = c.y;
-      if (e.cell >= 0 && e.next !== e.cell && barClosed(e.next) && !EN[e.k].fly){
-        const a = cellC(e.cell); tx = a.x + (c.x - a.x)*.45; ty = a.y + (c.y - a.y)*.45; stopAtBar = true;
+      if (e.cell >= 0 && e.next !== e.cell && !EN[e.k].fly){
+        if (barClosed(e.next)) stopAtBar = true; else if (!e.ph && wardAt(e.next)) stopAtWard = true;
+        if (stopAtBar || stopAtWard){ const a = cellC(e.cell); tx = a.x + (c.x - a.x)*.45; ty = a.y + (c.y - a.y)*.45; }
       }
     }
     const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
@@ -468,6 +473,7 @@ function moveEnemy(e, step){
     if (d <= step){
       e.x = tx; e.y = ty; step -= d;
       if (stopAtBar){ e.bash = barAt(e.next); return; }
+      if (stopAtWard){ e.wall = e.next; e.atkT = .35; return; }
       if (e.next === GONE){ e.out = true; return; }
       e.cell = e.next; e.next = chooseNext(e);
     } else { e.x += dx/d*step; e.y += dy/d*step; step = 0; }
@@ -492,7 +498,7 @@ function canClose(i){
   const d = bfsDist(NET.cells, NET.exit, blocked);
   return NET.ents.every(e => d[e] < INF);
 }
-function barSpot(i){ return NET.cells.has(i) && !NET.ents.includes(i) && i !== NET.exit && !barAt(i) && !trapMap.has(i); }
+function barSpot(i){ return NET.cells.has(i) && !NET.ents.includes(i) && i !== NET.exit && !barAt(i) && !trapMap.has(i) && !S.board[i]; }
 function dropBar(d){
   const ref = refAt(d.x, d.y - CS*.45);
   if (ref && ref.k === 'b' && barSpot(ref.i)){ d.b.i = ref.i; d.b.open = true; recomputeDist(); sfx('build'); }

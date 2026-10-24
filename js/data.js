@@ -18,7 +18,10 @@ const TYPES = [
     desc:'Ralentit les ennemis qu’il touche.' },
   { name:'Foudroyeur',    col:'#7a58c9', range:2.4,  dmg:7,  rate:1.25,
     ranks:['Étincelle','Orageux','Fulminant','Tempétueux','Avatar de foudre','Foudre de mythril','Orage d’obsidienne','Foudre céleste'],
-    desc:'Son éclair rebondit d’ennemi en ennemi.' }
+    desc:'Son éclair rebondit d’ennemi en ennemi.' },
+  { name:'Gardien nain',  col:'#3a8a8a', range:1.1,  dmg:5,  rate:1.0,
+    ranks:['Mineur','Porte-bouclier','Gardien','Brise-fer','Roi sous la montagne','Gardien de mythril','Rempart d’obsidienne','Bastion céleste'],
+    desc:'Le seul soldat qui se poste sur la route. Les monstres au sol butent sur lui et doivent l’abattre pour passer.' }
 ];
 const MAXL = 8;
 const DMUL = [1, 2.2, 4.8, 10.5, 23, 50, 108, 235];
@@ -82,27 +85,38 @@ Object.assign(EN.scorpion, { desc:'Sa carapace arrête une bonne partie des coup
 Object.assign(EN.titan, { desc:'Lourdement cuirassé, insensible au froid, il encaisse tout.' });
 Object.assign(EN.titan_ice, { desc:'Un titan de glace lourdement cuirassé, qui ignore le froid.' });
 Object.assign(EN.wolf_war, { desc:'Harnaché par les orcs, il encaisse mieux les coups physiques.' });
-const TYPE_DT = ['phys','phys','boom','magic','magic'];
+const TYPE_DT = ['phys','phys','boom','magic','magic','phys'];
 /* Combat au contact : certains monstres s'arrêtent pour frapper les soldats voisins du chemin.
    Un soldat à zéro est KO jusqu'à la fin de la vague. */
 const ATK = { wolf:.5, skeleton:.6, golem:1.2, orc:1, wolf_war:.8, ghoul:1, yeti:1.2, golem_ice:1.2, golem_lava:1.3, mummy:.9, scorpion:.9, beetle:.7, imp:.6, head:.8,
   boss:2.5, titan:3, titan_ice:3, warlord:2, mino:2, hydra:2, hydra_sand:2, kraken:2, vampire:2, dragon:2, lich:1.5, queen:1.5, wraith:1.5, king:3 };
 for (const k in ATK) if (EN[k]) EN[k].atk = ATK[k];
-const HPT = [3, 1.2, 1.6, 1.1, 1.1], LEG_HPT = 2.4;
+const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5], LEG_HPT = 2.4;
+/* Gardien nain : posté sur la route, il arrête les monstres au sol. Armure, riposte (niv. 4+), coup de bouclier (niv. 6+). */
+const WARD_T = 5;
+const WARD = { armor:[.2,.25,.3,.35,.4,.45,.5,.55], thorns:[0,0,0,.3,.35,.4,.45,.5], bashCd:6, bashStun:.8, recruit:.6, taunt:.5 };
+const isWarden = tw => !!tw && tw.t === WARD_T && !tw.leg;
+const wardArmor = tw => Math.min(.8, WARD.armor[tw.l-1] + (tw.syn ? tw.syn.armor : 0));
+const wardThorns = tw => WARD.thorns[tw.l-1] + (tw.syn ? tw.syn.thorns : 0);
 let K_SOLDIER = 40, K_ENEMY = .25;
-const troopMax = tw => (tw.leg ? LEG_HPT : HPT[tw.t]) * (tw.leg ? LMUL : DMUL)[tw.l-1] * K_SOLDIER;
+const troopMax = tw => (tw.leg ? LEG_HPT : HPT[tw.t]) * (tw.leg ? LMUL : DMUL)[tw.l-1] * K_SOLDIER * (isWarden(tw) ? MODS.wardHp * (1 + (tw.syn ? tw.syn.hp : 0)) : 1);
 const troopHp = tw => tw.hp == null ? troopMax(tw) : tw.hp;
 function findPrey(e){
   const c0 = Math.floor(e.x), r0 = Math.floor(e.y); let best = -1, bd = 1.1;
   for (let r=r0-1;r<=r0+1;r++) for (let c=c0-1;c<=c0+1;c++){
     if (c<0||r<0||c>=COLS||r>=ROWS) continue;
     const j = idx(c,r), tw = S.board[j]; if (!tw || tw.ko) continue;
-    const d = Math.hypot(c + .5 - e.x, r + .5 - e.y); if (d < bd){ bd = d; best = j; }
+    const d = Math.hypot(c + .5 - e.x, r + .5 - e.y) - (isWarden(tw) ? WARD.taunt : 0); if (d < bd){ bd = d; best = j; }
   }
   return best;
 }
-function hurtTroop(j, dmg){
+function hurtTroop(j, dmg, from){
   const tw = S.board[j]; if (!tw || tw.ko) return;
+  if (isWarden(tw)){
+    dmg *= 1 - wardArmor(tw);
+    const th = wardThorns(tw);
+    if (th > 0 && from && !from.dead){ const pv = hitDT; hitDT = 'phys'; hit(from, dmg*th); hitDT = pv; }
+  }
   tw.hp = troopHp(tw) - dmg; tw.hurtT = 0; tw.hitFx = .15;
   const cx = j%COLS + .5, cy = ((j/COLS)|0) + .5;
   burst(cx, cy - .2, '#e0523f', 3, 1.4);
@@ -203,15 +217,20 @@ const SYN = {
   '1-4': { name:'Ciel d’orage',        fx:{1:{rate:.2}, 4:{range:.3}},           txt:{1:'+20 % de cadence', 4:'+0,3 de portée'} },
   '2-3': { name:'Bombe givrante',      fx:{2:{bombSlow:.25}, 3:{dmg:.15}},       txt:{2:'ses explosions ralentissent de 25 %', 3:'+15 % de dégâts'} },
   '2-4': { name:'Poudre chargée',      fx:{2:{rate:.2}, 4:{dmg:.2}},             txt:{2:'+20 % de cadence', 4:'+20 % de dégâts'} },
-  '3-4': { name:'Supraconduction',     fx:{3:{rate:.15}, 4:{vsSlow:.4, chain:1}},txt:{3:'+15 % de cadence', 4:'+40 % contre les ralentis, 1 rebond de plus'} }
+  '3-4': { name:'Supraconduction',     fx:{3:{rate:.15}, 4:{vsSlow:.4, chain:1}},txt:{3:'+15 % de cadence', 4:'+40 % contre les ralentis, 1 rebond de plus'} },
+  '0-5': { name:'Mur de boucliers',    fx:{0:{dmg:.15}, 5:{hp:.25}},             txt:{0:'+15 % de dégâts', 5:'+25 % de vie'} },
+  '1-5': { name:'Couverture',          fx:{1:{rate:.15}, 5:{thorns:.15}},        txt:{1:'+15 % de cadence', 5:'+15 % de riposte'} },
+  '2-5': { name:'Enclume',             fx:{2:{dmg:.2}, 5:{dmg:.3}},              txt:{2:'+20 % de dégâts', 5:'+30 % de dégâts'} },
+  '3-5': { name:'Rempart de givre',    fx:{3:{slow:.08}, 5:{armor:.1}},          txt:{3:'+8 % de ralentissement', 5:'+10 % d’armure'} },
+  '4-5': { name:'Paratonnerre',        fx:{4:{chain:1}, 5:{thorns:.2}},          txt:{4:'1 rebond de plus', 5:'+20 % de riposte'} }
 };
 const FORMATION = .08;
 const synKey = (a,b) => a < b ? a+'-'+b : b+'-'+a;
 
 /* ---------- bénédictions ---------- */
 const RAR = { c:{ name:'Commune', col:'#b9a684', w:62 }, r:{ name:'Rare', col:'#5ea0e0', w:30 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
-const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre'];
-const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs'];
+const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne'];
+const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains'];
 const BLESS = [
   { id:'lames', rar:'c', icon:'sword', max:3, name:'Lames affûtées', desc:'Épéistes : +25 % de dégâts.', mod:M => { M.dmgType[0] *= 1.25; } },
   { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 60 % de leurs dégâts.', mod:M => { M.whirl = true; } },
@@ -233,6 +252,8 @@ const BLESS = [
   { id:'coffre', rar:'c', icon:'chest', max:3, name:'Coffre de guerre', desc:() => 'Reçois ' + (50 + 5*S.wave) + ' or tout de suite.', pick:() => { S.gold += 50 + 5*S.wave; } },
   { id:'primes', rar:'r', icon:'goblin', name:'Chasseur de primes', desc:'Les gobelins d’or viennent trois fois plus souvent et rapportent 50 % de plus.', mod:M => { M.bounty = true; } },
   { id:'maitre', rar:'c', icon:'sword', max:2, name:'Maître d’armes', desc:'Absorber un soldat rapporte 50 % d’expérience en plus.', mod:M => { M.absorbMul += .5; } },
+  { id:'barbe', rar:'c', icon:'helm', max:2, name:'Barbe de fer', desc:'Gardiens nains : +30 % de vie.', mod:M => { M.wardHp += .3; } },
+  { id:'forteresse', rar:'r', icon:'wall', name:'Forteresse', desc:'Les gardiens nains regagnent 3 % de leur vie par seconde, même sous les coups.', mod:M => { M.wardRegen = .03; } },
   { id:'murailles', rar:'c', icon:'wall', max:3, name:'Murailles renforcées', desc:'+5 vies.', pick:() => { S.lives += 5; } },
   { id:'herse', rar:'r', icon:'gate', name:'Herse', desc:'À chaque vague, le premier ennemi qui atteint le rempart ne te coûte aucune vie.', mod:M => { M.herse = true; } },
   { id:'remedes', rar:'r', icon:'potion', name:'Remèdes', desc:'Chaque vague terminée sans perdre de vie t’en rend une.', mod:M => { M.regen = true; } },
@@ -297,8 +318,8 @@ const blessName = key => { const { b, p } = blessInfo(key); return typeof b.name
 const blessDesc = key => { const { b, p } = blessInfo(key); return typeof b.desc === 'function' ? b.desc(p) : b.desc; };
 
 function baseMods(){
-  return { dmgAll:1, dmgType:[1,1,1,1,1], rateType:[0,0,0,0,0], range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
-    decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0], goldKill:0,
+  return { dmgAll:1, dmgType:[1,1,1,1,1,1], rateType:[0,0,0,0,0,0], wardHp:1, wardRegen:0, range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
+    decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0,0], goldKill:0,
     waveBonus:1, interest:false, bounty:false, sellMul:1, herse:false, regen:false, frenzy:false, synMul:1,
     elite:1, low:1, crit:0, hpMul:1, runeMul:1, absorbMul:1 };
 }

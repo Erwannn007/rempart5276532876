@@ -200,6 +200,64 @@ function drawFoudre(s,l){
   if (l>=4){ s.r(2,6,2,2,Y,1); s.p(2,6,YW,1); }
 }
 
+/* ---- Gardien nain : heaume clos, barbe tressée, bouclier-tour ---- */
+function drawNain(s,l){
+  const m = MET[l-1], c = l===5 ? '#2a6a6a' : '#3a8a8a', cd = '#24555a';
+  const beard = l===5 ? '#ece6d4' : '#8a5a3a', hlm = l===5 ? GOLD : m.m, ring = l>=4 ? GOLD : m.m;
+  if (l>=4){ s.r(4,10,9,7, l===5 ? '#4f2a74' : cd); if (l===5) s.hl(4,12,16,GOLD); }
+  // marteau, tenu derrière l'épaule
+  s.v(2,9,15,'#6b4a2e');
+  if (l===1){ s.hl(0,4,7,'#8e99a4'); s.p(0,8,'#8e99a4'); s.p(4,8,'#8e99a4'); s.v(2,6,8,'#6b4a2e'); }
+  else {
+    const hm = l===5 ? GOLD : m.m;
+    s.r(0,6,5,3,hm); s.hl(0,4,6,m.h,1);
+    if (l===4){ s.v(0,6,8,GOLD); s.v(4,6,8,GOLD); }
+    if (l===5) s.p(2,7,GEM,1);
+  }
+  s.r(6,16,2,1,'#3a3036'); s.r(10,16,2,1,'#3a3036');
+  const boot = l>=3 ? m.m : '#3a2a1f'; s.r(5,17,4,1,boot); s.r(9,17,4,1,boot);
+  s.r(5,11,8,5,c);
+  if (l>=2){ s.r(6,11,6,2,hlm); s.hl(6,11,11, l===5 ? '#fbe08a' : m.h,1); }
+  s.hl(5,12,14,'#4b3020'); s.r(8,14,2,1, l>=4 ? GOLD : m.h, 1);
+  if (l>=3){ s.r(4,10,3,2,m.m); s.hl(4,6,10,m.h,1); }
+  s.r(4,12,1,3,c); s.p(3,12,SK); s.p(4,11,SK);
+  // tête
+  s.r(6,6,6,4,SK);
+  if (l<=2){
+    s.p(7,8,EYE,1); s.p(10,8,EYE,1);
+    if (l===1){ s.r(6,4,6,3,m.m); s.hl(5,12,6,m.m); s.p(9,4,'#ffd23f',1); }
+    else { s.r(6,3,6,4,m.m); s.hl(7,10,3,m.h,1); s.hl(5,12,6,m.m); s.r(8,7,2,2,m.m); }
+  } else {
+    const glow = l>=4 ? '#7fe3ff' : '#f2c14e';
+    s.r(6,3,6,6,hlm); s.hl(7,10,2,hlm); s.hl(7,9,3, l===5 ? '#fbe08a' : m.h,1);
+    s.hl(6,11,7,'#21182a',1); s.p(7,7,glow,1); s.p(10,7,glow,1);
+    s.v(8,4,6, l===4 ? GOLD : l===5 ? '#f2ead6' : m.h, 1);
+  }
+  if (l===4){ s.p(5,4,'#efe6d0'); s.p(4,3,'#efe6d0'); s.p(4,2,'#efe6d0'); s.p(12,4,'#efe6d0'); s.p(13,3,'#efe6d0'); s.p(13,2,'#efe6d0'); }
+  if (l===5){ s.hl(6,11,1,GOLD); s.p(6,0,GOLD); s.p(8,0,GOLD); s.p(9,0,GOLD); s.p(11,0,GOLD); s.p(9,1,GEM,1); }
+  // barbe en deux tresses
+  s.r(6,9,6,3,beard); s.hl(7,10,12,beard); s.v(7,13,15,beard); s.v(10,13,15,beard);
+  s.hl(7,10,9, shade(beard,1.25), 1);
+  if (l>=2){ s.p(7,14,ring,1); s.p(10,14,ring,1); }
+  if (l>=4){ s.p(7,12,ring,1); s.p(10,12,ring,1); }
+  // bouclier-tour, face à l'ennemi
+  if (l===1){
+    s.r(13,10,5,5,'#8b5a33'); s.hl(14,16,9,'#8e99a4'); s.hl(14,16,15,'#8e99a4'); s.v(12,11,13,'#8e99a4'); s.v(18,11,13,'#8e99a4');
+    s.p(15,12,'#c3cbd3',1);
+  } else {
+    const rim = l>=4 ? GOLD : m.m, face = l===2 ? '#8b5a33' : l===3 ? m.m : l===4 ? c : '#f2ead6';
+    s.r(12,7,6,10,rim); s.r(13,8,4,8,face); s.hl(13,16,16,null);
+    s.p(12,7,null); s.p(17,7,null); s.p(12,16,null); s.p(17,16,null); s.hl(13,16,17,rim);
+    if (l===2){ s.v(15,8,15,'#6b4422'); s.hl(13,16,10,'#8e99a4'); s.hl(13,16,14,'#8e99a4'); }
+    else {
+      const em = l===3 ? c : l===4 ? '#7fe3ff' : GEM;
+      s.r(14,10,2,4,em,1); s.r(13,11,4,2,em,1);
+      if (l>=4) s.p(14,11,'#ffffff',1);
+    }
+  }
+  s.p(12,12,SK);
+}
+
 /* ---- Ennemis ---- */
 function enSlime(s){
   const c = '#79c25b';
@@ -294,12 +352,12 @@ function recolor(s, map){ for (let i=0;i<s.g.length;i++){ const c = s.g[i]; if (
 const TIER_MAP = [
   null,
   { '#e0a93a':'#4fc0d4', '#fbe08a':'#c8f6ff', '#f2ead6':'#8fd4e4', '#ffffff':'#e0fbff', '#e2334a':'#3fe0c0', '#a06d1f':'#2f7f8f', '#d1a23a':'#4fa8b8', '#c8962e':'#5fb0c0',
-    '#4f2a74':'#2a5a78', '#24557a':'#1f5a6a', '#ece6d4':'#b8e4ee', '#d6ebff':'#8fd8e4', '#8fb6dc':'#3f8aa0', '#2f3f8f':'#235a78', '#9b1d2a':'#1f6a7a' },
+    '#4f2a74':'#2a5a78', '#24557a':'#1f5a6a', '#2a6a6a':'#2f8f9f', '#ece6d4':'#b8e4ee', '#d6ebff':'#8fd8e4', '#8fb6dc':'#3f8aa0', '#2f3f8f':'#235a78', '#9b1d2a':'#1f6a7a' },
   { '#e0a93a':'#ff6a2a', '#fbe08a':'#ffc06a', '#f2ead6':'#3e3450', '#e2334a':'#ff3a1a', '#a06d1f':'#a8381a', '#d1a23a':'#e0501a',
-    '#a8323a':'#4a1a28', '#4f2a74':'#2a1830', '#2f6f8f':'#2a2838', '#24557a':'#1e1a28', '#b5452a':'#4a2228', '#9b1d2a':'#2a1a22',
+    '#a8323a':'#4a1a28', '#4f2a74':'#2a1830', '#2f6f8f':'#2a2838', '#24557a':'#1e1a28', '#2a6a6a':'#2a2838', '#b5452a':'#4a2228', '#9b1d2a':'#2a1a22',
     '#d6ebff':'#3a3050', '#8fb6dc':'#2a2440', '#2f3f8f':'#241a34', '#c8962e':'#3a2a40', '#ece6d4':'#4a4058' },
   { '#e0a93a':'#ffe680', '#fbe08a':'#fffbe0', '#f2ead6':'#ffffff', '#e2334a':'#7fd8ff', '#a06d1f':'#e0b850', '#d1a23a':'#f2d070',
-    '#a8323a':'#f08a8a', '#4f2a74':'#c8b8f0', '#2f6f8f':'#8ad0f0', '#24557a':'#b8e0f8', '#b5452a':'#f0b070', '#9b1d2a':'#f0d0a0',
+    '#a8323a':'#f08a8a', '#4f2a74':'#c8b8f0', '#2f6f8f':'#8ad0f0', '#24557a':'#b8e0f8', '#2a6a6a':'#8ad0d8', '#b5452a':'#f0b070', '#9b1d2a':'#f0d0a0',
     '#d6ebff':'#ffffff', '#8fb6dc':'#c0e0ff', '#2f3f8f':'#b8a8ff', '#c8962e':'#fff0c0' }
 ];
 function drawSoldier(s, t, l){
@@ -654,7 +712,7 @@ function terBrazier(){
 }
 
 const STORY_EN_DRAW = { toad:enToad, scorpion:enScorpion, mummy:enMummy, yeti:enYeti, ghoul:enGhoul };
-const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre];
+const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre, drawNain];
 function troopPixels(t,l){ const s = new Spr(); drawSoldier(s,t,l); return s.pixels(); }
 const EN_DRAW = { slime:enSlime, wolf:enWolf, golem:enGolem, boss:enBoss, bigslime:enBigSlime, mini:enMini, goblin:enGoblin, king:enKing };
 function enemyPixels(k){
