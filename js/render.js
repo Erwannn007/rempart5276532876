@@ -80,7 +80,7 @@ function drawTroop(tw, X, Y, alpha=1, scale=1){
   ctx.globalAlpha = 1;
 }
 function drawEnemy(e){
-  const o = ENS[e.k];
+  const o = e.toadT > 0 ? ENS.toad : ENS[e.k];
   const can = e.flash > 0 ? o.flash : (slowed(e) ? o.frost : o.n);
   const bob = (Math.floor((e.x + e.y)*5) % 2) ? P : 0;
   let bx = 0, by = 0;
@@ -101,6 +101,12 @@ function drawEnemy(e){
     ctx.fillStyle = '#120d08'; ctx.fillRect(ix - P, Y - 2*P, 5*P, 5*P);
     ctx.fillStyle = col; ctx.fillRect(ix, Y - P, 3*P, 2*P); ctx.fillRect(ix + P, Y + P, P, P);
     ix += 5*P;
+  }
+  if (e.huntT > 0){
+    const mx = snapP(cx) - 3*P, my = Y - 7*P - (Math.floor(clock*4) % 2)*P;
+    ctx.fillStyle = '#120d08'; ctx.fillRect(mx - P, my - P, 8*P, 8*P);
+    ctx.fillStyle = '#ff6a4a'; ctx.fillRect(mx, my + 2*P, 6*P, 2*P); ctx.fillRect(mx + 2*P, my, 2*P, 6*P);
+    ctx.fillStyle = '#120d08'; ctx.fillRect(mx + 2*P, my + 2*P, 2*P, 2*P);
   }
   if (e.stunT > 0 || e.frozenT > 0){ ctx.globalAlpha = .45; ctx.fillStyle = '#e8f8ff'; ctx.fillRect(X+3*P, Y+3*P, (o.w-6)*P, (o.h-5)*P); ctx.globalAlpha = 1; }
   if (e.hp < e.max){
@@ -263,6 +269,21 @@ function draw(){
   drawBars();
   // sol en feu
   for (const f of fires){
+    if (f.kind === 'thorn'){
+      const a = Math.min(1, f.t / .5), n = Math.round(f.r*26);
+      ctx.globalAlpha = .5*a; ctx.fillStyle = '#1e2e14';
+      ctx.fillRect(snapP(ox + (f.x - f.r)*CS), snapP(oy + (f.y - f.r*.6)*CS), snapP(f.r*2*CS), snapP(f.r*1.2*CS));
+      ctx.globalAlpha = a;
+      for (let k=0;k<n;k++){
+        const gx = f.x + (hash(k, 3, f.seed) - .5)*f.r*1.8, gy = f.y + (hash(k, 4, f.seed) - .5)*f.r*1.1;
+        const X = snapP(ox + gx*CS), Y = snapP(oy + gy*CS), tall = 1 + (hash(k, 5, f.seed) > .5 ? 1 : 0);
+        ctx.fillStyle = '#120d08'; ctx.fillRect(X - P, Y - (tall+1)*P, 3*P, (tall+2)*P);
+        ctx.fillStyle = '#5a7a2a'; ctx.fillRect(X, Y - tall*P, P, tall*P + P); ctx.fillRect(X - P, Y - P, P, P);
+        ctx.fillStyle = k % 3 ? '#c8402a' : '#9ac83a'; ctx.fillRect(X, Y - (tall+1)*P, P, P);
+      }
+      ctx.globalAlpha = 1;
+      continue;
+    }
     const a = Math.min(1, f.t / .5), n = Math.round(f.r*10);
     ctx.globalAlpha = .25*a; ctx.fillStyle = '#ff6a2a';
     ctx.fillRect(snapP(ox + (f.x - f.r)*CS), snapP(oy + (f.y - f.r*.6)*CS), snapP(f.r*2*CS), snapP(f.r*1.2*CS));
@@ -352,7 +373,7 @@ function draw(){
   for (let i=0;i<S.board.length;i++){
     const tw = S.board[i]; if (!tw) continue;
     const ghosted = drag && drag.moved && drag.troop === tw;
-    const lift = S.terrain[i] === TER.HILL ? 2*P : 0;
+    const lift = S.terrain[i] === TER.HILL ? 2*P : (tw.t === 23 && (S.terrain[i] === TER.ROCK || S.terrain[i] === TER.TREE)) ? 5*P : 0;
     drawTroop(tw, ox + (i%COLS)*CS, oy + ((i/COLS)|0)*CS - lift, ghosted ? .3 : 1);
   }
   S.bench.forEach((tw,i) => { if (!tw) return; const ghosted = drag && drag.moved && drag.troop === tw; drawTroop(tw, ox + i*CS, oy + BENCH_Y*P, ghosted ? .3 : 1); });
@@ -366,6 +387,13 @@ function draw(){
   ctx.save();
   ctx.beginPath(); ctx.rect(ox, oy, ART_W*P, (ROWS*T + WALL)*P); ctx.clip();
   enemies.slice().sort((a,b) => a.y - b.y).forEach(drawEnemy);
+  for (const a of allies){
+    const o = ENS.skeleton, X = snapP(ox + a.x*CS - o.w*P/2), Y = snapP(oy + (a.y + .42)*CS - o.h*P) - ((a.bump || 0) > 0 ? P : 0);
+    ctx.globalAlpha = .3; ctx.fillStyle = '#000'; ctx.fillRect(snapP(ox + a.x*CS - 4*P), snapP(oy + (a.y + .42)*CS - 2*P), 8*P, 2*P);
+    ctx.globalAlpha = Math.min(1, a.t*2); ctx.drawImage(o.frost, X, Y, o.w*P, o.h*P);
+    ctx.fillStyle = '#7cff8a'; ctx.fillRect(X + 8*P, Y + 5*P, P, P); ctx.fillRect(X + 11*P, Y + 5*P, P, P);
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
   if (S) drawAmbiance(ambDt);
 
@@ -417,7 +445,8 @@ function draw(){
         ctx.fillStyle = '#c3cbd3'; ctx.fillRect(-2*P, -3*P, 4*P, P);
         ctx.fillStyle = '#6b4428'; ctx.fillRect(-P/2, 0, P, 4*P);
       } else {
-        const sty = p.style === 'anubis' ? ['#24212e','#e0a93a','#fff3b0'] : p.style === 'merlin' ? ['#120d08','#9ec9ff','#ffffff'] : ['#120d08','#aeeeff','#ffffff'];
+        const sty = p.style === 'hex' ? ['#120d08','#7fff8a','#ffffff'] : p.style === 'holy' ? ['#120d08','#fff3b0','#ffffff'] : p.style === 'note' ? ['#120d08','#e0a0c0','#ffffff']
+          : p.style === 'gear' ? ['#120d08','#c8963a','#4a3a20'] : p.style === 'necro' ? ['#120d08','#7cff8a','#e8e2d0'] : p.style === 'coin' ? ['#120d08','#f6c94a','#fff3c4'] : p.style === 'anubis' ? ['#24212e','#e0a93a','#fff3b0'] : p.style === 'merlin' ? ['#120d08','#9ec9ff','#ffffff'] : ['#120d08','#aeeeff','#ffffff'];
         ctx.fillStyle = sty[0]; ctx.fillRect(-3*P, -2*P, 6*P, 4*P);
         ctx.fillStyle = sty[1]; ctx.fillRect(-2*P, -P, 4*P, 2*P);
         ctx.fillStyle = sty[2]; ctx.fillRect(P, -P/2, P, P);

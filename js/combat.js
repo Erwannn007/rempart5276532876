@@ -21,6 +21,9 @@ function hit(e, dmg){
   if (B.armor && !(e.shredT > 0)){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom' || hitDT === 'pierce') dmg *= 1 - B.armor/2; }
   if (B.mres && hitDT === 'magic') dmg *= 1 - B.mres;
   if (hitDT === 'holy' && UNDEAD.has(e.k)) dmg *= 2;
+  if (e.toadT > 0) dmg *= 1.5;
+  if (e.sleepT > 0 && dmg > 0){ dmg *= 2; e.sleepT = 0; fx.push({ k:'t', x:e.x, y:e.y-.8, s:'Réveil', col:'#e0a0c0', life:.5, max:.5 }); }
+  if (e.huntT > 0) dmg *= 1 + e.huntM;
   if (B.armorAll) dmg *= B.armorAll;
   e.hp -= dmg; e.flash = .07;
   if (B.bats && !e.batsDone && e.hp > 0 && e.hp < e.max*.4){
@@ -36,13 +39,15 @@ function hit(e, dmg){
   if (e.hp <= 0){
     if (B.boss) beatBoss(e.k);
     e.dead = true; legKills++;
-    const gv = Math.round(e.gold * (e.markT > 0 ? 1 + e.markB : 1));
+    const gv = Math.round(e.gold * (e.markT > 0 ? 1 + e.markB : 1)) + bankNear(e);
+    raiseNear(e);
     S.gold += gv; addGold(gv); pstat.kills++;
     if (isBoss(e)) pstat.bosses++;
     const gob = e.k === 'goblin';
     if (gob) pstat.goblins++;
     if (e.markT > 0) burst(e.x, e.y-.3, '#f2c14e', 6, 2);
     fx.push({ k:'t', x:e.x, y:e.y-.5, s:'+'+gv, col:'#f6c94a', life: gob ? 1.4 : .8, max: gob ? 1.4 : .8, big:gob });
+    if (e.huntT > 0){ const pr = Math.round((5 + S.wave*.5) * (B.boss ? 3 : 1)); S.gold += pr; addGold(pr); fx.push({ k:'t', x:e.x, y:e.y-1, s:'Prime +' + pr, col:'#ff9a6a', life:1.1, max:1.1, big:true }); }
     burst(e.x, e.y-.2, EN[e.k].col, B.boss ? 26 : 9);
     if (gob){ burst(e.x, e.y-.2, '#fbe08a', 22, 4); sfx('jackpot'); }
     const sp = EN[e.k].split;
@@ -73,6 +78,14 @@ function poison(e, dps, dur = 3){ e.poisonD = Math.max(e.poisonT > 0 ? e.poisonD
 function updFires(dt){
   for (const f of fires){
     f.t -= dt;
+    if (f.kind === 'thorn'){
+      for (const e of enemies){
+        if (e.dead || e.ph || EN[e.k].fly || (e.x-f.x)**2 + (e.y-f.y)**2 > f.r*f.r) continue;
+        applySlow(e, f.slow, .3); poison(e, f.dps, 1.5);
+        if (f.root && !f.held.has(e) && !isBoss(e) && !EN[e.k].noSlow){ f.held.add(e); e.stunT = Math.max(e.stunT, .7); }
+      }
+      continue;
+    }
     for (const e of enemies) if (!e.dead && !e.ph && !EN[e.k].fly && (e.x-f.x)**2 + (e.y-f.y)**2 <= f.r*f.r) dotHit(e, f.dps*dt, 'magic');
     if (Math.random() < dt*8) fx.push({ k:'p', x:f.x+(Math.random()-.5)*f.r*1.6, y:f.y-.1, vx:0, vy:-.9, life:.35, max:.35, col: Math.random() < .5 ? '#ff8a2a' : '#ffd23f', s:1 });
   }
@@ -95,6 +108,133 @@ function weakestTarget(cx, cy, range){
     if (!best || e.hp/e.max < best.hp/best.max) best = e;
   }
   return best;
+}
+/* Sorcière : change en crapaud les monstres les plus costauds à portée (pas les boss ni les volants). */
+function hexCast(tw, cx, cy, r){
+  const L = tw.l, pool = enemies.filter(e => !e.dead && !e.ph && e.y >= 0 && !isBoss(e) && !EN[e.k].fly && !(e.toadT > 0) && (e.x-cx)**2 + (e.y-cy)**2 <= r*r);
+  if (!pool.length) return false;
+  pool.sort((a,b) => b.hp - a.hp);
+  for (const e of pool.slice(0, L>=4 ? 2 : 1)){
+    e.toadT = SPEC.hexDur * (L>=6 ? 1.5 : 1); e.wall = null; e.eng = null;
+    burst(e.x, e.y-.3, '#7fff8a', 12, 2.5); fx.push({ k:'t', x:e.x, y:e.y-.8, s:'Crôa !', col:'#7fff8a', life:.8, max:.8 });
+  }
+  tw.anim = .2; sfx('split');
+  return true;
+}
+/* Chasseur de primes : marque le monstre le plus coriace à portée. */
+function huntMark(tw, cx, cy, r){
+  let best = null;
+  for (const e of enemies) if (!e.dead && !e.ph && e.y >= -.2 && !(e.huntT > 0) && (e.x-cx)**2 + (e.y-cy)**2 <= r*r && (!best || e.hp > best.hp)) best = e;
+  if (!best) return false;
+  best.huntT = 6; best.huntM = SPEC.huntMul[tw.l-1];
+  if (tw.l >= 6) applySlow(best, .4, 2);
+  fx.push({ k:'ring', x:best.x, y:best.y-.3, r:.55, life:.3, max:.3, col:'#ff6a4a' });
+  fx.push({ k:'t', x:best.x, y:best.y-.9, s:'Prime !', col:'#ff9a6a', life:.8, max:.8 });
+  tw.anim = .2; sfx('clang');
+  return true;
+}
+/* Prêtresse : soigne chaque seconde les soldats à portée, et relève les soldats KO (niv. 4+). */
+function priestTick(tw, i){
+  const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5, r = stats(tw, i).range, pct = SPEC.heal[tw.l-1];
+  for (let j=0;j<S.board.length;j++){
+    const o = S.board[j]; if (!o) continue;
+    const ox_ = j%COLS + .5, oy_ = ((j/COLS)|0) + .5; if ((ox_-cx)**2 + (oy_-cy)**2 > r*r) continue;
+    if (o.ko){
+      if ((tw.rez | 0) >= SPEC.rez[tw.l-1]) continue;
+      tw.rez = (tw.rez | 0) + 1; o.ko = false; o.hp = troopMax(o) * .5;
+      fx.push({ k:'t', x:ox_, y:oy_ - .7, s:'Debout !', col:'#fff3c4', life:1, max:1 }); burst(ox_, oy_, '#fff3c4', 12, 2.5); sfx('bless');
+      continue;
+    }
+    if (o.hp == null) continue;
+    o.hp += troopMax(o) * pct; if (o.hp >= troopMax(o)) o.hp = null;
+    fx.push({ k:'p', x:ox_ + (Math.random()-.5)*.4, y:oy_ - .2, vx:0, vy:-.8, life:.45, max:.45, col:'#fff3b0', s:1 });
+  }
+}
+/* Nécromancien : un monstre tué près de lui se relève en squelette allié qui remonte le chemin. */
+let allies = [];
+function raiseNear(e){
+  if (!NET || e.cell < 0 || EN[e.k].boss || EN[e.k].fly) return;
+  for (let j=0;j<S.board.length;j++){
+    const tw = S.board[j]; if (!tw || tw.t !== 24 || tw.leg || tw.ko) continue;
+    const st = stats(tw, j); if ((j%COLS + .5 - e.x)**2 + (((j/COLS)|0) + .5 - e.y)**2 > st.range*st.range) continue;
+    if (allies.filter(a => a.owner === j).length >= SPEC.skelCap[tw.l-1]) continue;
+    allies.push({ x:e.x, y:e.y, cell:e.cell, next:-1, owner:j, L:tw.l, t:SPEC.skelLife[tw.l-1], dmg:st.dmg*1.5, cd:0, seed:Math.random()*8|0 });
+    burst(e.x, e.y-.2, '#7cff8a', 10, 2); fx.push({ k:'t', x:e.x, y:e.y-.8, s:'Debout !', col:'#7cff8a', life:.7, max:.7 });
+    return;
+  }
+}
+function updAllies(dt){
+  for (const a of allies){
+    a.t -= dt; a.cd -= dt;
+    let foe = null;
+    for (const e of enemies) if (!e.dead && !e.ph && !EN[e.k].fly && (e.x-a.x)**2 + (e.y-a.y)**2 < .25){ foe = e; break; }
+    if (foe){
+      if (a.cd <= 0){ a.cd = .6; const pv = hitDT; hitDT = 'magic'; hit(foe, a.dmg); hitDT = pv; burst(foe.x, foe.y-.3, '#e8e2d0', 3, 1.5); a.bump = .12; }
+    } else {
+      if (a.next < 0){ const up = neighbors(a.cell).filter(n => NET.cells.has(n) && NET.distB[n] === NET.distB[a.cell] + 1); if (!up.length){ a.t = 0; continue; } a.next = up[a.seed % up.length]; }
+      const c = cellC(a.next), dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy), step = 1.1*dt;
+      if (d <= step){ a.x = c.x; a.y = c.y; a.cell = a.next; a.next = -1; } else { a.x += dx/d*step; a.y += dy/d*step; }
+    }
+    if (a.bump > 0) a.bump -= dt;
+    if (a.t <= 0){
+      burst(a.x, a.y-.3, '#e8e2d0', 8, 2);
+      if (a.L >= 6) explode(a.x, a.y, .8, a.dmg*2, 0, false);
+    }
+  }
+  if (allies.some(a => a.t <= 0)) allies = allies.filter(a => a.t > 0);
+}
+/* Ingénieur : barils posés gratuitement sur la route à sa portée, au début de chaque vague. */
+function engineerMines(){
+  for (let j=0;j<S.board.length;j++){
+    const tw = S.board[j]; if (!tw || tw.t !== 25 || tw.leg) continue;
+    const r = stats(tw, j).range, cx = j%COLS + .5, cy = ((j/COLS)|0) + .5;
+    const spots = shuffle([...NET.cells].filter(i => wardSpot(i) && !trapMap.has(i) && !barAt(i) && !S.board[i] && (i%COLS + .5 - cx)**2 + (((i/COLS)|0) + .5 - cy)**2 <= r*r));
+    const n = SPEC.mines[tw.l-1] + (tw.l >= 6 ? 1 : 0);
+    spots.slice(0, n).forEach((i, k) => {
+      S.traps.push({ i, k: tw.l >= 6 && k === n - 1 ? 'givre' : 'baril', id:++trapSeq, cd:0, anim:.3, used:false });
+      rebuildTraps(); burst(i%COLS + .5, ((i/COLS)|0) + .5, '#c3cbd3', 6, 1.5);
+    });
+  }
+}
+/* Banquier : bonus d'or pour chaque monstre abattu à moins de 2 cases de lui. */
+function bankNear(e){
+  let g = 0;
+  for (let j=0;j<S.board.length;j++){ const tw = S.board[j]; if (tw && tw.t === 21 && !tw.leg && !tw.ko && (j%COLS + .5 - e.x)**2 + (((j/COLS)|0) + .5 - e.y)**2 <= 4) g += SPEC.bankKill[tw.l-1]; }
+  return g;
+}
+/* Barde (niv. 4+) : berceuse qui endort les monstres proches. */
+function lullaby(tw, cx, cy, r){
+  const pool = enemies.filter(e => !e.dead && !e.ph && e.y >= 0 && !isBoss(e) && !(e.sleepT > 0) && (e.x-cx)**2 + (e.y-cy)**2 <= r*r);
+  if (!pool.length) return false;
+  for (const e of pool){ e.sleepT = SPEC.sleepDur[tw.l-1]; e.wall = null; e.eng = null; }
+  fx.push({ k:'ring', x:cx, y:cy-.2, r, life:.5, max:.5, col:'#e0a0c0' });
+  for (let k=0;k<6;k++) fx.push({ k:'mote', x:cx + (Math.random()-.5)*r, y:cy - .3, vx:(Math.random()-.5)*.8, vy:-.8, life:.7, max:.7, col:'#fff3a0' });
+  tw.anim = .2; sfx('bless');
+  return true;
+}
+/* Horloger (niv. 4+) : rembobine de 3 cases le monstre au sol le plus avancé (1 case pour un boss, dès le niv. 6). */
+function rewind(tw){
+  let best = null;
+  for (const e of enemies) if (!e.dead && !e.ph && e.y >= 0 && !EN[e.k].fly && (!isBoss(e) || tw.l >= 6) && (!best || e.rem < best.rem)) best = e;
+  if (!best) return false;
+  knockBack(best, isBoss(best) ? 1 : 3); best.rem = remOf(best);
+  fx.push({ k:'ring', x:best.x, y:best.y-.3, r:.6, life:.4, max:.4, col:'#8fd3ef' });
+  fx.push({ k:'t', x:best.x, y:best.y-.9, s:'Retour !', col:'#8fd3ef', life:.8, max:.8 });
+  burst(best.x, best.y-.3, '#8fd3ef', 10, 2); tw.anim = .2; sfx('freeze');
+  return true;
+}
+/* Troll : repousse un monstre au sol en arrière sur le chemin. */
+function knockBack(e, d){
+  if (e.dead || EN[e.k].fly || e.cell < 0 || !NET) return;
+  e.wall = null; e.eng = null; e.bash = null;
+  for (let g=0; g<6 && d > 1e-4; g++){
+    const a = cellC(e.cell), dist = Math.hypot(a.x - e.x, a.y - e.y);
+    if (dist >= d){ e.x += (a.x - e.x)/dist*d; e.y += (a.y - e.y)/dist*d; return; }
+    e.x = a.x; e.y = a.y; d -= dist;
+    const up = neighbors(e.cell).filter(n => NET.cells.has(n) && NET.distB[n] === NET.distB[e.cell] + 1);
+    if (!up.length) return;
+    e.next = e.cell; e.cell = up[(e.seedR || 0) % up.length];
+  }
 }
 /* Myconide : nuage de spores autour de lui. */
 function sporeCloud(tw, cx, cy, D, r){
@@ -327,6 +467,51 @@ function fireInner(tw, cx, cy, tg, st){
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.12, max:.12, col:'#ff7ae0' });
       sfx('slash'); break;
     }
+    case 14: {
+      projs.push({ k:'shard', style:'hex', x:cx+.3*tw.face, y:cy-.5, tg, spd:8, dmg:D, slow: L>=6 ? .25 : 0, dur:1.4, L:1 });
+      sfx('ice'); break;
+    }
+    case 15: {
+      if (!EN[tg.k].fly) fires.push({ kind:'thorn', x:tg.x, y:tg.y, r: L>=4 ? .62 : .46, t:SPEC.druidT + .3*L, max:SPEC.druidT + .3*L, dps:D*.8, slow:.35, root: L>=6, held:new Set(), seed:Math.random()*9 });
+      burst(tg.x, tg.y, '#9ac83a', 8, 2); sfx('split'); break;
+    }
+    case 16: {
+      hit(tg, D);
+      if (!tg.dead){ knockBack(tg, SPEC.trollPush[L-1] * (isBoss(tg) ? .3 : 1)); if (L>=4 && !isBoss(tg) && !EN[tg.k].noSlow) tg.stunT = Math.max(tg.stunT, .4); }
+      if (L>=6) for (const e of enemies) if (e !== tg && !e.dead && !EN[e.k].fly && d2(e,tg) < .36) hit(e, D*.5);
+      fx.push({ k:'ring', x:tg.x, y:tg.y-.1, r:.5, life:.22, max:.22, col:'#e8e0c8' }); burst(tg.x, tg.y, '#8f8a80', 6, 2.5);
+      shake = Math.max(shake, .05); sfx('stomp'); break;
+    }
+    case 17: {
+      projs.push({ k:'arrow', x:cx+tw.face*.2, y:cy-.3, tg, spd:13, dmg:D, L, aslow:0, pierce:false });
+      sfx('arrow'); break;
+    }
+    case 18: case 19: case 20: case 21: {
+      const sty = ['holy','note','gear','coin'][tw.t - 18];
+      projs.push({ k:'shard', style:sty, x:cx+.3*tw.face, y:cy-.45, tg, spd:9, dmg:D, slow:0, dur:0, L:1 });
+      sfx(tw.t === 21 ? 'sell' : 'ice'); break;
+    }
+    case 22: {
+      hit(tg, D); fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col:'#9ac83a' });
+      sfx('stomp'); break;
+    }
+    case 23: {
+      const a0 = Math.atan2(tg.y-cy, tg.x-cx), half = L>=6 ? .9 : .62, r2 = st.range*st.range;
+      for (const e of enemies){
+        if (e.dead || e.ph || e.y < -.2) continue;
+        const dx = e.x-cx, dy = e.y-cy, q = dx*dx + dy*dy; if (q > r2) continue;
+        let da = Math.abs(Math.atan2(dy, dx) - a0); if (da > Math.PI) da = 2*Math.PI - da;
+        if (da > half && q > .3) continue;
+        hit(e, D); if (L>=4 && !e.dead){ e.burnT = 2; e.burnD = Math.max(e.burnD || 0, D*.4); }
+      }
+      for (let k=0;k<10;k++){ const a = a0 + (Math.random()*2-1)*half, d = .4 + Math.random()*(st.range - .4);
+        fx.push({ k:'mote', x:cx + Math.cos(a)*d*.6, y:cy - .3 + Math.sin(a)*d*.6, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, life:.3, max:.3, col: Math.random() < .5 ? '#ff8a2a' : '#ffd23f' }); }
+      sfx('lob'); break;
+    }
+    case 24: case 25: {
+      projs.push({ k:'shard', style: tw.t === 24 ? 'necro' : 'gear', x:cx+.3*tw.face, y:cy-.45, tg, spd:9, dmg:D, slow:0, dur:0, L:1 });
+      sfx(tw.t === 24 ? 'ice' : 'clang'); break;
+    }
     case 5: {
       hit(tg, D);
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L>=5 ? '#fff3b0' : '#c3cbd3' });
@@ -443,7 +628,7 @@ function updProjInner(p, dt){
       hit(tg, p.dmg);
       if (p.k === 'arrow' && p.aslow) applySlow(tg, p.aslow, 1.2);
       if (p.k === 'shard'){
-        applySlow(tg, p.slow, p.dur);
+        if (p.slow) applySlow(tg, p.slow, p.dur);
         if (p.mark){ tg.markT = 4; tg.markB = p.mark; }
         if (MODS.freeze && tg.k !== 'boss' && tg.k !== 'king' && Math.random() < MODS.freeze){
           tg.stunT = .6;
@@ -489,6 +674,9 @@ function update(dt){
     if (e.flash > 0) e.flash -= dt;
     if (e.frozenT > 0) e.frozenT -= dt;
     let sp = (e.stunT > 0 || e.frozenT > 0) ? 0 : e.spd * (e.slowT > 0 ? 1-e.slow : 1);
+    const asleep = e.sleepT > 0; if (asleep){ e.sleepT -= dt; sp = 0; if (Math.random() < dt*1.5) fx.push({ k:'t', x:e.x + .2, y:e.y - .8, s:'z', col:'#e8e0f8', life:.7, max:.7 }); }
+    const toad = e.toadT > 0 || asleep; if (e.toadT > 0){ e.toadT -= dt; sp *= .45; }
+    if (e.huntT > 0) e.huntT -= dt;
     if (B.enrage && e.hp < e.max/2 && !(e.frozenT > 0)){ sp *= 1.8; if (!e.rage){ e.rage = true; fx.push({ k:'t', x:e.x, y:e.y-.9, s:'Furie !', col:'#ff6a4a', life:1, max:1 }); burst(e.x, e.y-.3, '#ff6a4a', 10, 2.5); } }
     const c = Math.floor(e.x), r = Math.floor(e.y);
     const ci = (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? idx(c,r) : -1;
@@ -499,9 +687,9 @@ function update(dt){
       sp = 0; e.eng = null;
       if (!(e.stunT > 0 || e.frozenT > 0)){
         e.atkT -= dt;
-        if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; hurtTroop(e.wall, enemyHit(e, Math.max(.5, B.atk || 0)), e); }
+        if (e.atkT <= 0){ e.atkT = 1; e.bump = .15; if (!toad) hurtTroop(e.wall, enemyHit(e, Math.max(.5, B.atk || 0)), e); }
       }
-    } else if (B.atk && K_ENEMY > 0 && e.y >= 0 && !e.ph){
+    } else if (B.atk && K_ENEMY > 0 && e.y >= 0 && !e.ph && !toad){
       if (e.eng != null){ const tw = S.board[e.eng]; if (!tw || tw.ko || Math.hypot(e.eng%COLS + .5 - e.x, ((e.eng/COLS)|0) + .5 - e.y) > 1.2) e.eng = null; }
       if (e.eng == null){ e.engCd = (e.engCd || 0) - dt; if (e.engCd <= 0){ e.engCd = .25; const j = findPrey(e); if (j >= 0){ e.eng = j; e.atkT = .35; } } }
       if (e.eng != null){
@@ -522,12 +710,12 @@ function update(dt){
       e.phT -= dt;
       if (e.phT <= 0){ e.ph = !e.ph; e.phT = e.ph ? B.phase[1] : B.phase[0]; if (e.ph) burst(e.x, e.y-.3, '#dfe8f4', 5, 1.5); }
     }
-    if (B.blink && e.y >= 0 && !(e.frozenT > 0)){
+    if (B.blink && e.y >= 0 && !(e.frozenT > 0) && !toad){
       e.blT -= dt;
       if (e.blT <= 0 && !e.bash && e.eng == null && e.wall == null){ e.blT = B.blink; burst(e.x, e.y-.3, '#a83a5a', 8, 2); moveEnemy(e, 1.2); if (e.out){ e.dead = true; leak(e); if (over) return; continue; } }
     }
     if (B.regen && e.hp < e.max){ e.hp = Math.min(e.max, e.hp + e.max*B.regen*(inMarsh ? 3 : 1)*dt); if (Math.random() < dt*4) fx.push({ k:'t', x:e.x+(Math.random()-.5)*.5, y:e.y-.6, s:'+', col:'#7bd34f', life:.5, max:.5 }); }
-    if (B.heal && e.y >= 0){
+    if (B.heal && e.y >= 0 && !toad){
       e.hlT -= dt;
       if (e.hlT <= 0){
         e.hlT = 2;
@@ -539,7 +727,7 @@ function update(dt){
         fx.push({ k:'ring', x:e.x, y:e.y-.2, r:1.5, life:.35, max:.35, col:'#7bd34f' });
       }
     }
-    if (B.summon && e.y >= 0){
+    if (B.summon && e.y >= 0 && !toad){
       e.smT -= dt;
       if (e.smT <= 0){
         e.smT = B.summon[2];
@@ -576,11 +764,32 @@ function update(dt){
     if (tw.ko) continue;
     if (tw.hp != null){
       tw.hurtT = (tw.hurtT || 0) + dt;
-      const rg = (tw.hurtT > 3 ? .05 : 0) + (MODS.wardRegen && isWarden(tw) ? MODS.wardRegen : 0);
+      const rg = (tw.hurtT > 3 ? .05 : 0) + (MODS.wardRegen && isWarden(tw) ? MODS.wardRegen : 0) + (tw.t === 16 && !tw.leg ? SPEC.trollRegen : 0) + (tw.t === 22 && !tw.leg ? SPEC.sylvRegen*(tw.l >= 6 ? 2 : 1) : 0);
       if (rg){ tw.hp += troopMax(tw) * rg * dt; if (tw.hp >= troopMax(tw)) tw.hp = null; }
     }
     tw.cd -= dt;
     if (tw.t === 8 && !tw.leg && tw.ab > 0) tw.ab -= dt;
+    if (!tw.leg && inWave && (tw.t === 14 || tw.t === 17 || ((tw.t === 19 || tw.t === 20) && tw.l >= 4))){
+      if (tw.ab > 0) tw.ab -= dt;
+      else {
+        const hx = i%COLS + .5, hy = ((i/COLS)|0) + .5, r = stats(tw, i).range;
+        const cd = tw.t === 14 ? (hexCast(tw, hx, hy, r) && SPEC.hexCd[tw.l-1]) : tw.t === 17 ? (huntMark(tw, hx, hy, r) && SPEC.huntCd)
+          : tw.t === 19 ? (lullaby(tw, hx, hy, r) && SPEC.sleepCd) : (rewind(tw) && SPEC.rewindCd[tw.l-1]);
+        if (cd) tw.ab = cd;
+      }
+    }
+    if (tw.t === 22 && !tw.leg && inWave){
+      tw.hb = (tw.hb || 0) - dt;
+      if (tw.hb <= 0){
+        tw.hb = .3;
+        const rx = i%COLS + .5, ry = ((i/COLS)|0) + .5, R = tw.l >= 4 ? 1.8 : 1.4;
+        for (const e of enemies) if (!e.dead && !EN[e.k].fly && (e.x-rx)**2 + (e.y-ry)**2 <= R*R){ applySlow(e, SPEC.sylvSlow[tw.l-1], .45); if (tw.l >= 6 && e.wall === i) poison(e, stats(tw, i).dmg*.6, 1); }
+      }
+    }
+    if (tw.t === 18 && !tw.leg && inWave){
+      tw.hb = (tw.hb || 0) - dt;
+      if (tw.hb <= 0){ tw.hb = 1; priestTick(tw, i); }
+    }
     if (tw.t === 10 && !tw.leg && tw.l >= 4 && inWave) for (const j of neighbors(i)){
       const o = S.board[j]; if (!o || o.ko || o.hp == null) continue;
       o.hp += troopMax(o) * SPEC.palaHeal * dt; if (o.hp >= troopMax(o)) o.hp = null;
@@ -614,6 +823,7 @@ function update(dt){
   for (const tr of S.traps){ if (tr.cd > 0) tr.cd -= dt; if (tr.anim > 0) tr.anim -= dt; }
   if (S.traps.some(t => t.used)){ S.traps = S.traps.filter(t => !t.used); rebuildTraps(); }
   updFires(dt);
+  if (allies.length) updAllies(dt);
   for (const p of projs) updProj(p, dt);
   projs = projs.filter(p => !p.done);
   enemies = enemies.filter(e => !e.dead);

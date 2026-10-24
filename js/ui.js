@@ -65,11 +65,19 @@ function markSeen(t, l){
 /* Sur la route, seul un gardien nain peut se poster, entre les vagues. */
 const onRoad = ref => ref.k === 'b' && netHas(ref.i);
 function roadWhy(tw, i){
-  if (!isWarden(tw)) return 'Seul le gardien nain peut se poster sur la route';
+  if (!isBlocker(tw)) return 'Seuls le gardien nain et le sylvain se postent sur la route';
   if (inWave) return 'Le gardien se poste sur la route entre les vagues';
   if (!wardSpot(i)) return 'Ni sur une entrée, ni devant la porte';
   if (barAt(i) || trapMap.has(i)) return 'La place est déjà prise';
   return '';
+}
+/* Une troupe peut-elle se tenir sur cette case ? (route : bloqueurs ; rochers et arbres : dragonnet) */
+function placeWhy(tw, ref){
+  if (ref.k !== 'b') return '';
+  if (netHas(ref.i)) return roadWhy(tw, ref.i);
+  const tt = S.terrain[ref.i];
+  if (BUILD[tt] || (tw.t === 23 && !tw.leg && (tt === TER.ROCK || tt === TER.TREE))) return '';
+  return TER_WHY[tt] || 'Impossible ici';
 }
 function evalDrop(src, dst){
   if (!dst || sameRef(src,dst)) return { ok:false, none:true };
@@ -78,7 +86,7 @@ function evalDrop(src, dst){
   const b = getT(dst);
   if (b && (b.t !== a.t || !!a.leg !== !!b.leg)){
     const offer = !!a.leg !== !!b.leg && (a.leg ? b : a).l >= (a.leg ? a : b).l + OFFER_GAP;
-    const w = (onRoad(dst) && roadWhy(offer ? (a.leg ? a : b) : a, dst.i)) || (!offer && onRoad(src) && roadWhy(b, src.i));
+    const w = placeWhy(offer ? (a.leg ? a : b) : a, dst) || (!offer && placeWhy(b, src));
     if (w) return { ok:false, why:w };
   }
   if (b && (a.leg || b.leg)){
@@ -102,11 +110,11 @@ function evalDrop(src, dst){
   if (dst.k === 'b'){
     const tt = S.terrain[dst.i];
     if (netHas(dst.i)){
-      if (!isWarden(a)) return { ok:false, why:'Une route passe ici jusqu’au prochain changement' };
+      if (!isBlocker(a)) return { ok:false, why:'Une route passe ici jusqu’au prochain changement' };
       const w = roadWhy(a, dst.i);
       return w ? { ok:false, why:w } : { ok:true, kind:'move' };
     }
-    if (!BUILD[tt]) return { ok:false, why:TER_WHY[tt] };
+    { const w = placeWhy(a, dst); if (w) return { ok:false, why:w }; }
     if (!routeOK(dst.i, src.k==='b' ? src.i : -1)) return { ok:false, why:'Il faut laisser un passage aux ennemis' };
   }
   return { ok:true, kind:'move' };
@@ -319,6 +327,29 @@ function specialText(t,l){
       + (l>=4 ? 'Les monstres touchés perdent leur armure 3 s, pour tous tes soldats. ' : 'Au niveau 4, il brisera l’armure des monstres touchés. ') + (l>=6 ? 'Portée de frappe allongée, ×1,5 contre les boss.' : 'Au niveau 6, ×1,5 contre les boss.');
     case 13: return Math.round(SPEC.assaCrit[l-1]*100) + ' % de coups critiques (×2,5). Achève tout monstre sous ' + Math.round(SPEC.execute[l-1]*100) + ' % de sa vie (pas les boss). Les monstres ne la frappent jamais. '
       + (l>=6 ? 'Chaque monstre achevé lui rend son attaque tout de suite.' : 'Au niveau 6, chaque monstre achevé lui rendra son attaque.');
+    case 14: return 'Toutes les ' + fr1(SPEC.hexCd[l-1]) + ' s, change le monstre le plus costaud en crapaud (' + fr1(SPEC.hexDur*(l>=6 ? 1.5 : 1)) + ' s) : il avance deux fois moins vite, subit 50 % de dégâts en plus, ne frappe plus et perd ses pouvoirs. Pas les boss ni les volants. '
+      + (l>=4 ? 'Elle ensorcelle deux monstres à la fois.' : 'Au niveau 4, elle en ensorcellera deux à la fois.');
+    case 15: return 'Ses ronces restent ' + fr1(SPEC.druidT + .3*l) + ' s : elles ralentissent de 35 % et empoisonnent les monstres au sol. '
+      + (l>=4 ? 'Buissons plus larges. ' : 'Au niveau 4, ses buissons seront plus larges. ') + (l>=6 ? 'Les racines immobilisent un instant chaque monstre qui y entre.' : 'Au niveau 6, ses racines immobiliseront.');
+    case 16: return 'Repousse sa cible de ' + fr1(SPEC.trollPush[l-1]) + ' case en arrière sur le chemin (bien moins les boss). Regagne ' + Math.round(SPEC.trollRegen*100) + ' % de vie par seconde. '
+      + (l>=4 ? 'Ses coups étourdissent. ' : 'Au niveau 4, ses coups étourdiront. ') + (l>=6 ? 'Sa massue frappe aussi les voisins de sa cible.' : '');
+    case 17: return 'Toutes les ' + SPEC.huntCd + ' s, marque le monstre le plus coriace à portée : +' + Math.round(SPEC.huntMul[l-1]*100) + ' % de dégâts de tous tes soldats pendant 6 s, et une prime en or s’il meurt (triple sur un boss). '
+      + (l>=6 ? 'Sa marque ralentit aussi la proie.' : 'Au niveau 6, sa marque ralentira la proie.');
+    case 18: return 'Chaque seconde, soigne de ' + fr1(SPEC.heal[l-1]*100) + ' % les soldats à sa portée. Dégâts sacrés. '
+      + (l>=4 ? 'Relève ' + (SPEC.rez[l-1] > 1 ? SPEC.rez[l-1] + ' soldats KO' : 'un soldat KO') + ' par vague, à mi-vie.' : 'Au niveau 4, elle relèvera un soldat KO par vague.');
+    case 19: return 'Les soldats sur les 8 cases autour de lui font +' + Math.round(SPEC.bardAura[l-1]*100) + ' % de dégâts. '
+      + (l>=4 ? 'Toutes les ' + SPEC.sleepCd + ' s, sa berceuse endort ' + fr1(SPEC.sleepDur[l-1]) + ' s les monstres proches (pas les boss) : ils ne bougent plus, et le premier coup reçu, doublé, les réveille.' : 'Au niveau 4, sa berceuse endormira les monstres proches.');
+    case 20: return 'Les soldats sur les 8 cases autour de lui tirent ' + Math.round(SPEC.clockAura[l-1]*100) + ' % plus vite. '
+      + (l>=4 ? 'Toutes les ' + SPEC.rewindCd[l-1] + ' s, rembobine de 3 cases le monstre au sol le plus avancé' + (l>=6 ? ', même un boss (1 case).' : ' (pas les boss).') : 'Au niveau 4, il rembobinera le monstre le plus avancé.');
+    case 21: return 'Rapporte ' + SPEC.bankWave[l-1] + ' or à chaque vague repoussée, et +' + SPEC.bankKill[l-1] + ' or par monstre abattu à moins de 2 cases de lui. '
+      + (l>=6 ? 'Intérêts : +5 % de ton or à chaque vague (30 au plus).' : 'Au niveau 6, il placera ton or à intérêts.');
+    case 22: return 'Se poste sur la route, entre les vagues, et bloque les monstres au sol comme le gardien nain. Ses racines ralentissent de ' + Math.round(SPEC.sylvSlow[l-1]*100) + ' % les monstres au sol tout autour (' + (l>=4 ? '1,8' : '1,4') + ' case). Regagne ' + Math.round(SPEC.sylvRegen*(l>=6 ? 2 : 1)*100) + ' % de vie par seconde. '
+      + (l>=6 ? 'Les monstres qu’il retient sont empoisonnés.' : 'Au niveau 6, il empoisonnera les monstres qu’il retient.');
+    case 23: return 'Son souffle brûle tous les monstres dans un cône, volants compris. Perché sur un rocher ou un arbre : +' + fr1(SPEC.perchRange) + ' de portée et +' + Math.round(SPEC.perchDmg*100) + ' % de dégâts. '
+      + (l>=4 ? 'Ses flammes collent : les monstres brûlent encore 2 s. ' : 'Au niveau 4, ses flammes colleront. ') + (l>=6 ? 'Cône élargi.' : '');
+    case 24: return 'Chaque monstre tué à sa portée (hors boss et volants) se relève en squelette allié pendant ' + fr1(SPEC.skelLife[l-1]) + ' s : il remonte le chemin et frappe tout ce qu’il croise. ' + SPEC.skelCap[l-1] + ' squelettes au plus. '
+      + (l>=6 ? 'En tombant, ils explosent en éclats d’os.' : 'Au niveau 6, ils exploseront en tombant.');
+    case 25: return 'Au début de chaque vague, pose gratuitement ' + (SPEC.mines[l-1] > 1 ? SPEC.mines[l-1] + ' barils explosifs' : 'un baril explosif') + ' sur la route à sa portée' + (l>=6 ? ', plus un piège de givre.' : '.');
   }
 }
 

@@ -45,7 +45,43 @@ const TYPES = [
     desc:'Sa hallebarde perce l’armure et tous les monstres alignés derrière sa cible.' },
   { name:'Assassin',      col:'#a03a8a', range:1.5,  dmg:9,  rate:.5,
     ranks:['Tire-laine','Lame furtive','Assassin','Ombre mortelle','Maître des ombres','Assassin de mythril','Lame d’obsidienne','Ombre céleste'],
-    desc:'Frappe le monstre le plus affaibli, en coups critiques, et achève les blessés. Les monstres ne la voient pas.' }
+    desc:'Frappe le monstre le plus affaibli, en coups critiques, et achève les blessés. Les monstres ne la voient pas.' },
+  { name:'Sorcière du marais', col:'#5a3a6a', range:2.4, dmg:4, rate:1.2, air:true,
+    ranks:['Rebouteuse','Jeteuse de sorts','Sorcière','Mère des crapauds','Reine du marais','Sorcière de mythril','Maléfice d’obsidienne','Sorcière céleste'],
+    desc:'Change régulièrement un monstre en crapaud : lent, fragile, et il ne frappe plus.' },
+  { name:'Druide',        col:'#9ac83a', range:2.2, dmg:4,  rate:1.4,
+    ranks:['Cueilleur','Druide','Gardien des chênes','Cerf-esprit','Cœur de la forêt','Druide de mythril','Ronce d’obsidienne','Druide céleste'],
+    desc:'Fait pousser des ronces sur le chemin : elles ralentissent et empoisonnent tout ce qui passe.' },
+  { name:'Troll des cavernes', col:'#5a7a6a', range:1.3, dmg:14, rate:1.3,
+    ranks:['Trollot','Troll','Troll des cavernes','Brise-os','Roi des cavernes','Troll de mythril','Troll d’obsidienne','Colosse céleste'],
+    desc:'Sa massue repousse les monstres en arrière sur le chemin. Il se régénère sans cesse.' },
+  { name:'Chasseur de primes', col:'#8a3a2a', range:2.6, dmg:8, rate:1.0, air:true,
+    ranks:['Traqueur','Chasseur','Chasseur de primes','Tueur à gages','Seigneur des primes','Chasseur de mythril','Traqueur d’obsidienne','Chasseur céleste'],
+    desc:'Marque le monstre le plus coriace : tous tes soldats lui font plus de dégâts, et sa mort rapporte une prime.' },
+  { name:'Prêtresse',     col:'#c8d8f0', range:2.2, dmg:4,  rate:1.0, air:true,
+    ranks:['Novice','Sœur','Prêtresse','Grande prêtresse','Voix de l’aube','Prêtresse de mythril','Oracle d’obsidienne','Sainte céleste'],
+    desc:'Soigne les soldats autour d’elle, et relève ceux qui tombent.' },
+  { name:'Barde',         col:'#e0a0c0', range:2.4, dmg:3,  rate:1.2, air:true,
+    ranks:['Ménestrel','Barde','Troubadour','Maître chanteur','Voix des légendes','Barde de mythril','Chant d’obsidienne','Barde céleste'],
+    desc:'Ses chansons donnent du cœur à l’ouvrage aux soldats tout autour de lui.' },
+  { name:'Horloger',      col:'#d0b080', range:2.0, dmg:5,  rate:1.0,
+    ranks:['Apprenti','Horloger','Mécanicien','Maître des rouages','Seigneur du temps','Horloger de mythril','Rouage d’obsidienne','Horloge céleste'],
+    desc:'Ses réglages font tirer plus vite les soldats tout autour de lui.' },
+  { name:'Banquier gobelin', col:'#d8b040', range:1.8, dmg:2, rate:1.5,
+    ranks:['Grippe-sou','Changeur','Banquier','Usurier','Roi de l’or','Banquier de mythril','Trésor d’obsidienne','Banquier céleste'],
+    desc:'Se bat à peine, mais remplit ta bourse à chaque vague et sur chaque monstre abattu près de lui.' },
+  { name:'Sylvain',       col:'#6a8a3a', range:1.2, dmg:6,  rate:1.2,
+    ranks:['Pousse','Sylvain','Vieux-chêne','Chêne-roi','Cœur des bois','Sylvain de mythril','Chêne d’obsidienne','Arbre céleste'],
+    desc:'Un arbre vivant qui se poste sur la route : il bloque les monstres au sol, et ses racines ralentissent tout autour.' },
+  { name:'Dragonnet',     col:'#e05030', range:2.2, dmg:7,  rate:1.3, air:true,
+    ranks:['Œuf éclos','Dragonnet','Jeune dragon','Dragon de braise','Dragon royal','Dragon de mythril','Dragon d’obsidienne','Dragon céleste'],
+    desc:'Crache son feu en cône. Le seul à se percher sur les rochers et les arbres, où il voit plus loin.' },
+  { name:'Nécromancien',  col:'#b8b0a0', range:2.3, dmg:5,  rate:1.1, air:true,
+    ranks:['Fossoyeur','Nécromant','Nécromancien','Seigneur des os','Roi des morts','Nécromancien de mythril','Ossuaire d’obsidienne','Liche céleste'],
+    desc:'Les monstres tués près de lui se relèvent en squelettes alliés, qui remontent le chemin en frappant tout sur leur passage.' },
+  { name:'Ingénieur',     col:'#6a8aa8', range:2.0, dmg:6,  rate:1.0,
+    ranks:['Bricoleur','Ingénieur','Artilleur','Maître d’œuvre','Génie militaire','Ingénieur de mythril','Génie d’obsidienne','Ingénieur céleste'],
+    desc:'À chaque vague, pose gratuitement des barils explosifs sur la route à sa portée.' }
 ];
 /* Familles : deux voisins de la même famille (et de types différents) se renforcent. */
 const FAM = {
@@ -55,7 +91,7 @@ const FAM = {
   machine: { name:'Machine',  col:'#d9a066', fx:{range:.3},         txt:'+0,3 de portée' },
   sylve:   { name:'Sylve',    col:'#9ed36a', fx:{dmg:.06, rate:.06},txt:'+6 % de dégâts et de cadence' }
 };
-['garnison','garnison','montagne','arcane','arcane','montagne','arcane','machine','sylve','machine','garnison','sylve','garnison','sylve'].forEach((f,t) => { TYPES[t].fam = f; });
+['garnison','garnison','montagne','arcane','arcane','montagne','arcane','machine','sylve','machine','garnison','sylve','garnison','sylve','arcane','sylve','montagne','garnison','garnison','sylve','machine','montagne','sylve','arcane','arcane','machine'].forEach((f,t) => { TYPES[t].fam = f; });
 [1,3,4,6,9].forEach(t => { TYPES[t].air = true; });
 const MAXL = 8;
 const DMUL = [1, 2.2, 4.8, 10.5, 23, 50, 108, 235];
@@ -119,17 +155,19 @@ Object.assign(EN.scorpion, { desc:'Sa carapace arrête une bonne partie des coup
 Object.assign(EN.titan, { desc:'Lourdement cuirassé, insensible au froid, il encaisse tout.' });
 Object.assign(EN.titan_ice, { desc:'Un titan de glace lourdement cuirassé, qui ignore le froid.' });
 Object.assign(EN.wolf_war, { desc:'Harnaché par les orcs, il encaisse mieux les coups physiques.' });
-const TYPE_DT = ['phys','phys','boom','magic','magic','phys','magic','boom','poison','phys','holy','phys','sunder','phys'];
+const TYPE_DT = ['phys','phys','boom','magic','magic','phys','magic','boom','poison','phys','holy','phys','sunder','phys','magic','poison','phys','phys','holy','magic','phys','phys','phys','magic','magic','phys'];
 /* Combat au contact : certains monstres s'arrêtent pour frapper les soldats voisins du chemin.
    Un soldat à zéro est KO jusqu'à la fin de la vague. */
 const ATK = { wolf:.5, skeleton:.6, golem:1.2, orc:1, wolf_war:.8, ghoul:1, yeti:1.2, golem_ice:1.2, golem_lava:1.3, mummy:.9, scorpion:.9, beetle:.7, imp:.6, head:.8,
   boss:2.5, titan:3, titan_ice:3, warlord:2, mino:2, hydra:2, hydra_sand:2, kraken:2, vampire:2, dragon:2, lich:1.5, queen:1.5, wraith:1.5, king:3 };
 for (const k in ATK) if (EN[k]) EN[k].atk = ATK[k];
-const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5, 1.1, 1.6, 2.2, 1.4, 2.4, 1.2, 1.8, 1.2], LEG_HPT = 2.4;
+const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5, 1.1, 1.6, 2.2, 1.4, 2.4, 1.2, 1.8, 1.2, 1.1, 1.3, 4, 1.4, 1.4, 1.1, 1.3, 1.2, 4.5, 1.4, 1.2, 1.3], LEG_HPT = 2.4;
 /* Gardien nain : posté sur la route, il arrête les monstres au sol. Armure, riposte (niv. 4+), coup de bouclier (niv. 6+). */
 const WARD_T = 5;
 const WARD = { armor:[.2,.25,.3,.35,.4,.45,.5,.55], thorns:[0,0,0,.3,.35,.4,.45,.5], bashCd:6, bashStun:.8, recruit:1, taunt:.5 };
 const isWarden = tw => !!tw && tw.t === WARD_T && !tw.leg;
+/* Bloqueurs de route : le gardien nain et le sylvain. */
+const isBlocker = tw => !!tw && !tw.leg && (tw.t === WARD_T || tw.t === 22);
 const wardArmor = tw => Math.min(.8, WARD.armor[tw.l-1] + (tw.syn ? tw.syn.armor : 0));
 const wardThorns = tw => WARD.thorns[tw.l-1] + (tw.syn ? tw.syn.thorns : 0);
 let K_SOLDIER = 40, K_ENEMY = .25;
@@ -140,12 +178,13 @@ function findPrey(e){
   for (let r=r0-1;r<=r0+1;r++) for (let c=c0-1;c<=c0+1;c++){
     if (c<0||r<0||c>=COLS||r>=ROWS) continue;
     const j = idx(c,r), tw = S.board[j]; if (!tw || tw.ko || (tw.t === 13 && !tw.leg)) continue;
-    const d = Math.hypot(c + .5 - e.x, r + .5 - e.y) - (isWarden(tw) ? WARD.taunt : 0); if (d < bd){ bd = d; best = j; }
+    const d = Math.hypot(c + .5 - e.x, r + .5 - e.y) - (isBlocker(tw) ? WARD.taunt : 0); if (d < bd){ bd = d; best = j; }
   }
   return best;
 }
 function hurtTroop(j, dmg, from){
   const tw = S.board[j]; if (!tw || tw.ko) return;
+  if (tw.t === 22 && !tw.leg) dmg *= 1 - SPEC.sylvArmor;
   if (isWarden(tw)){
     dmg *= 1 - wardArmor(tw);
     const th = wardThorns(tw);
@@ -163,11 +202,16 @@ function hurtTroop(j, dmg, from){
   }
 }
 let koCount = 0, spawnHP = 0;
-function reviveAll(){ for (const tw of S.board.concat(S.bench)) if (tw){ tw.hp = null; tw.ko = false; tw.hurtT = 0; } }
+function reviveAll(){ for (const tw of S.board.concat(S.bench)) if (tw){ tw.hp = null; tw.ko = false; tw.hurtT = 0; tw.rez = 0; } }
 const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques', poison:'de poison (ignorent l’armure et la résistance magique)', holy:'sacrés (ignorent la résistance magique, doublés contre les morts-vivants)', sunder:'perforants (ignorent l’armure)' };
 const UNDEAD = new Set(['skeleton','ghost','mummy','ghoul','lich','wraith','vampire']);
 /* Spécialistes : seuils et bonus par niveau. */
-const SPEC = { flyMul:3, execute:[.15,.15,.15,.2,.2,.22,.24,.26], assaCrit:[.25,.25,.25,.35,.35,.4,.45,.5], palaHeal:.02 };
+const SPEC = { flyMul:3, execute:[.15,.15,.15,.2,.2,.22,.24,.26], assaCrit:[.25,.25,.25,.35,.35,.4,.45,.5], palaHeal:.02,
+  hexCd:[8,7.5,7,6.5,6,5.5,5,4.5], hexDur:3, druidT:5, trollPush:[.6,.65,.7,.8,.85,.9,1,1.1], trollRegen:.02, huntCd:4, huntMul:[.25,.25,.25,.35,.35,.4,.45,.5],
+  heal:[.03,.03,.035,.04,.045,.05,.055,.06], rez:[0,0,0,1,1,2,2,2], bardAura:[.08,.1,.12,.14,.16,.18,.2,.22], sleepCd:9, sleepDur:[2.5,2.5,2.5,2.5,3,3.5,4,4.5],
+  clockAura:[.06,.08,.1,.12,.14,.16,.18,.2], rewindCd:[0,0,0,16,14,12,10,8], bankWave:[4,7,11,16,22,30,40,52], bankKill:[1,1,1,2,2,2,3,3],
+  sylvSlow:[.25,.25,.28,.32,.35,.38,.4,.42], sylvRegen:.03, sylvArmor:.1, perchRange:.6, perchDmg:.2,
+  skelCap:[2,2,3,3,4,4,5,6], skelLife:[5,5,5.5,6,6.5,7,7.5,8], mines:[1,1,1,2,2,3,3,3] };
 const canHitAir = t => !!TYPES[t].air;
 function resText(B){
   const r = [];
@@ -269,6 +313,19 @@ const SYN = {
   '1-11':{ name:'Ciel de chasse',      fx:{1:{range:.2}, 11:{dmg:.25}},          txt:{1:'+0,2 de portée', 11:'+25 % de dégâts'} },
   '5-12':{ name:'Hérisson',            fx:{5:{thorns:.2}, 12:{dmg:.2}},          txt:{5:'+20 % de riposte', 12:'+20 % de dégâts'} },
   '3-13':{ name:'Proie gelée',         fx:{3:{slow:.08}, 13:{vsSlow:.5}},        txt:{3:'+8 % de ralentissement', 13:'+50 % contre les ralentis'} },
+  '6-15':{ name:'Feu de forêt',        fx:{6:{dmg:.2}, 15:{dmg:.3}},             txt:{6:'+20 % de dégâts', 15:'+30 % de dégâts'} },
+  '14-15':{ name:'Sabbat',             fx:{14:{rate:.15}, 15:{rate:.15}},        txt:{14:'+15 % de cadence', 15:'+15 % de cadence'} },
+  '5-16':{ name:'Peuple des cavernes', fx:{5:{hp:.15}, 16:{dmg:.25}},            txt:{5:'+15 % de vie', 16:'+25 % de dégâts'} },
+  '13-17':{ name:'Contrat',            fx:{13:{dmg:.2}, 17:{rate:.2}},           txt:{13:'+20 % de dégâts', 17:'+20 % de cadence'} },
+  '10-18':{ name:'Foi',                fx:{10:{dmg:.2}, 18:{range:.3}},          txt:{10:'+20 % de dégâts', 18:'+0,3 de portée'} },
+  '1-19':{ name:'Ballade',             fx:{1:{rate:.15}, 19:{range:.3}},         txt:{1:'+15 % de cadence', 19:'+0,3 de portée'} },
+  '7-20':{ name:'Contrepoids',         fx:{7:{rate:.2}, 20:{dmg:.2}},            txt:{7:'+20 % de cadence', 20:'+20 % de dégâts'} },
+  '17-21':{ name:'Recel',              fx:{17:{range:.3}, 21:{dmg:.5}},          txt:{17:'+0,3 de portée', 21:'+50 % de dégâts'} },
+  '5-22':{ name:'Racines de pierre',   fx:{5:{armor:.1}, 22:{hp:.25}},           txt:{5:'+10 % d’armure', 22:'+25 % de vie'} },
+  '15-22':{ name:'Bosquet',            fx:{15:{range:.3}, 22:{dmg:.3}},          txt:{15:'+0,3 de portée', 22:'+30 % de dégâts'} },
+  '6-23':{ name:'Brasier',             fx:{6:{dmg:.2}, 23:{dmg:.2}},             txt:{6:'+20 % de dégâts', 23:'+20 % de dégâts'} },
+  '13-24':{ name:'Danse macabre',      fx:{13:{rate:.15}, 24:{range:.3}},        txt:{13:'+15 % de cadence', 24:'+0,3 de portée'} },
+  '7-25':{ name:'Génie militaire',     fx:{7:{dmg:.2}, 25:{rate:.2}},            txt:{7:'+20 % de dégâts', 25:'+20 % de cadence'} },
   '5-10':{ name:'Serment d’acier',     fx:{5:{armor:.1}, 10:{dmg:.2}},           txt:{5:'+10 % d’armure', 10:'+20 % de dégâts'} }
 };
 const FORMATION = .08;
@@ -283,8 +340,8 @@ function synLink(a, b){
 
 /* ---------- bénédictions ---------- */
 const RAR = { c:{ name:'Commune', col:'#b9a684', w:62 }, r:{ name:'Rare', col:'#5ea0e0', w:30 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
-const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne','du feu','du siège','des spores','du carreau','de la lumière','de la fauconnerie','de la pique','de l’ombre'];
-const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains','pyromanciennes','catapultes','myconides','balistes','paladines','fauconniers','hallebardiers','assassins'];
+const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne','du feu','du siège','des spores','du carreau','de la lumière','de la fauconnerie','de la pique','de l’ombre','du chaudron','des ronces','des cavernes','de la traque','du temple','de la ballade','des rouages','de la banque','des bois','des dragons','des os','du génie'];
+const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains','pyromanciennes','catapultes','myconides','balistes','paladines','fauconniers','hallebardiers','assassins','sorcières','druides','trolls','chasseurs de primes','prêtresses','bardes','horlogers','banquiers','sylvains','dragonnets','nécromanciens','ingénieurs'];
 const BLESS = [
   { id:'lames', rar:'c', icon:'sword', max:3, name:'Lames affûtées', desc:'Épéistes : +25 % de dégâts.', mod:M => { M.dmgType[0] *= 1.25; } },
   { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 60 % de leurs dégâts.', mod:M => { M.whirl = true; } },

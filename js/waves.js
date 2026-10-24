@@ -126,6 +126,7 @@ function startWave(){
   inWave = true; autoT = 0; waveTime = 0; herseUsed = false; waveLeaks = 0; legKills = 0;
   if (typeof recruitLevel === 'function' && recruitLevel() > (S.recLvl || 1)){ S.recLvl = recruitLevel(); setTimeout(() => toast('Tes recrues arrivent désormais au niveau ' + S.recLvl), 2400); }
   for (const tw of S.board) if (tw) tw.ab = 0;
+  engineerMines();
   renderBG();
   const siege = S.mode === 'siege';
   let sub = '', col = '#f3e7cc', text = 'Vague ' + S.wave;
@@ -181,6 +182,8 @@ function endWave(){
   if (dThreat > 1.001) sub += ', les monstres se renforcent'; else if (dThreat < .999) sub += ', les monstres faiblissent';
   const lt = S.board.find(t => t && t.leg);
   if (lt && lt.leg === 'cesar' && lt.l === 5){ S.gold += 25; sub += ', +25 or de César'; }
+  { let bank = 0; for (const tw of S.board) if (tw && tw.t === 21 && !tw.leg){ bank += SPEC.bankWave[tw.l-1]; if (tw.l >= 6) bank += Math.min(30, Math.floor(S.gold*.05)); }
+    if (bank){ S.gold += bank; addGold(bank); sub += ', +' + bank + ' or du banquier'; } }
   if (lt && lt.leg === 'jeanne' && livesFree()){
     const n = lt.l >= 5 ? 2 : lt.l >= 3 ? 1 : (S.wave % 2 === 0 ? 1 : 0);
     if (n){ S.lives += n; sub += ', +' + n + (n > 1 ? ' vies' : ' vie') + ' de Jeanne'; }
@@ -188,7 +191,7 @@ function endWave(){
   if (newPath) sub += ', nouveau chemin';
   banner = { t: newPath ? 2.6 : 2, max: newPath ? 2.6 : 2, text:'Vague ' + S.wave + ' repoussée', sub, col:'#f2c14e' };
   sfx('clear');
-  S.traps = []; S.trapBuys = 0; rebuildTraps();
+  S.traps = []; S.trapBuys = 0; rebuildTraps(); allies = [];
   for (const b of S.bars){ b.broken = false; b.hp = null; }
   if (newPath || !NET) makeNet(NET ? NET.cells : null); else { recomputeDist(); renderBG(); }
   if (!(finiteMode() && S.wave >= maxWaves())){ S.nextQ = makeWave(S.wave + 1); S.nextE = assignEntrances(S.nextQ); }
@@ -268,7 +271,7 @@ function newGame(mode, world = 0, size = 0){
   resize();
   ulx = []; aiming = null;
   hasGame = true; pstat.games++;
-  enemies = []; projs = []; fx = []; queue = []; pendingSpawn = []; fires = [];
+  enemies = []; projs = []; fx = []; queue = []; pendingSpawn = []; fires = []; allies = [];
   inWave = false; over = false; banner = null; drag = null; closeSheet();
   NET = null; stopPlacing(); rebuildTraps();
   hideHome();

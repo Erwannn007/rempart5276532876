@@ -140,6 +140,18 @@ function recomputeSyn(){
       else { const v = JEANNE_AURA[lt.l-1]; o.syn.rate += v; o.syn.list.push({ name:'Inspiration de Jeanne', icon:LURL.jeanne[lt.l-1], txt:'+' + Math.round(v*100) + ' % de cadence' }); }
     }
   });
+  /* Barde et Horloger : aura sur les 8 cases autour d'eux. */
+  S.board.forEach((bt,i) => {
+    if (!bt || bt.leg || (bt.t !== 19 && bt.t !== 20)) return;
+    const c = i%COLS, r = (i/COLS)|0, bard = bt.t === 19, v = (bard ? SPEC.bardAura : SPEC.clockAura)[bt.l-1];
+    for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++){
+      if (!dc && !dr) continue;
+      const nc = c+dc, nr = r+dr; if (nc<0||nr<0||nc>=COLS||nr>=ROWS) continue;
+      const o = S.board[idx(nc,nr)]; if (!o || !o.syn) continue;
+      if (bard){ o.syn.dmg += v; o.syn.list.push({ name:'Chant du barde', icon:URL_[19][bt.l-1], txt:'+' + Math.round(v*100) + ' % de dégâts' }); }
+      else { o.syn.rate += v; o.syn.list.push({ name:'Réglages de l’horloger', icon:URL_[20][bt.l-1], txt:'+' + Math.round(v*100) + ' % de cadence' }); }
+    }
+  });
 }
 function stats(tw, i){
   const ty = TYPES[tw.t], L = tw.l, sy = tw.syn || NOSYN, M = MODS;
@@ -149,7 +161,9 @@ function stats(tw, i){
   if (L >= 5) dmg *= M.elite;
   if (L < 5 && !lg) dmg *= M.low;
   if (ter === TER.RUNE) dmg *= 1 + RUNE_DMG*M.runeMul;
-  const range = base.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0);
+  const perch = tw.t === 23 && !lg && (ter === TER.ROCK || ter === TER.TREE);
+  if (perch) dmg *= 1 + SPEC.perchDmg;
+  const range = base.range + .12*(L-1) + sy.range + M.range + (ter === TER.HILL ? HILL_RANGE : 0) + (perch ? SPEC.perchRange : 0);
   const khan = tw.leg === 'gengis' ? Math.min(L === 5 ? .5 : .3, .02*legKills) : 0;
   let rate = base.rate*RMUL[L-1] / (1 + sy.rate + M.rateType[tw.t] + khan);
   if (M.frenzy && inWave) rate = waveTime < 6 ? rate/1.25 : rate*1.1;
@@ -267,9 +281,9 @@ function overlapRatio(p, set){ if (!set || !set.size) return 0; let n = 0; for (
    (les soldats concernés seront déplacés). */
 function relocateOff(set){
   let moved = 0, toBench = 0, sold = 0;
-  for (let i=0;i<COLS*ROWS;i++) if (isWarden(S.board[i]) && !set.has(i) && !isBuild(i)){ set = new Set(set); set.add(i); }
+  for (let i=0;i<COLS*ROWS;i++) if (isBlocker(S.board[i]) && !set.has(i) && !isBuild(i)){ set = new Set(set); set.add(i); }
   for (const i of set){
-    const tw = S.board[i]; if (!tw || (isWarden(tw) && wardSpot(i))) continue;
+    const tw = S.board[i]; if (!tw || (isBlocker(tw) && wardSpot(i))) continue;
     S.board[i] = null;
     let bestJ = -1, bd = Infinity;
     for (let j=0;j<COLS*ROWS;j++){
@@ -328,7 +342,7 @@ const barAt = i => (S.bars || []).find(b => b.i === i) || null;
 const barClosed = i => { const b = barAt(i); return !!b && !b.open && !b.broken; };
 /* Case de route où un gardien nain peut se poster, et gardien debout qui barre le passage. */
 const wardSpot = i => !!NET && NET.cells.has(i) && !NET.ents.includes(i) && i !== NET.exit;
-const wardAt = i => { const tw = S.board[i]; return isWarden(tw) && !tw.ko && netHas(i); };
+const wardAt = i => { const tw = S.board[i]; return isBlocker(tw) && !tw.ko && netHas(i); };
 function recomputeDist(){
   if (!NET) return;
   NET.dist = bfsDist(NET.cells, NET.exit, barClosed);
@@ -434,7 +448,7 @@ function makeNet(oldCells){
 function restoreNet(o){
   if (!o || !Array.isArray(o.cells) || !Array.isArray(o.ents)) return false;
   const cells = new Set(o.cells);
-  for (const i of cells) if (!(i >= 0 && i < COLS*ROWS) || (S.board[i] && !(isWarden(S.board[i]) && !o.ents.includes(i) && i !== o.exit)) || !isWalk(i)) return false;
+  for (const i of cells) if (!(i >= 0 && i < COLS*ROWS) || (S.board[i] && !(isBlocker(S.board[i]) && !o.ents.includes(i) && i !== o.exit)) || !isWalk(i)) return false;
   if (!cells.has(o.exit) || ((o.exit/COLS)|0) !== ROWS-1) return false;
   if (!o.ents.every(e => cells.has(e) && ((e/COLS)|0) === 0)) return false;
   const N = { cells, ents:o.ents.slice(), exit:o.exit };

@@ -573,7 +573,7 @@ window.addEventListener('resize', () => { hBG = null; });
    Deck : cinq soldats choisis pour la bataille
    ========================================================= */
 const DECK_N = 5;
-const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur','Feu','Artillerie','Poison','Perforant','Sacré','Anti-air','Perce-armure','Exécution'];
+const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur','Feu','Artillerie','Poison','Perforant','Sacré','Anti-air','Perce-armure','Exécution','Métamorphose','Ronces','Recul','Prime','Soin','Chant','Horlogerie','Économie','Racines','Souffle','Nécromancie','Pièges'];
 /* Cartes à gagner : elles ne peuvent sortir d'un coffre qu'une fois leur condition remplie. */
 const CARD_REQ = [null, null, null, null, null,
   { test:() => best >= 10 || story.unlocked >= 2, txt:'Atteins la vague 10 en Sans fin, ou termine la Forêt sombre.' },
@@ -584,7 +584,19 @@ const CARD_REQ = [null, null, null, null, null,
   { test:() => best >= 25 || story.unlocked >= 4, txt:'Atteins la vague 25 en Sans fin, ou libère le Désert brûlant.' },
   { test:() => pstat.games >= 10, txt:() => 'Joue 10 parties (' + Math.min(10, pstat.games) + '/10).' },
   { test:() => pstat.merges >= 100, txt:() => 'Réussis 100 fusions (' + Math.min(100, pstat.merges) + '/100).' },
-  { test:() => pstat.kills >= 3000, txt:() => 'Abats 3 000 monstres au total (' + fmtN(Math.min(3000, pstat.kills)) + '/3 000).' }];
+  { test:() => pstat.kills >= 3000, txt:() => 'Abats 3 000 monstres au total (' + fmtN(Math.min(3000, pstat.kills)) + '/3 000).' },
+  { test:() => best >= 30 || story.unlocked >= 3, txt:'Atteins la vague 30 en Sans fin, ou libère le Marais putride.' },
+  { test:() => (profile.cards || []).length >= 3, txt:() => 'Gagne 3 cartes dans des coffres (' + Math.min(3, (profile.cards || []).length) + '/3).' },
+  { test:() => pstat.bosses >= 20, txt:() => 'Abats 20 boss au total (' + Math.min(20, pstat.bosses) + '/20).' },
+  { test:() => pstat.gold >= 20000, txt:() => 'Ramasse 20 000 or au total (' + fmtN(Math.min(20000, pstat.gold)) + '/20 000).' },
+  { test:() => story.stars.some(n => n >= 3), txt:'Libère un monde avec trois étoiles.' },
+  { test:() => pstat.ach.length >= 10, txt:() => 'Débloque 10 succès (' + Math.min(10, pstat.ach.length) + '/10).' },
+  { test:() => pstat.merges >= 300, txt:() => 'Réussis 300 fusions (' + Math.min(300, pstat.merges) + '/300).' },
+  { test:() => pstat.gold >= 50000, txt:() => 'Ramasse 50 000 or au total (' + fmtN(Math.min(50000, pstat.gold)) + '/50 000).' },
+  { test:() => best >= 35 || story.unlocked >= 5, txt:'Atteins la vague 35 en Sans fin, ou libère les Pics gelés.' },
+  { test:() => pstat.beaten.includes('dragon'), txt:'Abats le Dragon de braise.' },
+  { test:() => pstat.kills >= 10000, txt:() => 'Abats 10 000 monstres au total (' + fmtN(Math.min(10000, pstat.kills)) + '/10 000).' },
+  { test:() => pstat.traps >= 50, txt:() => 'Pose 50 pièges (' + Math.min(50, pstat.traps) + '/50).' }];
 const reqTxt = t => { const x = CARD_REQ[t].txt; return typeof x === 'function' ? x() : x; };
 const cardBest = t => { let b = 0; for (let l=1;l<=MAXL;l++) if (seen.has(t*MAXL + l - 1)) b = l; return b; };
 const cardOpen = t => !CARD_REQ[t] || (profile.cards || []).includes(t) || cardBest(t) > 0;
