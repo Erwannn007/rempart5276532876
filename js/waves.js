@@ -83,26 +83,31 @@ function makeWave(w){
    faire croire que les monstres ordinaires, eux, ont résisté.
    La menace multiplie la vie des ennemis, et leurs coups par sa racine carrée. */
 /* steps / boss : [part du chemin qui restait au plus avancé, multiplicateur], du plus facile au plus serré.
-   Les monstres meurent souvent d'un coup : il faut de gros paliers pour rattraper une armée fusionnée. */
-let THREAT = { from:5, keep:.75, leak:[.07, 3],
+   Les monstres meurent souvent d'un coup : il faut de gros paliers pour rattraper une armée fusionnée.
+   hard : la menace la plus haute où le joueur a peiné (fuites, ou un monstre passé sous hard × le chemin).
+   near : arrivée à near[0] × ce niveau, elle ne monte plus que de near[1] au plus (pas de bond qui fait tout déborder). */
+let THREAT = { from:5, keep:.75, leak:[.07, 3], hard:.35, near:[.9, 1.10],
   steps:[[.9, 1.35], [.75, 1.2], [.55, 1.1], [.35, 1.04], [0, 1]],
   boss:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [0, 1]],
   endless:[.75, 50], story:[1, 1.5] };
 let waveMinRem = INF, waveBossRem = INF, waveBossLeaks = 0;
 const threat = () => S.threat || 1;
 const bossThreat = () => S.bossThreat || 1;
-function nudgeThreat(cur, peak, far, leaks, steps, lo, hi){
-  const C = THREAT, k = leaks ? 1 - C.leak[0] * Math.min(leaks, C.leak[1]) : steps.find(([f]) => far >= f)[1];
+function nudgeThreat(cur, peak, hard, far, leaks, steps, lo, hi){
+  const C = THREAT;
+  let k = leaks ? 1 - C.leak[0] * Math.min(leaks, C.leak[1]) : steps.find(([f]) => far >= f)[1];
+  if (k > 1 && hard && cur >= hard * C.near[0]) k = Math.min(k, C.near[1]);
+  if (leaks || far < C.hard) hard = Math.max(hard || 0, cur);
   const next = Math.max(Math.min(cur, Math.max(lo, (peak || 1) * C.keep)), Math.min(hi, cur * k));
-  return [next, Math.max(peak || 1, next)];
+  return [next, Math.max(peak || 1, next), hard || 0];
 }
 function updThreat(){
   if (S.mode === 'siege' || S.wave < THREAT.from || !NET) return 1;
   const C = THREAT, [lo, hi] = C[S.mode === 'story' ? 'story' : 'endless'];
   const path = Math.max(1, Math.min(...NET.ents.map(i => NET.distB[i] + 1)));
   const before = threat(), leaks = waveLeaks - waveBossLeaks;
-  if (waveMinRem < INF || leaks) [S.threat, S.threatPeak] = nudgeThreat(before, S.threatPeak, Math.min(1, waveMinRem / path), leaks, C.steps, lo, hi);
-  if (waveBossRem < INF || waveBossLeaks) [S.bossThreat, S.bossPeak] = nudgeThreat(bossThreat(), S.bossPeak, Math.min(1, waveBossRem / path), waveBossLeaks, C.boss, lo, hi);
+  if (waveMinRem < INF || leaks) [S.threat, S.threatPeak, S.threatHard] = nudgeThreat(before, S.threatPeak, S.threatHard, Math.min(1, waveMinRem / path), leaks, C.steps, lo, hi);
+  if (waveBossRem < INF || waveBossLeaks) [S.bossThreat, S.bossPeak, S.bossHard] = nudgeThreat(bossThreat(), S.bossPeak, S.bossHard, Math.min(1, waveBossRem / path), waveBossLeaks, C.boss, lo, hi);
   return S.threat / before;
 }
 function startWave(){
