@@ -262,14 +262,15 @@ function refreshHome(){
   $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
   $('hMusicBtn').textContent = prefs.music ? 'Musique : oui' : 'Musique : non';
   $('hChestBadge').textContent = profile.chests | 0; $('hChestBadge').style.display = (profile.chests | 0) ? '' : 'none';
-  $('hDeckCards').innerHTML = fixDeck().map(t => `<img class="px" src="${cardArt(t, Math.max(1, cardBest(t)), false)}" alt="">`).join('');
+  renderChestSlots();
+  const d0 = fixDeck()[0]; $('htDeck').src = cardArt(d0, Math.max(1, cardBest(d0)), false);
 }
 function showHome(){
   closeSheet(); stopPlacing(); drag = null;
   ['ovMenu','ovOver','ovWin','ovBless','ovLegend','ovShop'].forEach(hide);
   if (hasGame && !inWave) save(); else persist();
-  homeOn = true; hBG = null;
-  refreshHome();
+  homeOn = true; hBG = null; hTab = 1;
+  refreshHome(); homeTab(1);
   show('ovHome');
   requestAnimationFrame(() => { hBG = null; });
 }
@@ -401,6 +402,7 @@ document.querySelectorAll('[data-hact]').forEach(b => b.addEventListener('click'
   if (a === 'codex'){ buildCodex(); show('ovCodex'); }
   else if (a === 'help') show('ovHelp');
   else if (a === 'deck') openDeck();
+  else if (a === 'profile') openProfile();
   else if (a === 'sound'){ prefs.sound = !prefs.sound; persist(); refreshHome(); }
   else if (a === 'music'){ prefs.music = !prefs.music; persist(); refreshHome(); }
 }));
@@ -466,7 +468,7 @@ function cardHTML(t, cls = '', mini = false){
     ${mini ? '' : `<span class="card-pips">${pips}</span>`}
   </div>`;
 }
-let deckSel = -1, deckDrag = null;
+let deckSel = -1, deckDrag = null, deckDropT = 0;
 function deckInfo(t){
   const el = $('deckInfo');
   if (t < 0){ el.innerHTML = '<span class="dim">Touche une carte pour la lire, puis un emplacement pour l’y poser. Ou maintiens-la et fais-la glisser.</span>'; return; }
@@ -494,7 +496,7 @@ function deckPut(t, from, k){
   deckSel = -1; persist(); renderDeck(); refreshHome(); sfx('recruit');
   const s = $('deckSlots').children[k]; if (s){ s.classList.add('pop'); }
 }
-function openDeck(){ deckSel = -1; renderDeck(); show('ovDeck'); }
+function openDeck(){ deckSel = -1; homeTab(0); }
 function deckTap(t, slot){
   if (!cardOpen(t)){ deckSel = -1; renderDeck(); deckInfo(t); sfx('bad'); return; }
   if (slot >= 0 && deckSel >= 0 && deckSel !== t){ deckPut(deckSel, profile.deck.indexOf(deckSel), slot); return; }
@@ -502,14 +504,14 @@ function deckTap(t, slot){
 }
 /* Dans la collection (qui défile), une carte se saisit par un appui maintenu ; dans le deck, tout de suite. */
 const DECK_HOLD = 200;
-$('ovDeck').addEventListener('pointerdown', e => {
+$('deckWin').addEventListener('pointerdown', e => {
   const card = e.target.closest('.card'); if (!card || deckDrag) return;
   const slotEl = card.closest('.dslot');
   const d = deckDrag = { t:+card.dataset.t, from: slotEl ? +slotEl.dataset.k : -1, el:card, sx:e.clientX, sy:e.clientY, ghost:null, over:null, id:e.pointerId };
   d.armed = !!slotEl || e.pointerType === 'mouse';
   if (!d.armed && cardOpen(d.t)) d.timer = setTimeout(() => { if (deckDrag === d){ d.armed = true; card.classList.add('armed'); } }, DECK_HOLD);
 });
-$('ovDeck').addEventListener('touchmove', e => { if (deckDrag && (deckDrag.armed || deckDrag.ghost)) e.preventDefault(); }, { passive:false });
+$('deckWin').addEventListener('touchmove', e => { if (deckDrag && (deckDrag.armed || deckDrag.ghost)) e.preventDefault(); }, { passive:false });
 window.addEventListener('pointermove', e => {
   const d = deckDrag; if (!d || e.pointerId !== d.id) return;
   if (!d.ghost){
@@ -532,7 +534,7 @@ function endDeckDrag(e, cancel){
   const d = deckDrag; if (!d || e.pointerId !== d.id) return;
   deckDrag = null; clearTimeout(d.timer); d.el.classList.remove('armed');
   if (!d.ghost){ if (!cancel) deckTap(d.t, d.from); return; }
-  d.ghost.remove(); d.el.classList.remove('lifted');
+  d.ghost.remove(); d.el.classList.remove('lifted'); deckDropT = performance.now();
   if (d.over) d.over.classList.remove('hot');
   if (!cancel && d.over && +d.over.dataset.k !== d.from) deckPut(d.t, d.from, +d.over.dataset.k);
 }
@@ -566,7 +568,7 @@ function openChest(){
   show('ovChest');
 }
 function crackChest(){
-  if (chestState === 'none' || chestState === 'done'){ hide('ovChest'); if ($('ovDeck').classList.contains('show')) renderDeck(); return; }
+  if (chestState === 'none' || chestState === 'done'){ hide('ovChest'); renderDeck(); return; }
   if (chestState !== 'shut') return;
   const pool = TYPES.map((_,t) => t).filter(cardWinnable); if (!pool.length) return;
   chestState = 'shaking'; $('chestImg').classList.add('shake'); sfx('clang');
@@ -584,3 +586,36 @@ function crackChest(){
 $('deckChest').addEventListener('click', () => { audio(); openChest(); });
 $('chestBtn').addEventListener('click', () => { audio(); crackChest(); });
 $('chestImg').addEventListener('click', () => { audio(); crackChest(); });
+
+/* ---------- accueil en trois pages : Deck, Combat, Plus ---------- */
+let hTab = 1, hSwipe = null;
+function homeTab(n){
+  hTab = Math.max(0, Math.min(2, n));
+  $('hTrack').style.transform = `translateX(${-hTab*100/3}%)`;
+  document.querySelectorAll('.htab').forEach(b => b.classList.toggle('on', +b.dataset.tab === hTab));
+  if (hTab === 0){ deckSel = -1; renderDeck(); }
+}
+$('htPlay').src = BI.sword; $('htMore').src = BI.star;
+$('hiCodex').src = BI.scroll; $('hiProfile').src = BI.helm; $('hiHelp').src = BI.banner;
+document.querySelectorAll('.htab').forEach(b => b.addEventListener('click', () => { audio(); if (+b.dataset.tab !== hTab) sfx('arrow'); homeTab(+b.dataset.tab); }));
+$('hPager').addEventListener('pointerdown', e => { hSwipe = { x:e.clientX, y:e.clientY, id:e.pointerId }; });
+window.addEventListener('pointerup', e => {
+  const w = hSwipe; hSwipe = null;
+  if (!w || e.pointerId !== w.id || !homeOn || document.querySelector('.ov.show:not(.home)') || performance.now() - deckDropT < 80 || deckDrag) return;
+  const dx = e.clientX - w.x, dy = e.clientY - w.y;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){ homeTab(hTab + (dx < 0 ? 1 : -1)); sfx('arrow'); }
+});
+
+/* ---------- emplacements de coffres (écran Combat) ---------- */
+const CHEST_SLOTS = 4;
+function renderChestSlots(){
+  const n = profile.chests | 0, left = CHEST_EVERY - pstat.waves % CHEST_EVERY;
+  let h = '';
+  for (let k=0;k<CHEST_SLOTS;k++){
+    if (k < n) h += `<button class="cslot full" data-k="${k}"><img class="px" src="${CHEST_SHUT}" alt="Coffre"><span>Ouvrir</span></button>`;
+    else if (k === n) h += `<div class="cslot"><b>${CHEST_EVERY - left}/${CHEST_EVERY}</b><span>vagues</span></div>`;
+    else h += `<div class="cslot"></div>`;
+  }
+  $('hChests').innerHTML = h + (n > CHEST_SLOTS ? `<em class="cslot-more">+${n - CHEST_SLOTS} en réserve</em>` : '');
+}
+$('hChests').addEventListener('click', e => { if (e.target.closest('.cslot.full')){ audio(); openChest(); } });

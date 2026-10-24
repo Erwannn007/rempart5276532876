@@ -305,11 +305,6 @@ html{background:#1c1610}
 .mode.size2{background:#5a2f24}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
 /* deck : cartes de soldats */
-.home-deck{min-height:58px;justify-content:flex-start;gap:10px;padding:0 10px;background:#2f4a52;text-align:left}
-.hd-cards{display:flex;gap:4px;flex:none}
-.hd-cards img{width:32px;height:30px;border:2px solid var(--edge);display:block}
-.hd-lbl b{display:block;font-size:19px;line-height:1.05}
-.hd-lbl small{display:block;font-size:12.5px;font-weight:600;color:#bfe0e4}
 .deck-win{max-height:100%}
 .deck-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:7px;margin-top:6px;background:#1c1610;border:3px solid var(--edge);box-shadow:inset 0 4px 0 rgba(0,0,0,.45)}
 .dslot{min-width:0}
@@ -345,7 +340,6 @@ html{background:#1c1610}
 .dslot.pop .card{animation:cardPop .36s steps(3)}
 @keyframes cardPop{0%{transform:scale(1.18)}50%{transform:scale(.94)}100%{transform:scale(1)}}
 /* coffres */
-.home-deck{position:relative}
 .hd-badge{position:absolute;right:8px;top:50%;transform:translateY(-50%);min-width:26px;height:26px;padding:0 6px;font-style:normal;font-size:15px;font-weight:800;
   display:flex;align-items:center;justify-content:center;color:#2a1e14;background:var(--gold);border:3px solid var(--edge);animation:badgeBlink 1.2s steps(2) infinite}
 @keyframes badgeBlink{50%{background:#fff3a0}}
@@ -372,3 +366,32 @@ html{background:#1c1610}
 .deck-coll .card{touch-action:pan-y}
 .card.armed{transform:translateY(-4px) scale(1.06);box-shadow:inset 0 0 0 2px var(--cc),0 0 0 3px var(--gold),4px 6px 0 rgba(0,0,0,.35)}
 .card-role{text-shadow:1px 1px 0 #120d08}
+/* accueil en trois pages */
+.home-pager{flex:1;min-height:0;align-self:stretch;overflow:hidden;touch-action:pan-y}
+.home-track{display:flex;width:300%;height:100%;transition:transform .24s steps(6)}
+.hpage{flex:0 0 33.3333%;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;padding:0 2px}
+.hp-play .home-menu{margin-bottom:4px}
+.hp-deck .deck-win{max-width:420px;height:100%;padding:12px}
+.hp-more .more-win{max-width:420px;margin:auto 0}
+.more-win .stack .btn img{width:24px;height:24px;flex:none}
+.more-win .stack .btn .n{font-size:13px;font-weight:600;color:var(--dim)}
+.home-tabs{display:flex;gap:6px;width:100%;max-width:420px;margin-top:8px;flex:none}
+.htab{flex:1;position:relative;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 0;
+  font-family:var(--font);font-weight:800;font-size:14px;color:var(--dim);background:var(--wood);border:3px solid var(--edge);
+  box-shadow:inset 0 3px 0 var(--wood-hi),inset 0 -4px 0 var(--wood-lo)}
+.htab img{width:30px;height:28px;object-fit:contain;filter:grayscale(.6) brightness(.8)}
+.htab.on{background:var(--wood-hi);color:var(--gold);transform:translateY(-4px);
+  box-shadow:inset 0 3px 0 rgba(255,236,200,.16),inset 0 -5px 0 rgba(0,0,0,.35),0 0 0 2px var(--gold)}
+.htab.on img{filter:none}
+.htab .hd-badge{top:4px;right:6px;transform:none;min-width:22px;height:22px;font-size:13px}
+/* emplacements de coffres */
+.chest-slots{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cslot{height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;
+  font-family:var(--font);color:var(--dim);background:rgba(28,22,16,.88);border:3px solid var(--edge);box-shadow:inset 0 4px 0 rgba(0,0,0,.45)}
+.cslot b{font-size:17px;color:var(--ink);line-height:1}
+.cslot span{font-size:11.5px;font-weight:800;line-height:1.1}
+.cslot.full{--cc:#a8781e;background:#5a4420;cursor:pointer;color:var(--gold);box-shadow:inset 0 3px 0 rgba(255,236,200,.16),inset 0 -4px 0 rgba(0,0,0,.35);animation:winGlow 1.4s steps(2) infinite}
+.cslot.full:active{transform:translateY(2px)}
+.cslot.full img{width:46px;height:auto;animation:chestBob 1s steps(2) infinite}
+@keyframes chestBob{50%{transform:translateY(-2px)}}
+.cslot-more{position:absolute;right:0;top:-18px;font-style:normal;font-size:12px;font-weight:800;color:var(--gold);text-shadow:1px 1px 0 #120d08}

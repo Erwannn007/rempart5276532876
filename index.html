@@ -53,24 +53,51 @@
 <div class="ov home" id="ovHome">
   <canvas id="homeCv"></canvas>
   <div class="home-ui">
-    <div class="home-top">
-      <button class="profile-chip plank" id="hProfile" aria-label="Profil"><img class="px" id="hAvatar" alt=""><span><b id="hName"></b><small id="hRank"></small></span></button>
-    </div>
-    <img class="px home-title" id="hTitle" alt="Rempart">
-    <div class="home-menu">
-      <button class="btn main home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
-      <div class="home-row">
-        <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
-        <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
-      </div>
-      <button class="btn home-deck" data-hact="deck"><span class="hd-cards" id="hDeckCards"></span><span class="hd-lbl"><b>Mon deck</b><small>5 soldats</small></span><em class="hd-badge" id="hChestBadge"></em></button>
-      <div class="home-row small">
-        <button class="btn" data-hact="codex">Recueil</button>
-        <button class="btn" data-hact="help">Aide</button>
-        <button class="btn" data-hact="sound" id="hSoundBtn">Son</button>
-        <button class="btn" data-hact="music" id="hMusicBtn">Musique</button>
-      </div>
-    </div>
+    <div class="home-pager" id="hPager"><div class="home-track" id="hTrack">
+      <section class="hpage hp-deck">
+        <div class="win plank deck-win" id="deckWin">
+          <div class="deck-head"><h2>Mon deck</h2><button class="btn chest-btn" id="deckChest" aria-label="Coffres"><img class="px" id="deckChestImg" alt=""><b id="deckChestN">0</b></button></div>
+          <div class="deck-slots" id="deckSlots"></div>
+          <p class="deck-info" id="deckInfo"></p>
+          <div class="scroll">
+            <h3 class="cx-h">Collection <small id="deckCount"></small></h3>
+            <div class="deck-coll" id="deckColl"></div>
+            <p class="cx-note" id="deckNote"></p>
+          </div>
+        </div>
+      </section>
+      <section class="hpage hp-play">
+        <div class="home-top">
+          <button class="profile-chip plank" id="hProfile" aria-label="Profil"><img class="px" id="hAvatar" alt=""><span><b id="hName"></b><small id="hRank"></small></span></button>
+        </div>
+        <img class="px home-title" id="hTitle" alt="Rempart">
+        <div class="home-menu">
+          <div class="chest-slots" id="hChests"></div>
+          <button class="btn main home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
+          <div class="home-row">
+            <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
+            <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
+          </div>
+        </div>
+      </section>
+      <section class="hpage hp-more">
+        <div class="win plank more-win">
+          <h2>Plus</h2>
+          <div class="stack">
+            <button class="btn" data-hact="codex"><img class="px" id="hiCodex" alt="">Recueil<span class="n">soldats, monstres, synergies</span></button>
+            <button class="btn" data-hact="profile"><img class="px" id="hiProfile" alt="">Profil<span class="n">succès, portrait</span></button>
+            <button class="btn" data-hact="help"><img class="px" id="hiHelp" alt="">Aide<span class="n">comment jouer</span></button>
+            <button class="btn" data-hact="sound" id="hSoundBtn">Son</button>
+            <button class="btn" data-hact="music" id="hMusicBtn">Musique</button>
+          </div>
+        </div>
+      </section>
+    </div></div>
+    <nav class="home-tabs" id="hTabs">
+      <button class="htab" data-tab="0"><img class="px" id="htDeck" alt=""><span>Deck</span><em class="hd-badge" id="hChestBadge"></em></button>
+      <button class="htab" data-tab="1"><img class="px" id="htPlay" alt=""><span>Combat</span></button>
+      <button class="htab" data-tab="2"><img class="px" id="htMore" alt=""><span>Plus</span></button>
+    </nav>
   </div>
 </div>
 
@@ -178,18 +205,6 @@
   <div class="stars" id="winStars"></div>
   <p class="lead" id="winSub"></p>
   <div class="stack"><button class="btn main" id="winNext">Monde suivant</button><button class="btn" id="winMap">Carte des mondes</button><button class="btn" data-act="again">Retour à l’accueil</button></div>
-</div></div>
-
-<div class="ov" id="ovDeck"><div class="win plank deck-win">
-  <div class="deck-head"><h2>Mon deck</h2><button class="btn chest-btn" id="deckChest" aria-label="Coffres"><img class="px" id="deckChestImg" alt=""><b id="deckChestN">0</b></button></div>
-  <div class="deck-slots" id="deckSlots"></div>
-  <p class="deck-info" id="deckInfo"></p>
-  <div class="scroll">
-    <h3 class="cx-h">Collection <small id="deckCount"></small></h3>
-    <div class="deck-coll" id="deckColl"></div>
-    <p class="cx-note" id="deckNote"></p>
-  </div>
-  <div class="close-row"><button class="btn" data-close>Fermer</button></div>
 </div></div>
 
 <div class="ov" id="ovChest"><div class="win plank chest-win">
