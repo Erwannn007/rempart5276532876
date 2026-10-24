@@ -469,7 +469,7 @@ function cardHTML(t, cls = '', mini = false){
 let deckSel = -1, deckDrag = null;
 function deckInfo(t){
   const el = $('deckInfo');
-  if (t < 0){ el.innerHTML = '<span class="dim">Touche une carte pour la lire, puis un emplacement pour l’y poser. Ou fais-la glisser.</span>'; return; }
+  if (t < 0){ el.innerHTML = '<span class="dim">Touche une carte pour la lire, puis un emplacement pour l’y poser. Ou maintiens-la et fais-la glisser.</span>'; return; }
   const ty = TYPES[t], open = cardOpen(t), b = cardBest(t);
   el.innerHTML = open
     ? `<b style="color:${ty.col}">${ty.name}</b> · ${CARD_ROLE[t]}<br>${ty.desc} <span class="dim">${b ? 'Meilleur rang : ' + ty.ranks[b-1] + '.' : 'Pas encore recruté.'}</span>`
@@ -500,15 +500,23 @@ function deckTap(t, slot){
   if (slot >= 0 && deckSel >= 0 && deckSel !== t){ deckPut(deckSel, profile.deck.indexOf(deckSel), slot); return; }
   deckSel = deckSel === t ? -1 : t; renderDeck(); sfx('arrow');
 }
+/* Dans la collection (qui défile), une carte se saisit par un appui maintenu ; dans le deck, tout de suite. */
+const DECK_HOLD = 200;
 $('ovDeck').addEventListener('pointerdown', e => {
   const card = e.target.closest('.card'); if (!card || deckDrag) return;
   const slotEl = card.closest('.dslot');
-  deckDrag = { t:+card.dataset.t, from: slotEl ? +slotEl.dataset.k : -1, el:card, sx:e.clientX, sy:e.clientY, ghost:null, over:null, id:e.pointerId };
+  const d = deckDrag = { t:+card.dataset.t, from: slotEl ? +slotEl.dataset.k : -1, el:card, sx:e.clientX, sy:e.clientY, ghost:null, over:null, id:e.pointerId };
+  d.armed = !!slotEl || e.pointerType === 'mouse';
+  if (!d.armed && cardOpen(d.t)) d.timer = setTimeout(() => { if (deckDrag === d){ d.armed = true; card.classList.add('armed'); } }, DECK_HOLD);
 });
+$('ovDeck').addEventListener('touchmove', e => { if (deckDrag && (deckDrag.armed || deckDrag.ghost)) e.preventDefault(); }, { passive:false });
 window.addEventListener('pointermove', e => {
   const d = deckDrag; if (!d || e.pointerId !== d.id) return;
   if (!d.ghost){
-    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 8 || !cardOpen(d.t)) return;
+    const far = Math.hypot(e.clientX - d.sx, e.clientY - d.sy) >= 8;
+    if (far && !d.armed){ clearTimeout(d.timer); deckDrag = null; return; }
+    if (!far || !cardOpen(d.t)) return;
+    d.el.classList.remove('armed');
     const r = d.el.getBoundingClientRect();
     d.ghost = d.el.cloneNode(true); d.ghost.classList.add('ghost'); d.ghost.classList.remove('sel','in');
     Object.assign(d.ghost.style, { width:r.width + 'px', height:r.height + 'px' });
@@ -522,7 +530,7 @@ window.addEventListener('pointermove', e => {
 });
 function endDeckDrag(e, cancel){
   const d = deckDrag; if (!d || e.pointerId !== d.id) return;
-  deckDrag = null;
+  deckDrag = null; clearTimeout(d.timer); d.el.classList.remove('armed');
   if (!d.ghost){ if (!cancel) deckTap(d.t, d.from); return; }
   d.ghost.remove(); d.el.classList.remove('lifted');
   if (d.over) d.over.classList.remove('hot');
