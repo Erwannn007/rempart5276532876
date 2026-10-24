@@ -315,9 +315,7 @@ function refreshHome(){
   $('hRank').textContent = displayTitle();
   $('hResume').style.display = hasGame ? '' : 'none';
   if (hasGame) $('hResumeSub').textContent = (S.mode === 'story' ? WORLDS[S.world].name + ', vague ' + Math.min(S.wave + 1, maxWaves()) + '/' + maxWaves() : S.mode === 'siege' ? 'Siège, vague ' + Math.min(S.wave + 1, SIEGE_WAVES) + '/' + SIEGE_WAVES : 'Sans fin ' + SIZES[S.size || 0].name.toLowerCase() + ', vague ' + (S.wave + 1)) + (S.legend ? ', avec ' + LEGENDS[S.legend].name : '');
-  $('hEndRec').textContent = bestBy.some(Boolean) ? 'Records : ' + bestBy.join(' / ') : 'Trois tailles de carte';
-  const stN = story.stars.reduce((a,b) => a+b, 0);
-  $('hSiegeRec').textContent = 'Monde ' + Math.min(story.unlocked, WORLDS.length) + ' sur ' + WORLDS.length + ', ★ ' + stN + '/' + WORLDS.length*3;
+  renderModel();
   $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
   $('hMusicBtn').textContent = prefs.music ? 'Musique : oui' : 'Musique : non';
   $('hChestBadge').textContent = profile.chests | 0; $('hChestBadge').style.display = (profile.chests | 0) ? '' : 'none';
@@ -424,6 +422,64 @@ function worldThumb(i){
   return c.toDataURL();
 }
 const WORLD_THUMB = WORLDS.map((_,i) => worldThumb(i));
+/* Maquette d'un monde : un bloc de terrain posé sur un socle en bois, avec ses décors, un monstre et son boss. */
+const MDL_W = 88, MDL_H = 74;
+function worldModel(i){
+  const endless = i < 0, W = endless ? null : WORLDS[i], B = BIOMES[endless ? 0 : W.biome];
+  const c = document.createElement('canvas'); c.width = MDL_W; c.height = MDL_H;
+  const x = c.getContext('2d');
+  const put = (px, py, col) => { if (px < 0 || py < 0 || px >= MDL_W || py >= MDL_H || !col) return; x.fillStyle = col; x.fillRect(px|0, py|0, 1, 1); };
+  const stamp = (o, X0, Y0) => { for (let k=0;k<o.px.length;k++) put(X0 + k%o.w, Y0 + ((k/o.w)|0), o.px[k]); };
+  const top0 = 14, top1 = 47, inset = y => Math.round((top1 - y)*6/(top1 - top0));
+  // dessus : le sol du biome, en légère perspective
+  for (let y=top0;y<=top1;y++){
+    const a = 4 + inset(y), b = 83 - inset(y);
+    for (let px=a;px<=b;px++){
+      const n = hash(px, y, 60 + i);
+      put(px, y, px === a || px === b ? B.gd[1] : n < .1 ? B.gd[0] : n > .92 ? B.gl[0] : B.g[((px>>2) + (y>>2)) & 1]);
+    }
+  }
+  // chemin qui serpente de l'arrière vers l'avant
+  for (let y=top0+1;y<=top1;y++){
+    const cx = 44 + Math.round(Math.sin(y*.28 + i)*9), hw = 2 + Math.round((y - top0)/12);
+    for (let k=-hw;k<=hw;k++) put(cx + k, y, Math.abs(k) === hw ? B.edge[0] : hash(cx+k, y, 9) > .88 ? B.dirt[2] : B.dirt[0]);
+  }
+  // tranche avant : strates de terre et de roche
+  for (let y=48;y<=58;y++) for (let px=4;px<=83;px++){
+    const n = hash(px, y, 70);
+    let col = y === 48 ? B.gd[0] : y < 53 ? (n > .85 ? B.dirt[2] : B.dirt[1]) : y < 56 ? shade(B.dirt[1], .75) : (n > .8 ? '#6a6660' : '#4e4a46');
+    if (px === 4 || px === 83) col = shade(col, .7);
+    put(px, y, col);
+  }
+  // socle en bois et plaque dorée
+  for (let y=59;y<=68;y++) for (let px=1;px<=86;px++) put(px, y, y === 59 ? '#a0703c' : y === 68 ? '#3a2414' : (hash(px, y, 80) > .9 || (px + y*3) % 17 === 0) ? '#4a3018' : '#6b4422');
+  for (let y=61;y<=66;y++) for (let px=33;px<=54;px++) put(px, y, y === 61 || y === 66 || px === 33 || px === 54 ? '#a86d16' : y === 62 ? '#fbe08a' : '#e0a93a');
+  for (const [px,py] of [[35,63],[52,63],[35,64],[52,64]]) put(px, py, '#a86d16');
+  if (endless){
+    // le rempart, sa tour et sa porte, au bord avant du plateau
+    for (let y=34;y<=46;y++) for (let px=7;px<=80;px++){
+      const row = ((y-34)/3)|0, off = row % 2 ? 3 : 0, mortar = (px + off) % 6 === 0 || (y - 34) % 3 === 2;
+      put(px, y, y === 34 ? '#c98a6a' : mortar ? '#45404c' : hash(((px+off)/6)|0, row, 3) > .5 ? '#6e6874' : '#625d6a');
+    }
+    for (let px=7;px<=80;px++) if ((px - 7) % 6 < 4) for (let y=31;y<=33;y++) put(px, y, y === 31 ? '#d99a74' : '#6e6874');
+    for (let y=22;y<=46;y++) for (let px=37;px<=51;px++) put(px, y, y === 22 ? '#d99a74' : px === 37 ? '#c98a6a' : px === 51 ? '#3a3540' : (px + y) % 5 === 0 ? '#5a5462' : '#686270');
+    for (let px=37;px<=51;px++) if ((px - 37) % 4 < 2) put(px, 21, '#d99a74');
+    for (let y=38;y<=46;y++) for (let px=41;px<=47;px++) if (!(y < 40 && Math.abs(px - 44) > 1 + (y - 38))) put(px, y, (px % 2 === 0 || y % 3 === 0) ? '#2a2420' : '#14101a');
+    put(44, 27, '#e8a050'); put(44, 28, '#1a1420');
+    for (let y=14;y<=21;y++) put(48, y, '#4a3020');
+    for (let y=14;y<=17;y++) for (let px=49;px<=53;px++) put(px, y, y === 14 ? '#e0574a' : '#b8323a');
+    stamp(terTree(B), 2, 12); stamp(terTree(B), 66, 11);
+    const bo = ENS.boss.n; x.drawImage(bo, 56, 34 - bo.height);
+    x.drawImage(ENS.slime.n, 18, 14);
+  } else {
+    stamp(terTree(B), 5, 10); stamp(terTree(B), 63, 9); stamp(terRock(B), 10, 29);
+    if (B.water && i % 2) for (let y=38;y<=43;y++) for (let px=64;px<=76;px++) if ((px-70)**2/40 + (y-40.5)**2/7 <= 1) put(px, y, y === 38 ? B.water[2] : B.water[(px + y) % 2]);
+    const mob = ENS[W.base].n; x.drawImage(mob, 20, 46 - mob.height);
+    const boss = ENS[W.finals[W.finals.length-1]].n; x.drawImage(boss, 50, 45 - boss.height);
+  }
+  return c.toDataURL();
+}
+const WORLD_MODEL = WORLDS.map((_,i) => worldModel(i)), ENDLESS_MODEL = worldModel(-1);
 function openStoryMap(){
   $('storyBody').innerHTML = WORLDS.map((W,i) => {
     const open = i < story.unlocked, st = story.stars[i]|0;
@@ -444,14 +500,52 @@ function openStoryMap(){
   $('storyLead').textContent = 'Libère les mondes un à un. Étoiles : ' + total + ' sur ' + WORLDS.length*3 + '. Tu peux rejouer chaque monde ouvert pour améliorer ton score.';
   show('ovStory');
 }
-$('winMap').addEventListener('click', () => { hide('ovWin'); showHome(); openStoryMap(); });
+$('winMap').addEventListener('click', () => { hide('ovWin'); hMode = 'story'; hWorld = Math.min(story.unlocked, WORLDS.length) - 1; showHome(); });
 
 $('hTitle').src = titleURL('REMPART');
-$('hiEndless').src = ENS.boss.url;
-$('hiSiege').src = ENS.dragon.url;
 $('hProfile').addEventListener('click', () => { audio(); openProfile(); });
 $('hResume').addEventListener('click', () => { audio(); resumeGame(); });
-document.querySelectorAll('[data-new]').forEach(b => b.addEventListener('click', () => { audio(); if (b.dataset.new === 'story') openStoryMap(); else openSizeChooser(); }));
+/* ---------- écran Combat : maquette du monde choisi ---------- */
+let hMode = 'story', hWorld = -1;
+function renderModel(){
+  if (hWorld < 0 || hWorld >= WORLDS.length) hWorld = Math.min(story.unlocked, WORLDS.length) - 1;
+  const st = hMode === 'story', open = !st || hWorld < story.unlocked;
+  document.querySelectorAll('#hModeSw button').forEach(b => b.classList.toggle('on', b.dataset.mode === hMode));
+  $('mdlImg').src = st ? WORLD_MODEL[hWorld] : ENDLESS_MODEL;
+  $('mdlFig').classList.toggle('lock', !open);
+  $('mdlPrev').style.visibility = st && hWorld > 0 ? '' : 'hidden';
+  $('mdlNext').style.visibility = st && hWorld < WORLDS.length - 1 ? '' : 'hidden';
+  if (st){
+    const W = WORLDS[hWorld], n = story.stars[hWorld] | 0;
+    $('mdlKicker').textContent = 'Monde ' + (hWorld + 1) + ' sur ' + WORLDS.length;
+    $('mdlName').textContent = open ? W.name : '???';
+    $('mdlStars').innerHTML = [0,1,2].map(k => `<img class="px${k < n ? '' : ' off'}" src="${STAR_URL}" alt="">`).join('');
+    $('mdlSub').textContent = open ? W.waves + ' vagues. Boss : ' + W.finals.map(k => EN[k].name).join(', puis ') + '.' : 'Libère ' + WORLDS[hWorld - 1].name + ' pour l’ouvrir.';
+    $('mdlDots').innerHTML = WORLDS.map((_,k) => `<i class="${k === hWorld ? 'on' : k >= story.unlocked ? 'lock' : ''}"></i>`).join('');
+  } else {
+    $('mdlKicker').textContent = 'Mode libre';
+    $('mdlName').textContent = 'Sans fin';
+    $('mdlStars').innerHTML = '';
+    $('mdlSub').textContent = bestBy.some(Boolean) ? 'Records : facile ' + bestBy[0] + ', moyen ' + bestBy[1] + ', difficile ' + bestBy[2] + '.' : 'Tiens le plus longtemps possible. Trois tailles de carte.';
+    $('mdlDots').innerHTML = '';
+  }
+  $('mdlGo').classList.toggle('off', !open);
+  $('mdlGo').textContent = open ? 'Lancer' : 'Verrouillé';
+}
+function stepWorld(d){
+  const n = Math.max(0, Math.min(WORLDS.length - 1, hWorld + d)); if (n === hWorld) return;
+  hWorld = n; sfx('arrow'); renderModel();
+  const f = $('mdlFig'); f.classList.remove('swap', 'swapL'); void f.offsetWidth; f.classList.add(d > 0 ? 'swap' : 'swapL');
+}
+$('mdlPrev').addEventListener('click', () => { audio(); stepWorld(-1); });
+$('mdlNext').addEventListener('click', () => { audio(); stepWorld(1); });
+document.querySelectorAll('#hModeSw button').forEach(b => b.addEventListener('click', () => { audio(); if (hMode !== b.dataset.mode){ hMode = b.dataset.mode; sfx('arrow'); renderModel(); } }));
+$('mdlGo').addEventListener('click', () => {
+  audio();
+  if (hMode === 'endless') return openSizeChooser();
+  if (hWorld >= story.unlocked){ toast('Libère le monde précédent pour ouvrir celui-ci'); sfx('bad'); return; }
+  askNew('story', hWorld);
+});
 $('cfGo').addEventListener('click', () => { hide('ovConfirm'); hide('ovStory'); hideHome(); newGame(pendingMode, pendingWorld, pendingSize); });
 $('pName').addEventListener('change', saveName);
 $('pName').addEventListener('blur', saveName);
@@ -659,11 +753,12 @@ function homeTab(n){
 $('htPlay').src = BI.sword; $('htMore').src = BI.star;
 $('hiCodex').src = BI.scroll; $('hiProfile').src = BI.helm; $('hiHelp').src = BI.banner;
 document.querySelectorAll('.htab').forEach(b => b.addEventListener('click', () => { audio(); if (+b.dataset.tab !== hTab) sfx('arrow'); homeTab(+b.dataset.tab); }));
-$('hPager').addEventListener('pointerdown', e => { hSwipe = { x:e.clientX, y:e.clientY, id:e.pointerId }; });
+$('hPager').addEventListener('pointerdown', e => { hSwipe = { x:e.clientX, y:e.clientY, id:e.pointerId, model: !!e.target.closest('#hModel') }; });
 window.addEventListener('pointerup', e => {
   const w = hSwipe; hSwipe = null;
   if (!w || e.pointerId !== w.id || !homeOn || document.querySelector('.ov.show:not(.home)') || performance.now() - deckDropT < 80 || deckDrag) return;
   const dx = e.clientX - w.x, dy = e.clientY - w.y;
+  if (Math.abs(dx) > 40 && w.model && hMode === 'story'){ stepWorld(dx < 0 ? 1 : -1); return; }
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){ homeTab(hTab + (dx < 0 ? 1 : -1)); sfx('arrow'); }
 });
 

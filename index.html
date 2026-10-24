@@ -71,18 +71,29 @@
         </div>
       </section>
       <section class="hpage hp-play">
-        <div class="home-top">
+        <div class="play-top">
+          <img class="px play-logo" id="hTitle" alt="Rempart">
           <button class="profile-chip plank" id="hProfile" aria-label="Profil"><img class="px" id="hAvatar" alt=""><span><b id="hName"></b><small id="hRank"></small></span></button>
         </div>
-        <img class="px home-title" id="hTitle" alt="Rempart">
-        <div class="home-menu">
-          <div class="chest-slots" id="hChests"></div>
-          <button class="btn main home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
-          <div class="home-row">
-            <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
-            <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
-          </div>
+        <div class="mode-switch" id="hModeSw">
+          <button data-mode="story">Histoire</button><button data-mode="endless">Sans fin</button>
         </div>
+        <div class="model-stage" id="hModel">
+          <button class="mdl-arrow left" id="mdlPrev" aria-label="Monde précédent"><i></i></button>
+          <figure class="model" id="mdlFig"><img class="px" id="mdlImg" alt=""><span class="mdl-lock"></span></figure>
+          <button class="mdl-arrow right" id="mdlNext" aria-label="Monde suivant"><i></i></button>
+        </div>
+        <div class="model-info">
+          <em id="mdlKicker"></em><b id="mdlName"></b>
+          <span class="mdl-stars" id="mdlStars"></span>
+          <small id="mdlSub"></small>
+          <span class="mdl-dots" id="mdlDots"></span>
+        </div>
+        <div class="play-actions">
+          <button class="btn main mdl-go" id="mdlGo">Lancer</button>
+          <button class="btn home-resume" id="hResume"><span>Reprendre</span><small id="hResumeSub"></small></button>
+        </div>
+        <div class="chest-slots" id="hChests"></div>
       </section>
       <section class="hpage hp-more">
         <div class="win plank more-win">

@@ -217,18 +217,8 @@ button{font-family:var(--font);color:var(--ink);cursor:pointer}
 .profile-chip span{min-width:0}
 .profile-chip b{display:block;font-size:18px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile-chip small{display:block;font-size:13px;color:var(--gold)}
-.home-title{width:min(84vw,380px);margin-top:3vh;filter:drop-shadow(0 4px 0 rgba(14,10,6,.55))}
-.home-menu{margin-top:auto;width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px}
 .home-resume{background:#3f6a2f;min-height:66px;flex-direction:column;gap:2px;font-size:22px;line-height:1}
 .home-resume small{font-size:14px;font-weight:600;color:#cfe3b9}
-.home-row{display:flex;gap:8px}
-.home-row .btn{flex:1}
-.home-mode{min-height:78px;justify-content:flex-start;gap:8px;padding:0 10px;text-align:left}
-.home-mode img{width:46px;height:46px;flex:none;object-fit:contain}
-.home-mode b{display:block;font-size:20px;line-height:1.05}
-.home-mode small{display:block;font-size:12.5px;font-weight:600;color:var(--dim);line-height:1.2;margin-top:2px}
-.home-mode.siege{background:#5a2f24}
-.home-row.small .btn{min-height:48px;font-size:16px}
 .prof-win{max-height:100%}
 .prof-head{display:flex;gap:12px;align-items:center;margin-bottom:6px}
 .prof-head>img{width:88px;height:88px;flex:none;border:3px solid var(--edge);box-shadow:0 0 0 3px #f2c14e}
@@ -299,7 +289,6 @@ html{background:#1c1610}
 .sh-ult{font-size:15px;line-height:1.35;margin:0 0 8px;color:var(--ink)}
 .sh-ult b{color:#f2c14e}
 .lcard span.lult{color:#f2c14e;font-size:14px}
-.home-row.small .btn{font-size:14px;padding:0 4px}
 .sz-grid{flex:none;width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;background:#1c1610;border:3px solid var(--edge);color:var(--gold)}
 .mode.size1{background:#4a3a24}
 .mode.size2{background:#5a2f24}
@@ -370,7 +359,6 @@ html{background:#1c1610}
 .home-pager{flex:1;min-height:0;align-self:stretch;overflow:hidden;touch-action:pan-y}
 .home-track{display:flex;width:300%;height:100%;transition:transform .24s steps(6)}
 .hpage{flex:0 0 33.3333%;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;padding:0 2px}
-.hp-play .home-menu{margin-bottom:4px}
 .hp-deck .deck-win{max-width:420px;height:100%;padding:12px}
 .hp-more .more-win{max-width:420px;margin:auto 0}
 .more-win .stack .btn img{width:24px;height:24px;flex:none}
@@ -423,3 +411,48 @@ html{background:#1c1610}
 .htab:last-child{border-right:0}
 .htab.on{flex:1.35;transform:none;background:var(--wood-hi);box-shadow:inset 0 4px 0 var(--gold),inset 0 -5px 0 rgba(0,0,0,.35)}
 .htab.on img{width:36px;height:34px}
+/* écran Combat : maquette du monde */
+.play-top{align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+.play-logo{width:min(40vw,170px);filter:drop-shadow(0 3px 0 rgba(14,10,6,.55))}
+.play-top .profile-chip{max-width:58%}
+.mode-switch{display:flex;flex:none;margin:12px 0 2px;border:3px solid var(--edge);background:var(--wood-lo);box-shadow:inset 0 3px 0 rgba(0,0,0,.35)}
+.mode-switch button{font-family:var(--font);font-weight:800;font-size:16px;color:var(--dim);background:transparent;border:0;padding:6px 20px;min-height:40px}
+.mode-switch button+button{border-left:3px solid var(--edge)}
+.mode-switch button.on{background:var(--wood-hi);color:var(--gold);box-shadow:inset 0 -4px 0 var(--gold)}
+.model-stage{flex:1 1 auto;min-height:110px;width:100%;max-width:440px;display:flex;align-items:center;justify-content:center;gap:4px}
+.model{position:relative;margin:0;flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:center}
+.model img{width:100%;max-width:330px;max-height:100%;object-fit:contain;filter:drop-shadow(0 7px 0 rgba(0,0,0,.45));animation:mdlFloat 2.2s steps(2) infinite}
+@keyframes mdlFloat{50%{transform:translateY(-3px)}}
+.model.swap img{animation:mdlIn .32s steps(4),mdlFloat 2.2s steps(2) .32s infinite}
+.model.swapL img{animation:mdlInL .32s steps(4),mdlFloat 2.2s steps(2) .32s infinite}
+@keyframes mdlIn{0%{transform:translateX(50px) scale(.85);opacity:0}100%{transform:none;opacity:1}}
+@keyframes mdlInL{0%{transform:translateX(-50px) scale(.85);opacity:0}100%{transform:none;opacity:1}}
+.model.lock img{filter:grayscale(1) brightness(.32) drop-shadow(0 7px 0 rgba(0,0,0,.45))}
+.mdl-lock{display:none;position:absolute;left:50%;top:44%;width:30px;height:22px;transform:translate(-50%,-10%);background:var(--gold);border:3px solid var(--edge);box-shadow:inset 0 -5px 0 #a86d16}
+.mdl-lock::before{content:'';position:absolute;left:50%;top:-19px;width:12px;height:14px;transform:translateX(-50%);border:5px solid var(--edge);border-bottom:0}
+.model.lock .mdl-lock{display:block}
+.mdl-arrow{flex:none;width:40px;height:58px;padding:0;display:flex;align-items:center;justify-content:center;background:var(--wood);border:3px solid var(--edge);
+  box-shadow:inset 0 3px 0 var(--wood-hi),inset 0 -4px 0 var(--wood-lo)}
+.mdl-arrow:active{transform:translateY(2px)}
+.mdl-arrow i{width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:12px solid var(--gold);margin-left:4px}
+.mdl-arrow.left i{border-left:0;border-right:12px solid var(--gold);margin:0 4px 0 0}
+.model-info{flex:none;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;margin:2px 0 10px;max-width:420px;text-shadow:2px 2px 0 #120d08}
+.model-info em{font-style:normal;font-size:12px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}
+.model-info b{font-size:27px;line-height:1.05}
+.mdl-stars{display:flex;gap:3px;min-height:4px}
+.mdl-stars img{width:20px;height:20px}
+.mdl-stars img.off{opacity:.25;filter:grayscale(1)}
+.model-info small{font-size:13.5px;color:#d8c8a8;line-height:1.25;margin-top:2px}
+.mdl-dots{display:flex;gap:5px;margin-top:5px}
+.mdl-dots i{width:9px;height:9px;background:#3a2a1a;border:2px solid var(--edge)}
+.mdl-dots i.on{background:var(--gold)}
+.mdl-dots i.lock{opacity:.4}
+.play-actions{flex:none;width:100%;max-width:420px;display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.mdl-go{min-height:58px;font-size:24px;background:#3f6a2f}
+.mdl-go.off{background:#4a4038;color:var(--dim)}
+.play-actions .home-resume{min-height:48px;background:#2f4a52;font-size:18px}
+.play-actions .home-resume small{color:#bfe0e4}
+.hp-play .chest-slots{flex:none;width:100%;max-width:420px}
+.hp-play .cslot{height:86px}
+.hp-play .cslot.full img{width:58px}
+.hp-play .cslot b{font-size:19px}
