@@ -21,8 +21,30 @@ const TYPES = [
     desc:'Son éclair rebondit d’ennemi en ennemi.' },
   { name:'Gardien nain',  col:'#3a8a8a', range:1.1,  dmg:5,  rate:1.0,
     ranks:['Mineur','Porte-bouclier','Gardien','Brise-fer','Roi sous la montagne','Gardien de mythril','Rempart d’obsidienne','Bastion céleste'],
-    desc:'Le seul soldat qui se poste sur la route. Les monstres au sol butent sur lui et doivent l’abattre pour passer.' }
+    desc:'Le seul soldat qui se poste sur la route. Les monstres au sol butent sur lui et doivent l’abattre pour passer.' },
+  { name:'Pyromancienne', col:'#d8364e', range:2.3,  dmg:6,  rate:1.1,
+    ranks:['Allumeuse','Brandon','Pyromancienne','Cœur de braise','Reine des cendres','Flamme de mythril','Brasier d’obsidienne','Soleil céleste'],
+    desc:'Ses boules de feu embrasent le chemin : tout ce qui marche dans les flammes brûle.' },
+  { name:'Catapulte',     col:'#a0703c', range:3.6,  dmg:26, rate:3.0, splash:1.0, minRange:1.3,
+    ranks:['Fronde','Mangonneau','Catapulte','Trébuchet','Brise-remparts','Trébuchet de mythril','Catapulte d’obsidienne','Foudre des cieux'],
+    desc:'Artillerie : portée énorme et grosse explosion, mais lente, et aveugle tout près d’elle.' },
+  { name:'Myconide',      col:'#c9b04a', range:1.3,  dmg:5,  rate:1.2,
+    ranks:['Pousse','Champignon','Myconide','Vieux-chapeau','Roi des spores','Myconide de mythril','Spore d’obsidienne','Champignon céleste'],
+    desc:'Souffle des spores qui empoisonnent tout autour. Quand on le frappe, il en relâche un nuage.' },
+  { name:'Baliste',       col:'#7a8a9a', range:3.2,  dmg:20, rate:2.2,
+    ranks:['Arbalète lourde','Scorpion','Baliste','Baliste de siège','Perce-titans','Baliste de mythril','Baliste d’obsidienne','Lance céleste'],
+    desc:'Son carreau traverse tous les monstres alignés, volants compris.' }
 ];
+/* Familles : deux voisins de la même famille (et de types différents) se renforcent. */
+const FAM = {
+  garnison:{ name:'Garnison', col:'#e8dcc0', fx:{dmg:.1},           txt:'+10 % de dégâts' },
+  montagne:{ name:'Montagne', col:'#c3cbd3', fx:{dmg:.08, hp:.15},  txt:'+8 % de dégâts, +15 % de vie' },
+  arcane:  { name:'Arcane',   col:'#bfa8ff', fx:{rate:.1},          txt:'+10 % de cadence' },
+  machine: { name:'Machine',  col:'#d9a066', fx:{range:.3},         txt:'+0,3 de portée' },
+  sylve:   { name:'Sylve',    col:'#9ed36a', fx:{dmg:.06, rate:.06},txt:'+6 % de dégâts et de cadence' }
+};
+['garnison','garnison','montagne','arcane','arcane','montagne','arcane','machine','sylve','machine'].forEach((f,t) => { TYPES[t].fam = f; });
+[1,3,4,6,9].forEach(t => { TYPES[t].air = true; });
 const MAXL = 8;
 const DMUL = [1, 2.2, 4.8, 10.5, 23, 50, 108, 235];
 const RMUL = [1, .94, .88, .82, .76, .72, .68, .64];
@@ -85,13 +107,13 @@ Object.assign(EN.scorpion, { desc:'Sa carapace arrête une bonne partie des coup
 Object.assign(EN.titan, { desc:'Lourdement cuirassé, insensible au froid, il encaisse tout.' });
 Object.assign(EN.titan_ice, { desc:'Un titan de glace lourdement cuirassé, qui ignore le froid.' });
 Object.assign(EN.wolf_war, { desc:'Harnaché par les orcs, il encaisse mieux les coups physiques.' });
-const TYPE_DT = ['phys','phys','boom','magic','magic','phys'];
+const TYPE_DT = ['phys','phys','boom','magic','magic','phys','magic','boom','poison','phys'];
 /* Combat au contact : certains monstres s'arrêtent pour frapper les soldats voisins du chemin.
    Un soldat à zéro est KO jusqu'à la fin de la vague. */
 const ATK = { wolf:.5, skeleton:.6, golem:1.2, orc:1, wolf_war:.8, ghoul:1, yeti:1.2, golem_ice:1.2, golem_lava:1.3, mummy:.9, scorpion:.9, beetle:.7, imp:.6, head:.8,
   boss:2.5, titan:3, titan_ice:3, warlord:2, mino:2, hydra:2, hydra_sand:2, kraken:2, vampire:2, dragon:2, lich:1.5, queen:1.5, wraith:1.5, king:3 };
 for (const k in ATK) if (EN[k]) EN[k].atk = ATK[k];
-const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5], LEG_HPT = 2.4;
+const HPT = [3, 1.2, 1.6, 1.1, 1.1, 5, 1.1, 1.6, 2.2, 1.4], LEG_HPT = 2.4;
 /* Gardien nain : posté sur la route, il arrête les monstres au sol. Armure, riposte (niv. 4+), coup de bouclier (niv. 6+). */
 const WARD_T = 5;
 const WARD = { armor:[.2,.25,.3,.35,.4,.45,.5,.55], thorns:[0,0,0,.3,.35,.4,.45,.5], bashCd:6, bashStun:.8, recruit:.6, taunt:.5 };
@@ -99,7 +121,7 @@ const isWarden = tw => !!tw && tw.t === WARD_T && !tw.leg;
 const wardArmor = tw => Math.min(.8, WARD.armor[tw.l-1] + (tw.syn ? tw.syn.armor : 0));
 const wardThorns = tw => WARD.thorns[tw.l-1] + (tw.syn ? tw.syn.thorns : 0);
 let K_SOLDIER = 40, K_ENEMY = .25;
-const troopMax = tw => (tw.leg ? LEG_HPT : HPT[tw.t]) * (tw.leg ? LMUL : DMUL)[tw.l-1] * K_SOLDIER * (isWarden(tw) ? MODS.wardHp * (1 + (tw.syn ? tw.syn.hp : 0)) : 1);
+const troopMax = tw => (tw.leg ? LEG_HPT : HPT[tw.t]) * (tw.leg ? LMUL : DMUL)[tw.l-1] * K_SOLDIER * (1 + (tw.syn ? tw.syn.hp : 0)) * (isWarden(tw) ? MODS.wardHp : 1);
 const troopHp = tw => tw.hp == null ? troopMax(tw) : tw.hp;
 function findPrey(e){
   const c0 = Math.floor(e.x), r0 = Math.floor(e.y); let best = -1, bd = 1.1;
@@ -117,6 +139,7 @@ function hurtTroop(j, dmg, from){
     const th = wardThorns(tw);
     if (th > 0 && from && !from.dead){ const pv = hitDT; hitDT = 'phys'; hit(from, dmg*th); hitDT = pv; }
   }
+  if (tw.t === 8 && !tw.leg && !(tw.ab > 0)){ tw.ab = 1.5; sporeCloud(tw, j%COLS + .5, ((j/COLS)|0) + .5, stats(tw, j).dmg, stats(tw, j).range); }
   tw.hp = troopHp(tw) - dmg; tw.hurtT = 0; tw.hitFx = .15;
   const cx = j%COLS + .5, cy = ((j/COLS)|0) + .5;
   burst(cx, cy - .2, '#e0523f', 3, 1.4);
@@ -129,8 +152,8 @@ function hurtTroop(j, dmg, from){
 }
 let koCount = 0, spawnHP = 0;
 function reviveAll(){ for (const tw of S.board.concat(S.bench)) if (tw){ tw.hp = null; tw.ko = false; tw.hurtT = 0; } }
-const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques' };
-const canHitAir = t => t === 1 || t === 3 || t === 4;
+const DT_NAME = { phys:'physiques', boom:'explosifs (ignorent la moitié de l’armure)', magic:'magiques', poison:'de poison (ignorent l’armure et la résistance magique)' };
+const canHitAir = t => !!TYPES[t].air;
 function resText(B){
   const r = [];
   if (B.armor) r.push('Armure : −' + Math.round(B.armor*100) + ' % de dégâts physiques');
@@ -222,15 +245,27 @@ const SYN = {
   '1-5': { name:'Couverture',          fx:{1:{rate:.15}, 5:{thorns:.15}},        txt:{1:'+15 % de cadence', 5:'+15 % de riposte'} },
   '2-5': { name:'Enclume',             fx:{2:{dmg:.2}, 5:{dmg:.3}},              txt:{2:'+20 % de dégâts', 5:'+30 % de dégâts'} },
   '3-5': { name:'Rempart de givre',    fx:{3:{slow:.08}, 5:{armor:.1}},          txt:{3:'+8 % de ralentissement', 5:'+10 % d’armure'} },
-  '4-5': { name:'Paratonnerre',        fx:{4:{chain:1}, 5:{thorns:.2}},          txt:{4:'1 rebond de plus', 5:'+20 % de riposte'} }
+  '4-5': { name:'Paratonnerre',        fx:{4:{chain:1}, 5:{thorns:.2}},          txt:{4:'1 rebond de plus', 5:'+20 % de riposte'} },
+  '3-6': { name:'Choc thermique',      fx:{3:{dmg:.2}, 6:{dmg:.2}},              txt:{3:'+20 % de dégâts', 6:'+20 % de dégâts'} },
+  '6-8': { name:'Spores ardentes',     fx:{6:{rate:.15}, 8:{dmg:.25}},           txt:{6:'+15 % de cadence', 8:'+25 % de dégâts'} },
+  '2-7': { name:'Poudrière',           fx:{2:{rate:.15}, 7:{splash:.25}},        txt:{2:'+15 % de cadence', 7:'+0,25 de rayon d’explosion'} },
+  '1-9': { name:'Tir croisé',          fx:{1:{range:.3}, 9:{rate:.15}},          txt:{1:'+0,3 de portée', 9:'+15 % de cadence'} },
+  '5-8': { name:'Tapis de mousse',     fx:{5:{hp:.2}, 8:{dmg:.2}},               txt:{5:'+20 % de vie', 8:'+20 % de dégâts'} }
 };
 const FORMATION = .08;
 const synKey = (a,b) => a < b ? a+'-'+b : b+'-'+a;
+/* Lien entre deux types voisins : formation, paire nommée, ou famille commune (sinon aucun). */
+function synLink(a, b){
+  if (a === b) return { name:'Formation', col:TYPES[a].col };
+  const sy = SYN[synKey(a,b)]; if (sy) return { name:sy.name, col:'#f2c14e', sy };
+  const f = TYPES[a].fam; if (f && f === TYPES[b].fam) return { name:FAM[f].name, col:FAM[f].col, fam:f };
+  return null;
+}
 
 /* ---------- bénédictions ---------- */
 const RAR = { c:{ name:'Commune', col:'#b9a684', w:62 }, r:{ name:'Rare', col:'#5ea0e0', w:30 }, l:{ name:'Légendaire', col:'#f2c14e', w:8 } };
-const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne'];
-const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains'];
+const SCHOOL = ['de l’épée','de l’arc','de la poudre','du givre','de la foudre','de la montagne','du feu','du siège','des spores','du carreau'];
+const PLUR = ['épéistes','archères','artificiers','mages de givre','foudroyeurs','gardiens nains','pyromanciennes','catapultes','myconides','balistes'];
 const BLESS = [
   { id:'lames', rar:'c', icon:'sword', max:3, name:'Lames affûtées', desc:'Épéistes : +25 % de dégâts.', mod:M => { M.dmgType[0] *= 1.25; } },
   { id:'tourbillon', rar:'r', icon:'sword', name:'Tourbillon', desc:'Les épéistes frappent tous les ennemis à leur portée, à 60 % de leurs dégâts.', mod:M => { M.whirl = true; } },
@@ -320,8 +355,8 @@ const blessName = key => { const { b, p } = blessInfo(key); return typeof b.name
 const blessDesc = key => { const { b, p } = blessInfo(key); return typeof b.desc === 'function' ? b.desc(p) : b.desc; };
 
 function baseMods(){
-  return { dmgAll:1, dmgType:[1,1,1,1,1,1], rateType:[0,0,0,0,0,0], wardHp:1, wardRegen:0, range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
-    decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:[0,0,0,0,0,0], goldKill:0,
+  return { dmgAll:1, dmgType:TYPES.map(() => 1), rateType:TYPES.map(() => 0), wardHp:1, wardRegen:0, range:0, chainAdd:0, slowAdd:0, slowDur:0, freeze:0,
+    decay:.8, whirl:false, pierce:false, frag:false, costInc:2, vet:0, skip:0, school:TYPES.map(() => 0), goldKill:0,
     waveBonus:1, interest:false, bounty:false, sellMul:1, herse:false, regen:false, frenzy:false, synMul:1,
     elite:1, low:1, crit:0, hpMul:1, runeMul:1, absorbMul:1 };
 }

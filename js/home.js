@@ -45,7 +45,7 @@ function avatarSprite(key){
 
 /* ---------- statistiques ---------- */
 let pstat = { games:0, waves:0, kills:0, bosses:0, goblins:0, merges:0, offers:0, gold:0, time:0, legPick:{}, traps:0, terra:0, beaten:[], bestStreak:0, ach:[] };
-let profile = { name:'Défenseur', avatar:'s:0:1', title:null };
+let profile = { name:'Défenseur', avatar:'s:0:1', title:null, cards:[], chests:1 };
 const addGold = n => { pstat.gold += n; };
 function fmtTime(s){ s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return h ? h + ' h ' + String(m).padStart(2,'0') : m + ' min'; }
 const fmtN = n => Math.floor(n).toLocaleString('fr-FR');
@@ -261,6 +261,7 @@ function refreshHome(){
   $('hSiegeRec').textContent = 'Monde ' + Math.min(story.unlocked, WORLDS.length) + ' sur ' + WORLDS.length + ', ★ ' + stN + '/' + WORLDS.length*3;
   $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
   $('hMusicBtn').textContent = prefs.music ? 'Musique : oui' : 'Musique : non';
+  $('hChestBadge').textContent = profile.chests | 0; $('hChestBadge').style.display = (profile.chests | 0) ? '' : 'none';
   $('hDeckCards').innerHTML = fixDeck().map(t => `<img class="px" src="${cardArt(t, Math.max(1, cardBest(t)), false)}" alt="">`).join('');
 }
 function showHome(){
@@ -409,11 +410,24 @@ window.addEventListener('resize', () => { hBG = null; });
    Deck : cinq soldats choisis pour la bataille
    ========================================================= */
 const DECK_N = 5;
-const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur'];
-const CARD_LOCK = [null, null, null, null, null,
-  { test:() => best >= 10 || story.unlocked >= 2, txt:'Atteins la vague 10 en Sans fin, ou termine la Forêt sombre.' }];
+const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur','Feu','Artillerie','Poison','Perforant'];
+/* Cartes à gagner : elles ne peuvent sortir d'un coffre qu'une fois leur condition remplie. */
+const CARD_REQ = [null, null, null, null, null,
+  { test:() => best >= 10 || story.unlocked >= 2, txt:'Atteins la vague 10 en Sans fin, ou termine la Forêt sombre.' },
+  { test:() => pstat.waves >= 50, txt:() => 'Repousse 50 vagues au total (' + Math.min(50, pstat.waves) + '/50).' },
+  { test:() => pstat.kills >= 1000, txt:() => 'Abats 1 000 monstres au total (' + fmtN(Math.min(1000, pstat.kills)) + '/1 000).' },
+  { test:() => best >= 20 || story.unlocked >= 3, txt:'Atteins la vague 20 en Sans fin, ou termine le Marais putride.' },
+  { test:() => pstat.bosses >= 5, txt:() => 'Abats 5 boss au total (' + Math.min(5, pstat.bosses) + '/5).' }];
+const reqTxt = t => { const x = CARD_REQ[t].txt; return typeof x === 'function' ? x() : x; };
 const cardBest = t => { let b = 0; for (let l=1;l<=MAXL;l++) if (seen.has(t*MAXL + l - 1)) b = l; return b; };
-const cardOpen = t => !CARD_LOCK[t] || CARD_LOCK[t].test() || cardBest(t) > 0;
+const cardOpen = t => !CARD_REQ[t] || (profile.cards || []).includes(t) || cardBest(t) > 0;
+const cardWinnable = t => !cardOpen(t) && CARD_REQ[t].test();
+/* Coffres : un toutes les CHEST_EVERY vagues repoussées, et un par monde libéré la première fois. */
+const CHEST_EVERY = 10;
+function giveChest(why){
+  profile.chests = (profile.chests | 0) + 1; persist();
+  setTimeout(() => { toast(why + ' : un coffre t’attend dans Mon deck'); sfx('jackpot'); }, 900);
+}
 const deckTypes = () => S && S.deck ? S.deck : TYPES.map((_,t) => t);
 /* Deck valide : cinq types distincts et débloqués, complété dans l'ordre si besoin. */
 function fixDeck(){
@@ -440,9 +454,10 @@ function cardArt(t, l, lock){
 function cardHTML(t, cls = '', mini = false){
   const open = cardOpen(t), lb = Math.max(1, cardBest(t)), ty = TYPES[t];
   const pips = Array.from({length:MAXL}, (_,k) => `<i class="${k < cardBest(t) ? 'on' : ''}"></i>`).join('');
-  return `<div class="card${open ? '' : ' lock'} ${cls}" data-t="${t}" style="--cc:${open ? ty.col : '#5a5048'}">
+  const win = !open && cardWinnable(t);
+  return `<div class="card${open ? '' : ' lock'}${win ? ' win' : ''} ${cls}" data-t="${t}" style="--cc:${open ? ty.col : win ? '#a8781e' : '#5a5048'}">
     <img class="px card-art" src="${cardArt(t, lb, !open)}" alt="" draggable="false">
-    ${mini ? '' : `<span class="card-role">${open ? CARD_ROLE[t] : 'Verrouillée'}</span>`}
+    ${mini ? '' : `<span class="card-role">${open ? CARD_ROLE[t] : win ? 'À gagner' : 'Verrouillée'}</span>`}
     <b class="card-name">${open ? ty.name : '???'}</b>
     ${mini ? '' : `<span class="card-pips">${pips}</span>`}
   </div>`;
@@ -454,7 +469,8 @@ function deckInfo(t){
   const ty = TYPES[t], open = cardOpen(t), b = cardBest(t);
   el.innerHTML = open
     ? `<b style="color:${ty.col}">${ty.name}</b> · ${CARD_ROLE[t]}<br>${ty.desc} <span class="dim">${b ? 'Meilleur rang : ' + ty.ranks[b-1] + '.' : 'Pas encore recruté.'}</span>`
-    : `<b>Carte verrouillée</b><br>${CARD_LOCK[t].txt}`;
+    : cardWinnable(t) ? `<b>Carte à gagner</b><br>Condition remplie : elle peut sortir de ton prochain coffre.`
+    : `<b>Carte verrouillée</b><br>Pour qu’elle puisse sortir d’un coffre : ${reqTxt(t)}`;
 }
 function renderDeck(){
   const d = fixDeck();
@@ -462,6 +478,8 @@ function renderDeck(){
   $('deckColl').innerHTML = TYPES.map((_,t) => cardHTML(t, (d.includes(t) ? 'in' : '') + (deckSel === t ? ' sel' : ''))).join('');
   const nOpen = TYPES.filter((_,t) => cardOpen(t)).length;
   $('deckCount').textContent = nOpen + '/' + TYPES.length;
+  const nc = profile.chests | 0;
+  $('deckChestN').textContent = nc; $('deckChest').classList.toggle('empty', !nc);
   $('deckNote').textContent = hasGame ? 'Ta partie en cours garde son deck. Le nouveau servira à la prochaine partie.' : 'Seuls les soldats du deck sortent au recrutement, et seules leurs bénédictions te sont proposées.';
   deckInfo(deckSel);
 }
@@ -508,3 +526,49 @@ function endDeckDrag(e, cancel){
 }
 window.addEventListener('pointerup', e => endDeckDrag(e, false));
 window.addEventListener('pointercancel', e => endDeckDrag(e, true));
+
+/* ---------- coffres ---------- */
+const CHEST_C = { D:'#4a2e1a', B:'#8a5a32', G:'#e0a93a', Y:'#f6c94a', K:'#1e140c', W:'#fff3c4' };
+const CHEST_SHUT = pxCanvas(patt(['..DDDDDDDDDDDDDD..','.DBBBBBBBBBBBBBBD.','DBBBBBBBBBBBBBBBBD','DGGGGGGGGGGGGGGGGD','DBBBBBBBYYBBBBBBBD',
+  'DGGGGGGGYKGGGGGGGD','DBBBBBBBYYBBBBBBBD','DBBBBBBBBBBBBBBBBD','DGBBBBBBBBBBBBBBGD','DGBBBBBBBBBBBBBBGD','DGGGGGGGGGGGGGGGGD','.DDDDDDDDDDDDDDDD.'], CHEST_C)).toDataURL();
+const CHEST_OPEN = pxCanvas(patt(['.DDDDDDDDDDDDDDDD.','DBBBBBBBBBBBBBBBBD','DGGGGGGGGGGGGGGGGD','DBBBBBBBBBBBBBBBBD','DKKKKKKKKKKKKKKKKD',
+  'DKYYWYYKYYYWYYYKKD','DGGGGGGGGGGGGGGGGD','DBBBBBBBYYBBBBBBBD','DBBBBBBBYYBBBBBBBD','DGBBBBBBBBBBBBBBGD','DGBBBBBBBBBBBBBBGD','DGGGGGGGGGGGGGGGGD','.DDDDDDDDDDDDDDDD.'], CHEST_C)).toDataURL();
+$('deckChestImg').src = CHEST_SHUT;
+let chestState = null;
+function openChest(){
+  if ((profile.chests | 0) <= 0){ toast('Aucun coffre : tu en gagnes un toutes les ' + CHEST_EVERY + ' vagues repoussées'); sfx('bad'); return; }
+  const pool = TYPES.map((_,t) => t).filter(cardWinnable);
+  $('chestImg').src = CHEST_SHUT; $('chestImg').className = 'px chest-img'; $('chestCard').innerHTML = ''; $('chestStage').classList.remove('lit');
+  if (!pool.length){
+    const next = TYPES.map((_,t) => t).filter(t => !cardOpen(t));
+    chestState = 'none';
+    $('chestTitle').textContent = 'Coffre fermé';
+    $('chestLead').innerHTML = next.length ? 'Aucune carte n’est encore prête à en sortir. Remplis une condition :<br>' + next.map(t => '• ' + reqTxt(t)).join('<br>') : 'Tu as déjà toutes les cartes. De nouvelles troupes arrivent bientôt.';
+    $('chestBtn').textContent = 'Fermer';
+  } else {
+    chestState = 'shut';
+    $('chestTitle').textContent = (profile.chests | 0) > 1 ? 'Coffre (' + profile.chests + ')' : 'Coffre';
+    $('chestLead').textContent = 'Touche le coffre pour l’ouvrir.';
+    $('chestBtn').textContent = 'Ouvrir';
+  }
+  show('ovChest');
+}
+function crackChest(){
+  if (chestState === 'none' || chestState === 'done'){ hide('ovChest'); if ($('ovDeck').classList.contains('show')) renderDeck(); return; }
+  if (chestState !== 'shut') return;
+  const pool = TYPES.map((_,t) => t).filter(cardWinnable); if (!pool.length) return;
+  chestState = 'shaking'; $('chestImg').classList.add('shake'); sfx('clang');
+  setTimeout(() => {
+    const t = pool[Math.random()*pool.length|0];
+    profile.cards = (profile.cards || []).concat(t); profile.chests = Math.max(0, (profile.chests | 0) - 1); persist();
+    $('chestImg').classList.remove('shake'); $('chestImg').src = CHEST_OPEN; $('chestStage').classList.add('lit');
+    $('chestCard').innerHTML = cardHTML(t, 'reveal');
+    $('chestTitle').textContent = 'Nouvelle carte !';
+    $('chestLead').innerHTML = `<b style="color:${TYPES[t].col}">${TYPES[t].name}</b> rejoint ta collection. ${TYPES[t].desc}`;
+    $('chestBtn').textContent = 'Super !'; chestState = 'done';
+    sfx('legend'); refreshHome();
+  }, 900);
+}
+$('deckChest').addEventListener('click', () => { audio(); openChest(); });
+$('chestBtn').addEventListener('click', () => { audio(); crackChest(); });
+$('chestImg').addEventListener('click', () => { audio(); crackChest(); });

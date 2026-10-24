@@ -63,7 +63,7 @@
         <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
         <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
       </div>
-      <button class="btn home-deck" data-hact="deck"><span class="hd-cards" id="hDeckCards"></span><span class="hd-lbl"><b>Mon deck</b><small>5 soldats</small></span></button>
+      <button class="btn home-deck" data-hact="deck"><span class="hd-cards" id="hDeckCards"></span><span class="hd-lbl"><b>Mon deck</b><small>5 soldats</small></span><em class="hd-badge" id="hChestBadge"></em></button>
       <div class="home-row small">
         <button class="btn" data-hact="codex">Recueil</button>
         <button class="btn" data-hact="help">Aide</button>
@@ -134,7 +134,7 @@
   <h2>Comment jouer</h2>
   <div class="scroll help">
     <p><b>Recruter</b> envoie un soldat au hasard dans ta réserve, en bas, derrière le mur.</p>
-    <p>Depuis l’accueil, compose <b>ton deck</b> : cinq types de soldats. Seuls eux sortent au recrutement, et seules leurs bénédictions te sont proposées. Glisse une carte sur un emplacement pour l’échanger.</p>
+    <p>Depuis l’accueil, compose <b>ton deck</b> : cinq types de soldats. Seuls eux sortent au recrutement, et seules leurs bénédictions te sont proposées. Glisse une carte sur un emplacement pour l’échanger. Tu gagnes un <b>coffre</b> toutes les 10 vagues repoussées et à chaque monde libéré : il contient une nouvelle carte, parmi celles dont tu as rempli la condition.</p>
     <p>Fais-le <b>glisser sur l’herbe</b> pour le poster. Seuls les soldats sur le terrain se battent.</p>
     <p>Tes recrues s’aguerrissent : elles arrivent au niveau 2 dès la vague 6, puis 3, 4 et 5 aux vagues 14, 24 et 36. Elles coûtent un peu plus cher, mais bien moins que les fusions qu’elles t’épargnent.</p>
     <p>Lâche un soldat sur un soldat <b>du même type mais d’un autre niveau</b> : le plus faible est absorbé et le plus fort gagne de l’expérience. Quand sa jauge bleue est pleine, il monte d’un niveau.</p>
@@ -181,7 +181,7 @@
 </div></div>
 
 <div class="ov" id="ovDeck"><div class="win plank deck-win">
-  <h2>Mon deck</h2>
+  <div class="deck-head"><h2>Mon deck</h2><button class="btn chest-btn" id="deckChest" aria-label="Coffres"><img class="px" id="deckChestImg" alt=""><b id="deckChestN">0</b></button></div>
   <div class="deck-slots" id="deckSlots"></div>
   <p class="deck-info" id="deckInfo"></p>
   <div class="scroll">
@@ -190,6 +190,13 @@
     <p class="cx-note" id="deckNote"></p>
   </div>
   <div class="close-row"><button class="btn" data-close>Fermer</button></div>
+</div></div>
+
+<div class="ov" id="ovChest"><div class="win plank chest-win">
+  <h2 id="chestTitle">Coffre</h2>
+  <div class="chest-stage" id="chestStage"><img class="px chest-img" id="chestImg" alt="Coffre"><div class="chest-card" id="chestCard"></div></div>
+  <p class="lead" id="chestLead"></p>
+  <div class="close-row"><button class="btn main" id="chestBtn">Ouvrir</button></div>
 </div></div>
 
 <div class="ov" id="ovStory"><div class="win plank">

@@ -114,10 +114,11 @@ function synergyFor(t, i, ignore){
   for (const j of neighbors(i)){
     const o = S.board[j]; if (!o || o === ignore) continue;
     if (o.t === t){ same++; continue; }
-    const k = synKey(t, o.t); if (done.has(k)) continue; done.add(k);
-    const sy = SYN[k], f = sy.fx[t];
+    const lk = synLink(t, o.t); if (!lk) continue;
+    const k = lk.sy ? synKey(t, o.t) : 'fam'; if (done.has(k)) continue; done.add(k);
+    const f = lk.sy ? lk.sy.fx[t] : FAM[lk.fam].fx;
     for (const key in f) s[key] += f[key] * (key === 'chain' ? 1 : mul);
-    s.list.push({ name:sy.name, with:o.t, icon: o.leg ? LURL[o.leg][0] : null, txt:sy.txt[t] });
+    s.list.push({ name: lk.sy ? lk.name : 'Famille ' + lk.name, with:o.t, icon: o.leg ? LURL[o.leg][0] : null, txt: lk.sy ? lk.sy.txt[t] : FAM[lk.fam].txt });
   }
   if (same){
     s.dmg += FORMATION*same*mul;

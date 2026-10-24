@@ -5,11 +5,12 @@
    ========================================================= */
 const d2 = (a,b) => (a.x-b.x)**2 + (a.y-b.y)**2;
 const slowed = e => e.slowT > 0 || e.stunT > 0 || e.frozenT > 0;
-function findTarget(cx, cy, range, not, air = true){
-  let bestE = null, r2 = range*range;
+function findTarget(cx, cy, range, not, air = true, minR = 0){
+  let bestE = null, r2 = range*range, m2 = minR*minR;
   for (const e of enemies){
     if (e.dead || e === not || e.y < -.2 || e.ph || (!air && EN[e.k].fly)) continue;
-    if ((e.x-cx)**2 + (e.y-cy)**2 <= r2 && (!bestE || e.rem < bestE.rem)) bestE = e;
+    const q = (e.x-cx)**2 + (e.y-cy)**2;
+    if (q <= r2 && q >= m2 && (!bestE || e.rem < bestE.rem)) bestE = e;
   }
   return bestE;
 }
@@ -17,7 +18,7 @@ let hitDT = '';
 function hit(e, dmg){
   if (e.dead || e.ph) return;
   const B = EN[e.k];
-  if (B.armor){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom') dmg *= 1 - B.armor/2; }
+  if (B.armor){ if (hitDT === 'phys') dmg *= 1 - B.armor; else if (hitDT === 'boom' || hitDT === 'pierce') dmg *= 1 - B.armor/2; }
   if (B.mres && hitDT === 'magic') dmg *= 1 - B.mres;
   if (B.armorAll) dmg *= B.armorAll;
   e.hp -= dmg; e.flash = .07;
@@ -50,6 +51,44 @@ function hit(e, dmg){
       if (B.boss) shake = .5;
     } else if (!gob) sfx('kill');
   }
+}
+/* Dégâts dans la durée (poison, brûlure, sol en feu) : sans faire clignoter le monstre. */
+let fires = [];
+function dotHit(e, dmg, type){
+  const fl = e.flash, pv = hitDT; hitDT = type; hit(e, dmg); hitDT = pv;
+  if (!e.dead) e.flash = fl;
+}
+function dotTick(e, dt){
+  if (e.poisonT > 0){
+    e.poisonT -= dt; dotHit(e, e.poisonD*dt, 'poison');
+    if (Math.random() < dt*5) fx.push({ k:'p', x:e.x+(Math.random()-.5)*.4, y:e.y-.4, vx:0, vy:-.6, life:.45, max:.45, col:'#9ed36a', s:1 });
+  }
+  if (!e.dead && e.burnT > 0){
+    e.burnT -= dt; dotHit(e, e.burnD*dt, 'magic');
+    if (Math.random() < dt*6) fx.push({ k:'p', x:e.x+(Math.random()-.5)*.4, y:e.y-.5, vx:0, vy:-.8, life:.35, max:.35, col: Math.random() < .5 ? '#ff8a2a' : '#ffd23f', s:1 });
+  }
+}
+function poison(e, dps, dur = 3){ e.poisonD = Math.max(e.poisonT > 0 ? e.poisonD : 0, dps); e.poisonT = Math.max(e.poisonT || 0, dur); }
+function updFires(dt){
+  for (const f of fires){
+    f.t -= dt;
+    for (const e of enemies) if (!e.dead && !e.ph && !EN[e.k].fly && (e.x-f.x)**2 + (e.y-f.y)**2 <= f.r*f.r) dotHit(e, f.dps*dt, 'magic');
+    if (Math.random() < dt*8) fx.push({ k:'p', x:f.x+(Math.random()-.5)*f.r*1.6, y:f.y-.1, vx:0, vy:-.9, life:.35, max:.35, col: Math.random() < .5 ? '#ff8a2a' : '#ffd23f', s:1 });
+  }
+  if (fires.some(f => f.t <= 0)) fires = fires.filter(f => f.t > 0);
+}
+/* Myconide : nuage de spores autour de lui. */
+function sporeCloud(tw, cx, cy, D, r){
+  const L = tw.l, pv = hitDT; hitDT = 'poison';
+  for (const e of enemies){
+    if (e.dead || e.ph || e.y < -.2 || (e.x-cx)**2 + (e.y-cy)**2 > r*r) continue;
+    hit(e, D*.4); if (e.dead) continue;
+    poison(e, D*.6*(L>=6 ? 1.5 : 1));
+    if (L>=4) applySlow(e, .2, 1);
+  }
+  hitDT = pv;
+  fx.push({ k:'ring', x:cx, y:cy-.1, r, life:.35, max:.35, col:'#b8e070' });
+  for (let k=0;k<8;k++){ const a = Math.random()*Math.PI*2, d = Math.random()*r; fx.push({ k:'mote', x:cx+Math.cos(a)*d, y:cy+Math.sin(a)*d-.2, vx:(Math.random()-.5)*.6, vy:-.4-Math.random()*.4, life:.6, max:.6, col: Math.random() < .5 ? '#d8f0a0' : '#9ed36a' }); }
 }
 function burst(x, y, col, n, spd=3){
   for (let i=0;i<n;i++){
@@ -214,6 +253,25 @@ function fireInner(tw, cx, cy, tg, st){
       lightning(cx + .3*tw.face, cy-.55, tg, D, 1 + L + sy.chain + M.chainAdd, M.decay, sy.vsSlow, L);
       sfx('zap'); break;
     }
+    case 6: {
+      projs.push({ k:'fire', x:cx+.3*tw.face, y:cy-.45, tg, spd:8, dmg:D, L, patch:{ dps:D*.9, t:2.4+.15*L, r: L>=6 ? .7 : .48 }, burn: L>=4 ? D*.5 : 0 });
+      sfx('lob'); break;
+    }
+    case 7: {
+      const rad = TYPES[7].splash + .06*(L-1) + sy.splash, dur = .9;
+      const sp_ = (tg.eng != null || tg.wall != null || tg.bash || tg.frozenT > 0 || tg.stunT > 0) ? 0 : tg.spd*(tg.slowT>0 ? 1-tg.slow : 1);
+      projs.push({ k:'bomb', rock:true, sx:cx+tw.face*.2, sy:cy-.4, tx:tg.x + (tg.vx || 0)*sp_*dur, ty:tg.y + (tg.vy || 0)*sp_*dur, t:0, dur, dmg:D, rad, L, bslow:0, frag:M.frag || L>=6, stun: L>=4 ? .5 : 0 });
+      sfx('lob'); break;
+    }
+    case 8: {
+      sporeCloud(tw, cx, cy, D, st.range);
+      sfx('split'); break;
+    }
+    case 9: {
+      const dx = tg.x-cx, dy = tg.y-.25-(cy-.3), dl = Math.hypot(dx,dy) || 1;
+      projs.push({ k:'ballista', x:cx + tw.face*.3, y:cy-.3, ux:dx/dl, uy:dy/dl, a:Math.atan2(dy,dx), left:st.range + .5, spd:16, dmg:D, hitSet:new Set(), L, dt: L>=4 ? 'pierce' : 'phys' });
+      sfx('arrow'); break;
+    }
     case 5: {
       hit(tg, D);
       fx.push({ k:'slash', x:tg.x, y:tg.y-.2, a:Math.atan2(tg.y-cy, tg.x-cx), life:.16, max:.16, col: L>=5 ? '#fff3b0' : '#c3cbd3' });
@@ -261,6 +319,16 @@ function updProj(p, dt){
   hitDT = prevDT;
 }
 function updProjInner(p, dt){
+  if (p.k === 'ballista'){
+    const step = Math.min(p.left, p.spd*dt); p.x += p.ux*step; p.y += p.uy*step; p.left -= step;
+    for (const e of enemies){
+      if (e.dead || e.ph || p.hitSet.has(e) || (e.x-p.x)**2 + (e.y-.25-p.y)**2 > .16) continue;
+      p.hitSet.add(e); hit(e, p.dmg); burst(e.x, e.y-.25, '#e8dcc0', 3, 1.5);
+      if (p.L >= 6 && !e.dead) applySlow(e, .3, 1.2);
+    }
+    if (p.left <= 0) p.done = true;
+    return;
+  }
   if (p.k === 'hammer'){
     p.a += dt*16;
     const tx = p.back ? p.home.x : p.tg.x, ty = p.back ? p.home.y : p.tg.y - .25;
@@ -283,6 +351,8 @@ function updProjInner(p, dt){
     if (p.t >= p.dur){
       p.done = true;
       explode(p.tx, p.ty, p.rad, p.dmg, p.bslow, true);
+      if (p.stun) for (const e of enemies) if (!e.dead && !EN[e.k].fly && !EN[e.k].noSlow && (e.x-p.tx)**2 + (e.y-p.ty)**2 <= p.rad*p.rad) e.stunT = Math.max(e.stunT, p.stun * (isBoss(e) ? .5 : 1));
+      if (p.rock) burst(p.tx, p.ty, '#8f8a80', 10, 3.5);
       if (p.frag) for (let k=0;k<3;k++){
         const a = Math.random()*Math.PI*2, r = .5 + Math.random()*.35;
         explode(p.tx + Math.cos(a)*r, p.ty + Math.sin(a)*r, .45, p.dmg*.25, p.bslow, false);
@@ -315,6 +385,11 @@ function updProjInner(p, dt){
       for (const e of enemies){ if (e.dead || e === tg) continue; const dd = (e.x-tx)**2 + (e.y-tg.y)**2; if (dd < bd){ bd = dd; nx = e; } }
       if (nx){ hit(nx, p.dmg*.5); burst(nx.x, nx.y-.25, '#e8dcc0', 3, 1.5); }
     }
+    if (p.k === 'fire'){
+      if (!tg.dead && p.burn){ tg.burnT = 3; tg.burnD = Math.max(tg.burnD || 0, p.burn); }
+      if (!EN[tg.k].fly) fires.push({ x:tg.x, y:tg.y, r:p.patch.r, t:p.patch.t, max:p.patch.t, dps:p.patch.dps });
+      burst(tx, ty, '#ff8a2a', 8, 2.2); fx.push({ k:'ring', x:tx, y:ty+.25, r:p.patch.r, life:.25, max:.25, col:'#ffd23f' });
+    }
     if (p.k === 'shard'){ burst(tx, ty, '#bff0ff', 6, 2); if (p.L>=4) fx.push({ k:'ring', x:tx, y:ty, r:.8, life:.25, max:.25, col:'#bff0ff' }); }
   } else { p.x += dx/dist*step; p.y += dy/dist*step; }
 }
@@ -332,6 +407,7 @@ function update(dt){
   }
   for (const e of enemies){
     if (e.dead) continue;
+    if (e.poisonT > 0 || e.burnT > 0){ dotTick(e, dt); if (e.dead) continue; }
     const B = EN[e.k];
     if (B.noSlow){ e.slowT = 0; e.stunT = 0; }
     if (e.slowT > 0) e.slowT -= dt;
@@ -431,6 +507,7 @@ function update(dt){
       if (rg){ tw.hp += troopMax(tw) * rg * dt; if (tw.hp >= troopMax(tw)) tw.hp = null; }
     }
     tw.cd -= dt;
+    if (tw.t === 8 && !tw.leg && tw.ab > 0) tw.ab -= dt;
     if (isWarden(tw) && tw.l >= 6 && inWave){
       if (tw.ab > 0) tw.ab -= dt;
       else {
@@ -447,7 +524,7 @@ function update(dt){
     }
     if (tw.cd <= 0 && inWave){
       const cx = i%COLS + .5, cy = ((i/COLS)|0) + .5, st = stats(tw, i);
-      const tg = findTarget(cx, cy, st.range, null, canHitAir(tw.t));
+      const tg = findTarget(cx, cy, st.range, null, canHitAir(tw.t), tw.leg ? 0 : TYPES[tw.t].minRange || 0);
       if (tg){ fire(tw, cx, cy, tg, st); tw.cd = st.rate; } else tw.cd = 0;
     }
   }
@@ -457,6 +534,7 @@ function update(dt){
   legendAmbient(dt);
   for (const tr of S.traps){ if (tr.cd > 0) tr.cd -= dt; if (tr.anim > 0) tr.anim -= dt; }
   if (S.traps.some(t => t.used)){ S.traps = S.traps.filter(t => !t.used); rebuildTraps(); }
+  updFires(dt);
   for (const p of projs) updProj(p, dt);
   projs = projs.filter(p => !p.done);
   enemies = enemies.filter(e => !e.dead);

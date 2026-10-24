@@ -118,8 +118,9 @@ function dropPreview(src, dst, r){
     if (src.k === 'b' && j === src.i) continue;
     const o = S.board[j]; if (!o || o === a) continue;
     const p = linkPos(dst.i, j);
-    links.push({ x:p.x, y:p.y, col: o.t === a.t ? TYPES[a.t].col : '#f2c14e' });
-    const nm = o.t === a.t ? 'Formation' : SYN[synKey(a.t,o.t)].name;
+    const lk = synLink(a.t, o.t); if (!lk) continue;
+    links.push({ x:p.x, y:p.y, col:lk.col });
+    const nm = lk.name;
     if (!seenK.has(nm)){ seenK.add(nm); names.push(nm); }
   }
   return { links, names };
@@ -302,6 +303,14 @@ function specialText(t,l){
       + (l>=4 ? 'Riposte : renvoie ' + Math.round(WARD.thorns[l-1]*100) + ' % des coups reçus. ' : 'Au niveau 4, il renverra une partie des coups reçus. ')
       + (l>=6 ? 'Toutes les ' + WARD.bashCd + ' s, son bouclier étourdit les monstres qu’il retient.' : 'Au niveau 6, son bouclier étourdira les monstres qu’il retient.')
       + ' Les volants et les fantômes intangibles passent.';
+    case 6: return 'Le feu reste ' + fr1(2.4+.15*l) + ' s au sol' + (l>=6 ? ', sur une large zone' : '') + '. '
+      + (l>=4 ? 'Ses cibles brûlent encore 3 s.' : 'Au niveau 4, ses cibles brûleront encore 3 s.') + ' Les volants ne marchent pas dans les flammes.';
+    case 7: return 'Explosion d’un rayon de ' + fr1(TYPES[7].splash + .06*(l-1)) + ' case. Ne tire pas à moins de ' + fr1(TYPES[7].minRange) + ' case. '
+      + (l>=4 ? 'Étourdit les monstres touchés. ' : 'Au niveau 4, elle étourdira. ') + (l>=6 ? 'Ses pierres éclatent en trois éclats.' : 'Au niveau 6, ses pierres éclateront.');
+    case 8: return 'Empoisonne 3 s tous les monstres autour de lui, volants compris. '
+      + (l>=4 ? 'Ses spores ralentissent de 20 %. ' : 'Au niveau 4, ses spores ralentiront. ') + (l>=6 ? 'Poison 50 % plus fort.' : 'Au niveau 6, son poison sera plus fort.');
+    case 9: return 'Le carreau traverse tous les monstres alignés. '
+      + (l>=4 ? 'Il ignore la moitié de l’armure. ' : 'Au niveau 4, il ignorera la moitié de l’armure. ') + (l>=6 ? 'Il ralentit chaque monstre touché.' : 'Au niveau 6, il ralentira.');
   }
 }
 
@@ -525,6 +534,11 @@ function buildCodex(){
         return `<div class="cx-cell${ok ? '' : ' lock'}"><img class="px" src="${ok ? URL_[t][l-1] : SIL[t][l-1].toDataURL()}" alt=""><span>${ok ? ty.ranks[l-1] : 'Niveau ' + l}</span></div>`;
       }).join('')}</div>
     </div>`).join('');
+  const fams = Object.keys(FAM).map(f => {
+    const mem = TYPES.map((ty,t) => ty.fam === f ? t : -1).filter(t => t >= 0);
+    return `<div class="syn-row"><div class="pair">${mem.slice(0,2).map(t => `<img class="px" src="${URL_[t][0]}" alt="">`).join('')}</div>
+      <div><b>Famille ${FAM[f].name}</b><span>${mem.map(t => TYPES[t].name).join(', ')}.</span><span>Deux voisins de types différents : ${FAM[f].txt} chacun.</span></div></div>`;
+  }).join('');
   const syns = Object.keys(SYN).map(k => {
     const [a,b] = k.split('-').map(Number), sy = SYN[k];
     return `<div class="syn-row"><div class="pair"><img class="px" src="${URL_[a][0]}" alt=""><img class="px" src="${URL_[b][0]}" alt=""></div>
@@ -549,7 +563,7 @@ function buildCodex(){
   const metN = LEG_ORDER.filter(id => [1,2,3,4,5].some(l => seenLeg.has(id + ':' + l))).length;
   $('cxBody').innerHTML = troops +
     `<h3 class="cx-h">Panthéon</h3><p class="cx-note">${metN} légendes rencontrées sur ${LEG_ORDER.length}. À partir de la vague 5, un recrutement peut faire apparaître trois légendes : tu en choisis une pour toute la partie. Offre-lui un soldat d’au moins un niveau de plus qu’elle : la légende prend le niveau du soldat offert (5 au maximum).</p>${pantheon}` +
-    `<h3 class="cx-h">Synergies</h3><p class="cx-note">Deux soldats posés côte à côte (haut, bas, gauche, droite) se renforcent. Un losange apparaît entre eux.</p>${syns}` +
+    `<h3 class="cx-h">Synergies</h3><p class="cx-note">Deux soldats posés côte à côte (haut, bas, gauche, droite) se renforcent s’ils forment une paire, ou s’ils sont de la même famille. Un losange apparaît entre eux.</p>${syns}<h3 class="cx-h">Familles</h3><p class="cx-note">Quand deux voisins ne forment pas de paire, leur famille commune les renforce.</p>${fams}` +
     `<h3 class="cx-h">Bestiaire</h3>${beasts}`;
 }
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {

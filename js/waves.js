@@ -166,6 +166,7 @@ function endWave(){
   const bonus = Math.round((8 + S.wave*2) * MODS.waveBonus);
   const intr = MODS.interest ? Math.min(25, Math.floor(S.gold*.1)) : 0;
   S.gold += bonus + intr; addGold(bonus + intr); pstat.waves++;
+  if (pstat.waves % CHEST_EVERY === 0) giveChest(pstat.waves + ' vagues repoussées');
   S.streak = waveLeaks === 0 ? (S.streak|0) + 1 : 0; pstat.bestStreak = Math.max(pstat.bestStreak|0, S.streak);
   let regen = false;
   if (MODS.regen && waveLeaks === 0){ S.lives++; regen = true; }
@@ -234,6 +235,7 @@ function storyVictory(){
   over = true; hasGame = false;
   const w = S.world, W = WORLDS[w], stars = S.lives >= 18 ? 3 : S.lives >= 10 ? 2 : 1;
   const first = story.unlocked <= w + 1 && w + 1 < WORLDS.length;
+  if (!(story.stars[w] > 0)) giveChest(W.name + ' libéré');
   story.stars[w] = Math.max(story.stars[w]|0, stars);
   story.unlocked = Math.max(story.unlocked, Math.min(WORLDS.length, w + 2));
   snapshot = null; persist();
@@ -266,7 +268,7 @@ function newGame(mode, world = 0, size = 0){
   resize();
   ulx = []; aiming = null;
   hasGame = true; pstat.games++;
-  enemies = []; projs = []; fx = []; queue = []; pendingSpawn = [];
+  enemies = []; projs = []; fx = []; queue = []; pendingSpawn = []; fires = [];
   inWave = false; over = false; banner = null; drag = null; closeSheet();
   NET = null; stopPlacing(); rebuildTraps();
   hideHome();

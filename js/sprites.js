@@ -258,6 +258,81 @@ function drawNain(s,l){
   s.p(12,12,SK);
 }
 
+/* ---- Pyromancienne : chevelure de flammes, boule de feu au poing ---- */
+function drawPyro(s,l){
+  const m = MET[l-1], c = l===5 ? '#9b1d2a' : '#d8364e', cd = '#7a1a2a';
+  const F1 = '#ff8a2a', F2 = '#ffd23f', F3 = '#fff3b0';
+  if (l>=4) s.r(5,10,10,7, l===5 ? '#2a1a22' : cd);
+  s.r(6,17,3,1,'#3a2028'); s.r(11,17,3,1,'#3a2028');
+  s.r(6,10,8,5,c); s.r(5,15,10,2,c); s.hl(5,14,16, l>=4 ? GOLD : cd);
+  s.hl(6,13,13,'#4b2030'); s.p(9,13,F2,1); s.p(10,13,F1,1);
+  if (l>=2){ s.p(9,11,F1,1); s.p(10,11,F2,1); }
+  if (l>=3){ s.r(4,9,3,2,m.m); s.r(13,9,3,2,m.m); s.hl(4,6,9,m.h,1); s.hl(13,15,9,m.h,1); }
+  s.r(5,10,1,3,c); s.p(5,13,SK);
+  s.r(14,10,2,1,c); s.p(16,10,SK);
+  if (l===1){ s.r(16,8,2,2,F1,1); s.p(16,8,F2,1); s.p(17,7,F1,1); }
+  else if (l<=3){ s.r(16,7,3,3,F1,1); s.p(17,8,F3,1); s.p(17,6,F2,1); s.p(18,5,F1,1); }
+  else { s.r(16,6,4,4,F1,1); s.r(17,7,2,2,F2,1); s.p(17,7,F3,1); s.p(18,5,F2,1); s.p(16,4,F1,1); s.p(19,4,F1,1); }
+  s.r(7,4,6,6,SK);
+  const eye = l>=3 ? F2 : EYE; s.p(8,7,eye,1); s.p(11,7,eye,1); s.hl(9,10,9,SKD,1);
+  s.r(7,3,6,2,F1); s.v(6,4,9,F1); s.v(13,4,9,F1); s.p(7,5,F1); s.p(12,5,F1);
+  s.p(7,2,F2,1); s.p(8,1,F1); s.p(9,2,F1); s.p(10,1,F2,1); s.p(11,2,F1); s.p(12,2,F2,1); s.p(6,3,F1); s.p(13,3,F1);
+  s.p(6,9,F2,1); s.p(13,9,F2,1);
+  if (l>=3){ s.p(10,0,F3,1); s.p(8,0,F2,1); s.p(5,5,F1); s.p(14,6,F1); }
+  if (l===5){ s.hl(7,12,4,GOLD,1); s.p(9,4,GEM,1); s.p(10,4,GEM,1); }
+}
+
+/* ---- Catapulte : bras armé, pierre dans la cuillère ---- */
+function drawCata(s,l){
+  const m = MET[l-1], w = l===5 ? '#7a4a2a' : '#a0703c', wd = '#5a3a20', band = l>=4 ? GOLD : m.m;
+  if (l>=4){ s.v(17,4,12,wd); s.r(18,4,2,3, l===5 ? '#4f2a74' : '#c4473d'); if (l===5) s.p(18,5,GOLD,1); }
+  s.r(2,12,15,3,w); s.hl(2,16,12, shade(w,1.15)); s.v(6,12,14,band); s.v(12,12,14,band);
+  s.r(2,15,4,3,wd); s.r(13,15,4,3,wd); s.p(3,16,band,1); s.p(14,16,band,1);
+  if (l===5){ s.p(3,16,GEM,1); s.p(14,16,GEM,1); }
+  sline(s,8,11,10,6,wd); sline(s,12,11,10,6,wd); s.hl(9,11,7,band);
+  sline(s,14,10,4,4,w); sline(s,14,11,5,4,w);
+  s.r(1,3,4,2,wd); s.p(1,2,wd); s.p(4,2,wd);
+  const rock = l===5 ? '#ff8a2a' : '#8f8a80';
+  s.r(2,1,2,2,rock, l===5 ? 1 : 0); if (l===5) s.p(2,1,'#ffd23f',1);
+  if (l>=3){ s.r(14,9,3,3,m.m); s.hl(14,16,9,m.h,1); }
+  else { s.p(15,10,'#c9b48a'); s.p(16,11,'#c9b48a'); }
+  if (l>=2) s.p(10,7,m.h,1);
+}
+
+/* ---- Myconide : chapeau tacheté, spores ---- */
+function drawMyco(s,l){
+  const m = MET[l-1], cap = l===5 ? GOLD : '#c9b04a', spot = '#f3e7cc', stem = '#efe2c8', gill = '#8a6a3a';
+  s.r(6,17,3,1,'#a89878'); s.r(11,17,3,1,'#a89878');
+  s.r(6,10,8,7,stem);
+  s.r(4,12,2,1,stem); s.p(4,13,stem); s.r(14,12,2,1,stem); s.p(15,13,stem);
+  s.p(8,12,EYE,1); s.p(11,12,EYE,1); s.p(7,13,'#e8a0a0',1); s.p(12,13,'#e8a0a0',1); s.hl(9,10,13,'#8a5a4a',1);
+  if (l>=2){ s.hl(6,13,15,m.m); s.p(9,15,m.h,1); }
+  s.hl(7,12,3,cap); s.hl(5,14,4,cap); s.hl(4,15,5,cap); s.r(3,6,14,3,cap); s.hl(4,15,9,gill);
+  s.p(4,9,null); s.p(15,9,null);
+  const spots = [[8,4],[12,6],[5,7],[10,7],[14,7],[7,6],[11,4]].slice(0, 2 + l);
+  for (const [x,y] of spots) s.p(x,y,spot,1);
+  if (l>=3){ s.p(1,4,'#d8f0a0',1); s.p(18,6,'#d8f0a0',1); s.p(2,10,'#b8e070',1); s.p(17,2,'#b8e070',1); }
+  if (l>=4){ s.p(3,16,'#5a9a4c'); s.p(4,16,'#5a9a4c'); s.p(15,16,'#5a9a4c'); s.p(16,16,'#5a9a4c'); s.p(16,15,'#5a9a4c'); }
+  if (l===5){ s.r(9,1,2,2,'#e2334a'); s.p(9,1,spot,1); s.p(7,2,'#e2334a'); s.p(12,2,'#e2334a'); s.p(9,10,GEM,1); s.p(10,10,GEM,1); }
+}
+
+/* ---- Baliste : arbalète géante sur trépied ---- */
+function drawBal(s,l){
+  const m = MET[l-1], w = '#8a5a33', wd = '#5a3a20', bow = l>=4 ? GOLD : m.m;
+  sline(s,9,11,5,16,wd); sline(s,10,11,14,16,wd); s.v(9,12,16,wd);
+  s.hl(4,6,17,wd); s.hl(13,15,17,wd); s.hl(8,10,17,wd);
+  s.r(6,10,7,2,w);
+  s.r(2,8,13,2,w); s.hl(2,14,8, shade(w,1.15));
+  sline(s,13,1,15,4,bow); s.v(15,4,13,bow); sline(s,15,13,13,16,bow);
+  sline(s,13,2,4,7,'#e8dcc0',1); sline(s,13,15,4,10,'#e8dcc0',1);
+  const bolt = l===5 ? '#f2ead6' : '#c9b48a';
+  s.hl(3,16,7,bolt); s.p(17,6,m.h); s.p(17,7,m.h); s.p(18,7,m.h); s.p(17,8,m.h);
+  s.p(3,6,'#c4473d'); s.p(2,6,'#c4473d');
+  if (l>=3){ s.r(3,10,3,3,m.m); s.p(4,11,wd,1); }
+  if (l>=4){ s.r(11,10,3,4,m.m); s.hl(11,13,10,m.h,1); }
+  if (l===5){ s.p(12,12,GEM,1); s.p(15,8,GEM,1); }
+}
+
 /* ---- Ennemis ---- */
 function enSlime(s){
   const c = '#79c25b';
@@ -712,7 +787,7 @@ function terBrazier(){
 }
 
 const STORY_EN_DRAW = { toad:enToad, scorpion:enScorpion, mummy:enMummy, yeti:enYeti, ghoul:enGhoul };
-const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre, drawNain];
+const DRAW = [drawLame, drawArc, drawBombe, drawGivre, drawFoudre, drawNain, drawPyro, drawCata, drawMyco, drawBal];
 function troopPixels(t,l){ const s = new Spr(); drawSoldier(s,t,l); return s.pixels(); }
 const EN_DRAW = { slime:enSlime, wolf:enWolf, golem:enGolem, boss:enBoss, bigslime:enBigSlime, mini:enMini, goblin:enGoblin, king:enKing };
 function enemyPixels(k){

@@ -224,8 +224,9 @@ function drawLinks(){
     for (const j of [c+1 < COLS ? i+1 : -1, r+1 < ROWS ? i+COLS : -1]){
       if (j < 0) continue;
       const b = S.board[j]; if (!b || b === hidden) continue;
+      const lk = synLink(a.t, b.t); if (!lk) continue;
       const p = linkPos(i,j);
-      gem(p.x, p.y, a.t === b.t ? TYPES[a.t].col : '#f2c14e', .95);
+      gem(p.x, p.y, lk.col, .95);
     }
   }
 }
@@ -260,6 +261,20 @@ function draw(){
     }
   }
   drawBars();
+  // sol en feu
+  for (const f of fires){
+    const a = Math.min(1, f.t / .5), n = Math.round(f.r*10);
+    ctx.globalAlpha = .25*a; ctx.fillStyle = '#ff6a2a';
+    ctx.fillRect(snapP(ox + (f.x - f.r)*CS), snapP(oy + (f.y - f.r*.6)*CS), snapP(f.r*2*CS), snapP(f.r*1.2*CS));
+    ctx.globalAlpha = a;
+    for (let k=0;k<n;k++){
+      const h = hash(k, Math.floor(clock*10), 31), gx = f.x + (hash(k, 7, 5) - .5)*f.r*1.8, gy = f.y + (hash(k, 9, 5) - .5)*f.r*1.1;
+      const X = snapP(ox + gx*CS), Y = snapP(oy + gy*CS), ht = 1 + Math.floor(h*3);
+      ctx.fillStyle = '#ff8a2a'; ctx.fillRect(X, Y - ht*P, P, ht*P);
+      ctx.fillStyle = h > .5 ? '#ffd23f' : '#fff3b0'; ctx.fillRect(X, Y - ht*P, P, P);
+    }
+    ctx.globalAlpha = 1;
+  }
   // pièges
   for (const tr of S.traps){
     if (tr.used) continue;
@@ -356,7 +371,14 @@ function draw(){
 
   // projectiles
   for (const p of projs){
-    if (p.k === 'bomb'){
+    if (p.k === 'bomb' && p.rock){
+      const t = Math.min(1, p.t/p.dur), x = p.sx + (p.tx-p.sx)*t, y = p.sy + (p.ty-p.sy)*t - Math.sin(Math.PI*t)*2;
+      const X = snapP(ox + x*CS), Y = snapP(oy + y*CS), hot = p.L >= 5;
+      ctx.fillStyle = '#120d08'; ctx.fillRect(X-3*P, Y-2*P, 6*P, 5*P); ctx.fillRect(X-2*P, Y-3*P, 4*P, 7*P);
+      ctx.fillStyle = hot ? '#ff8a2a' : '#8f8a80'; ctx.fillRect(X-2*P, Y-2*P, 4*P, 4*P);
+      ctx.fillStyle = hot ? '#ffd23f' : '#bdb6aa'; ctx.fillRect(X-2*P, Y-2*P, 2*P, P);
+      ctx.fillStyle = hot ? '#b5452a' : '#5e5a52'; ctx.fillRect(X, Y+P, 2*P, P);
+    } else if (p.k === 'bomb'){
       const t = Math.min(1, p.t/p.dur), x = p.sx + (p.tx-p.sx)*t, y = p.sy + (p.ty-p.sy)*t - Math.sin(Math.PI*t)*1.1;
       const X = snapP(ox + x*CS), Y = snapP(oy + y*CS);
       ctx.fillStyle = '#120d08'; ctx.fillRect(X-2*P, Y-P, 4*P, 3*P); ctx.fillRect(X-P, Y-2*P, 2*P, 5*P);
@@ -369,6 +391,18 @@ function draw(){
         ctx.fillStyle = p.L===5 ? '#fff6d0' : '#d9c7a0'; ctx.fillRect(-4*P, -P/2, 7*P, P);
         ctx.fillStyle = p.aslow ? '#aeeeff' : '#eef4f8'; ctx.fillRect(2*P, -P, 2*P, 2*P);
         ctx.fillStyle = '#c8473d'; ctx.fillRect(-4*P, -P, 2*P, 2*P);
+      } else if (p.k === 'ballista'){
+        ctx.fillStyle = '#120d08'; ctx.fillRect(-6*P, -P, 12*P, 3*P); ctx.fillRect(4*P, -2*P, 3*P, 5*P);
+        ctx.fillStyle = p.L >= 5 ? '#f2ead6' : '#c9b48a'; ctx.fillRect(-6*P, 0, 10*P, P);
+        ctx.fillStyle = '#eef4f8'; ctx.fillRect(4*P, -P, 2*P, 3*P); ctx.fillRect(6*P, 0, P, P);
+        ctx.fillStyle = '#c4473d'; ctx.fillRect(-6*P, -P, 2*P, P); ctx.fillRect(-6*P, P, 2*P, P);
+      } else if (p.k === 'fire'){
+        const fl = Math.floor(clock*16) % 2;
+        ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -3*P, 6*P, 6*P);
+        ctx.fillStyle = '#ff8a2a'; ctx.fillRect(-2*P, -2*P, 4*P, 4*P);
+        ctx.fillStyle = '#ffd23f'; ctx.fillRect(-P, -P, 2*P, 2*P);
+        ctx.fillStyle = '#fff3b0'; ctx.fillRect(fl ? 0 : -P, -P, P, P);
+        ctx.fillStyle = '#ff8a2a'; ctx.fillRect(-5*P, fl ? -P : 0, 2*P, P); ctx.fillRect(-4*P, fl ? P : -2*P, P, P);
       } else if (p.k === 'hammer'){
         ctx.rotate(p.a);
         ctx.fillStyle = '#120d08'; ctx.fillRect(-3*P, -4*P, 6*P, 5*P); ctx.fillRect(-P, P, 2*P, 4*P);

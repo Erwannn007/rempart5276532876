@@ -344,3 +344,26 @@ html{background:#1c1610}
 .dslot.hot .card{box-shadow:inset 0 0 0 2px var(--cc),0 0 0 3px var(--gold);transform:scale(1.06)}
 .dslot.pop .card{animation:cardPop .36s steps(3)}
 @keyframes cardPop{0%{transform:scale(1.18)}50%{transform:scale(.94)}100%{transform:scale(1)}}
+/* coffres */
+.home-deck{position:relative}
+.hd-badge{position:absolute;right:8px;top:50%;transform:translateY(-50%);min-width:26px;height:26px;padding:0 6px;font-style:normal;font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;color:#2a1e14;background:var(--gold);border:3px solid var(--edge);animation:badgeBlink 1.2s steps(2) infinite}
+@keyframes badgeBlink{50%{background:#fff3a0}}
+.deck-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.deck-head h2{margin:0}
+.chest-btn{min-height:46px;padding:0 10px;gap:6px;background:#5a4420}
+.chest-btn img{width:36px;height:auto}
+.chest-btn b{font-size:20px;color:var(--gold)}
+.chest-btn.empty{opacity:.55}
+.chest-win{text-align:center}
+.chest-stage{position:relative;height:230px;display:flex;align-items:center;justify-content:center;margin:6px 0 10px;background:#1c1610;border:3px solid var(--edge);overflow:hidden}
+.chest-stage.lit{background:repeating-conic-gradient(from 0deg at 50% 62%,#3a2a14 0 12deg,#1c1610 12deg 24deg)}
+.chest-img{width:180px;height:auto;cursor:pointer;touch-action:manipulation}
+.chest-img.shake{animation:chestShake .9s steps(9)}
+@keyframes chestShake{0%,100%{transform:none}20%{transform:translate(-6px,0) rotate(-4deg)}40%{transform:translate(6px,-3px) rotate(4deg)}60%{transform:translate(-8px,-6px) rotate(-6deg) scale(1.05)}80%{transform:translate(8px,-9px) rotate(6deg) scale(1.1)}}
+.chest-stage.lit .chest-img{position:absolute;bottom:8px;width:120px;opacity:.9}
+.chest-card{position:absolute;left:50%;top:10px;width:118px;transform:translateX(-50%)}
+.card.reveal{animation:cardReveal .6s steps(6)}
+@keyframes cardReveal{0%{transform:translateY(90px) scale(.2) rotate(-20deg)}60%{transform:translateY(-10px) scale(1.15) rotate(4deg)}100%{transform:none}}
+.card.lock.win{animation:winGlow 1.4s steps(2) infinite}
+@keyframes winGlow{50%{box-shadow:inset 0 0 0 2px var(--cc),0 0 0 2px #f2c14e}}
