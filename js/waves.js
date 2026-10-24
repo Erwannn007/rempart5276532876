@@ -77,10 +77,11 @@ function makeWave(w){
 }
 /* ---------- menace : les ennemis s'adaptent aux résultats du joueur ---------- */
 /* Après chaque vague, on regarde la part du chemin qui restait à l'ennemi le plus avancé.
-   Vague écrasée loin de la porte : la suivante est plus solide. Des fuites : elle s'adoucit.
+   Vague écrasée loin de la porte : la suivante est plus solide. Seules de vraies fuites l'adoucissent,
+   et jamais sous keep × son record (pas de triche en défendant à la porte ou en laissant passer exprès).
    La menace multiplie la vie des ennemis, et leurs coups par sa racine carrée. */
 /* steps : [part du chemin qui restait au plus avancé, multiplicateur], du plus facile au plus serré. */
-let THREAT = { from:5, steps:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [.12, 1], [0, .98]], leak:[.07, 3],
+let THREAT = { from:5, steps:[[.85, 1.15], [.65, 1.10], [.4, 1.05], [0, 1]], leak:[.07, 3], keep:.75,
   endless:[.75, 50], story:[1, 1.5] };
 let waveMinRem = INF;
 const threat = () => S.threat || 1;
@@ -91,8 +92,9 @@ function updThreat(){
   const path = Math.max(1, Math.min(...NET.ents.map(i => NET.distB[i] + 1)));
   const far = Math.min(1, waveMinRem / path);
   const k = waveLeaks ? 1 - C.leak[0] * Math.min(waveLeaks, C.leak[1]) : C.steps.find(([f]) => far >= f)[1];
-  const before = threat();
-  S.threat = Math.max(lo, Math.min(hi, before * k));
+  const before = threat(), floor = Math.max(lo, (S.threatPeak || 1) * C.keep);
+  S.threat = Math.max(Math.min(before, floor), Math.min(hi, before * k));
+  S.threatPeak = Math.max(S.threatPeak || 1, S.threat);
   return S.threat / before;
 }
 function startWave(){

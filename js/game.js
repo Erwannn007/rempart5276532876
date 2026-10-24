@@ -21,7 +21,7 @@ function freshGame(mode = 'endless', world = 0, size = 0){
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
     terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
     traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 },
-    legend:null, legendOffer:null, legendSlot:-1, legendPity:0, bossBag:null, streak:0, threat:1 };
+    legend:null, legendOffer:null, legendSlot:-1, legendPity:0, bossBag:null, streak:0, threat:1, threatPeak:1 };
 }
 
 /* ---------- sauvegarde (une seule clé) ---------- */
@@ -30,7 +30,7 @@ function snap(){
   snapshot = { mode:S.mode, world:S.world, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
     bless:S.bless, pending:S.pending, size:S.size || 0, net:netSave(), bars:(S.bars || []).map(b => [b.i, b.open ? 1 : 0]), barStock:S.barStock | 0, nextE:S.nextE || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
-    ult:S.ult || 0, bossBag:S.bossBag, streak:S.streak, threat:threat(), nextQ:S.nextQ || null, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
+    ult:S.ult || 0, bossBag:S.bossBag, streak:S.streak, threat:threat(), threatPeak:S.threatPeak || 1, nextQ:S.nextQ || null, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
     board:S.board.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0) };
 }
 function persist(){
@@ -79,7 +79,7 @@ function load(){
     S.legendPity = g.legendPity|0;
     S.bossBag = Array.isArray(g.bossBag) ? g.bossBag.filter(k => BOSS_POOL.includes(k)) : null;
     S.streak = g.streak|0; S.ult = Math.min(1, +g.ult || 0);
-    S.threat = Math.max(.5, +g.threat || 1);
+    S.threat = Math.max(.5, +g.threat || 1); S.threatPeak = Math.max(S.threat, +g.threatPeak || 1);
     S.nextQ = Array.isArray(g.nextQ) ? g.nextQ.filter(k => EN[k]) : null;
     S.board = g.board.map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
     S.bench = (g.bench||[]).slice(0,BENCH_N).map(a => a ? mk(a[0],a[1],okLeg(a[2]),a[3]|0) : null);
