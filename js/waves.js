@@ -33,6 +33,14 @@ function pickTheme(avail){
   return out;
 }
 const wavePace = w => w <= 10 ? 1 : PACE[w % 5];
+/* Volants : seuls les tireurs anti-aériens les touchent, et rien ne les arrête sur la route.
+   cap : part maximale de la vague (le surplus redevient des monstres au sol), spd : accélération max avec les vagues,
+   thr : exposant de la menace sur leur vie, lead : avance (en cases) qu'on leur prête pour le ciblage. */
+let FLY = { cap:.12, spd:1.1, thr:.85, lead:1.5 };
+function capFly(q, alt){
+  let left = Math.max(3, Math.round(q.length * FLY.cap));
+  return q.map(k => EN[k].fly && !EN[k].boss ? (left-- > 0 ? k : alt) : k);
+}
 function makeStoryWave(w){
   const W = WORLDS[S.world], q = [], last = w >= W.waves;
   const ew = w + W.off, n = Math.round(Math.min(8 + Math.floor(ew*1.5), NMAX) * wavePace(w));
@@ -46,6 +54,7 @@ function makeStoryWave(w){
     q.push(k);
     if (k === 'spider' && i < n-1){ q.push('spider'); i++; }
   }
+  q.splice(0, q.length, ...capFly(q, W.base));
   if (last) q.push(...W.finals);
   else if (w % 5 === 0){
     const pool = BOSS_POOL.filter(b => !W.finals.includes(b) && b !== 'boss');
@@ -67,6 +76,7 @@ function makeWave(w){
     q.push(k);
     if (k === 'spider' && i < n-1){ q.push('spider'); i++; }
   }
+  q.splice(0, q.length, ...capFly(q, 'slime'));
   if (w % 5 === 0){
     if (siege && w === SIEGE_WAVES) q.push('bigslime','bigslime','king');
     else { const b = nextBoss(w), cnt = siege ? 1 : 1 + Math.floor(w/30); for (let c=0;c<cnt;c++) q.push(b); }
@@ -145,9 +155,9 @@ function spawn(k, opt = {}){
   if (!hpOver && S.mode === 'story' && base.boss && S.wave < maxWaves()) hp *= .6;
   if (!hpOver && base.boss) hp *= BOSS_HPM;
   const thr = base.boss ? bossThreat() : threat();
-  if (!hpOver) hp *= thr;
+  if (!hpOver) hp *= base.fly && !base.boss ? Math.pow(thr, FLY.thr) : thr;
   if (!hpOver && base.boss){ const ew = S.wave + (S.mode === 'story' ? WORLDS[S.world].off : 0); hp *= Math.min(1, .3 + ew*.045); }
-  const spdScale = Math.min(1.3, 1 + S.wave*.006);
+  const spdScale = Math.min(base.fly ? FLY.spd : 1.3, 1 + S.wave*.006);
   let gold = base.gold + Math.floor(S.wave/GOLDW) + MODS.goldKill;
   if (k === 'mini') gold = 1 + MODS.goldKill;
   if (k === 'goblin') gold = Math.round((30 + S.wave*2) * (MODS.bounty ? 1.5 : 1));

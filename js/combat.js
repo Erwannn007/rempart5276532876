@@ -6,11 +6,11 @@
 const d2 = (a,b) => (a.x-b.x)**2 + (a.y-b.y)**2;
 const slowed = e => e.slowT > 0 || e.stunT > 0 || e.frozenT > 0;
 function findTarget(cx, cy, range, not, air = true, minR = 0){
-  let bestE = null, r2 = range*range, m2 = minR*minR;
+  let bestE = null, bestR = INF, r2 = range*range, m2 = minR*minR;
   for (const e of enemies){
     if (e.dead || e === not || e.y < -.2 || e.ph || (!air && EN[e.k].fly)) continue;
-    const q = (e.x-cx)**2 + (e.y-cy)**2;
-    if (q <= r2 && q >= m2 && (!bestE || e.rem < bestE.rem)) bestE = e;
+    const q = (e.x-cx)**2 + (e.y-cy)**2, rem = e.rem - (EN[e.k].fly ? FLY.lead : 0);
+    if (q <= r2 && q >= m2 && (!bestE || rem < bestR)){ bestE = e; bestR = rem; }
   }
   return bestE;
 }
