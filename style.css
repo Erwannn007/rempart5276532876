@@ -452,3 +452,10 @@ html{background:#1c1610}
 .mdl-dots i.lock{background:#5a5262}
 .mdl-dots i.on{width:12px;height:12px;background:#fff}
 .model img{-webkit-user-drag:none;user-select:none;pointer-events:none}
+/* barre d'onglets au ras du bas de l'écran, coffres plus hauts */
+.home-tabs{padding-bottom:calc(var(--sb)*.3)}
+.htab{min-height:58px;justify-content:flex-start;padding-top:7px}
+.hp-play .cslot{height:108px;gap:4px}
+.hp-play .cslot.full img{width:70px}
+.hp-play .cslot span{font-size:13px}
+.hp-play .cslot b{font-size:22px}
