@@ -289,14 +289,14 @@ function newGame(mode, world = 0, size = 0){
 function drawBless(n){
   const count = {};
   for (const k of S.bless){ const id = String(k).split(':')[0]; count[id] = (count[id] || 0) + 1; }
-  const pool = BLESS.filter(b => (count[b.id] || 0) < (b.max || 1) && (!b.req || b.req()));
+  const dk = deckTypes(), pool = BLESS.filter(b => (count[b.id] || 0) < (b.max || 1) && (!b.req || b.req()) && (BLESS_TY[b.id] == null || dk.includes(BLESS_TY[b.id])));
   const out = [], used = new Set();
   while (out.length < n){
     const avail = pool.filter(b => !used.has(b.id)); if (!avail.length) break;
     let r = Math.random() * avail.reduce((a,b) => a + RAR[b.rar].w, 0), pick = avail[0];
     for (const b of avail){ r -= RAR[b.rar].w; if (r <= 0){ pick = b; break; } }
     used.add(pick.id);
-    out.push(pick.id === 'ecole' ? 'ecole:' + (Math.random()*TYPES.length|0) : pick.id);
+    out.push(pick.id === 'ecole' ? 'ecole:' + dk[Math.random()*dk.length|0] : pick.id);
   }
   return out;
 }

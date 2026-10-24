@@ -21,7 +21,7 @@ function freshGame(mode = 'endless', world = 0, size = 0){
     board:new Array(COLS*ROWS).fill(null), bench:new Array(BENCH_N).fill(null),
     terrain:new Array(COLS*ROWS).fill(0), biome:0, bless:[], pending:null,
     traps:[], trapBuys:0, shopBuys:{ dyn:0, hill:0, marsh:0, rune:0 },
-    legend:null, legendOffer:null, legendSlot:-1, legendPity:0, bossBag:null, streak:0, threat:1, threatPeak:1, bossThreat:1, bossPeak:1, threatHard:0, bossHard:0 };
+    deck:fixDeck().slice(), legend:null, legendOffer:null, legendSlot:-1, legendPity:0, bossBag:null, streak:0, threat:1, threatPeak:1, bossThreat:1, bossPeak:1, threatHard:0, bossHard:0 };
 }
 
 /* ---------- sauvegarde (une seule clé) ---------- */
@@ -30,7 +30,7 @@ function snap(){
   snapshot = { mode:S.mode, world:S.world, wave:S.wave, gold:S.gold, lives:S.lives, cost:S.cost, terrain:S.terrain, biome:S.biome,
     bless:S.bless, pending:S.pending, size:S.size || 0, net:netSave(), bars:(S.bars || []).map(b => [b.i, b.open ? 1 : 0]), barStock:S.barStock | 0, nextE:S.nextE || null,
     traps:S.traps.filter(t => !t.used).map(t => [t.i, t.k]), trapBuys:S.trapBuys, shopBuys:S.shopBuys,
-    ult:S.ult || 0, bossBag:S.bossBag, streak:S.streak, threat:threat(), threatPeak:S.threatPeak || 1, bossThreat:bossThreat(), bossPeak:S.bossPeak || 1, threatHard:S.threatHard || 0, bossHard:S.bossHard || 0, nextQ:S.nextQ || null, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
+    ult:S.ult || 0, deck:S.deck || null, bossBag:S.bossBag, streak:S.streak, threat:threat(), threatPeak:S.threatPeak || 1, bossThreat:bossThreat(), bossPeak:S.bossPeak || 1, threatHard:S.threatHard || 0, bossHard:S.bossHard || 0, nextQ:S.nextQ || null, legend:S.legend, legendOffer:S.legendOffer, legendSlot:S.legendSlot, legendPity:S.legendPity,
     board:S.board.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0), bench:S.bench.map(t => t ? [t.t,t.l,t.leg||0,t.xp||0] : 0) };
 }
 function persist(){
@@ -77,6 +77,7 @@ function load(){
     S.legendOffer = Array.isArray(g.legendOffer) && g.legendOffer.every(id => LEGENDS[id]) ? g.legendOffer : null;
     S.legendSlot = Number.isInteger(g.legendSlot) ? g.legendSlot : -1;
     S.legendPity = g.legendPity|0;
+    S.deck = Array.isArray(g.deck) && g.deck.length && g.deck.every(t => TYPES[t]) ? g.deck : null;
     S.bossBag = Array.isArray(g.bossBag) ? g.bossBag.filter(k => BOSS_POOL.includes(k)) : null;
     S.streak = g.streak|0; S.ult = Math.min(1, +g.ult || 0);
     S.threat = Math.max(.5, +g.threat || 1); S.threatPeak = Math.max(S.threat, +g.threatPeak || 1);

@@ -313,6 +313,8 @@ const LEGENDS = {
 };
 const LEG_ORDER = Object.keys(LEGENDS);
 const BLESS_BY = Object.fromEntries(BLESS.map(b => [b.id, b]));
+/* Bénédictions propres à un type : proposées seulement s'il est dans le deck de la partie. */
+const BLESS_TY = { lames:0, tourbillon:0, carquois:1, perforant:1, poudre:2, fragment:2, hiver:3, gel:3, conducteur:4, surcharge:4, barbe:5, forteresse:5 };
 function blessInfo(key){ const [id, p] = String(key).split(':'); return { b: BLESS_BY[id], p: p != null ? +p : null }; }
 const blessName = key => { const { b, p } = blessInfo(key); return typeof b.name === 'function' ? b.name(p) : b.name; };
 const blessDesc = key => { const { b, p } = blessInfo(key); return typeof b.desc === 'function' ? b.desc(p) : b.desc; };

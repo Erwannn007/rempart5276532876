@@ -63,6 +63,7 @@
         <button class="btn home-mode" data-new="endless"><img class="px" id="hiEndless" alt=""><span><b>Sans fin</b><small id="hEndRec"></small></span></button>
         <button class="btn home-mode siege" data-new="story"><img class="px" id="hiSiege" alt=""><span><b>Histoire</b><small id="hSiegeRec"></small></span></button>
       </div>
+      <button class="btn home-deck" data-hact="deck"><span class="hd-cards" id="hDeckCards"></span><span class="hd-lbl"><b>Mon deck</b><small>5 soldats</small></span></button>
       <div class="home-row small">
         <button class="btn" data-hact="codex">Recueil</button>
         <button class="btn" data-hact="help">Aide</button>
@@ -133,6 +134,7 @@
   <h2>Comment jouer</h2>
   <div class="scroll help">
     <p><b>Recruter</b> envoie un soldat au hasard dans ta réserve, en bas, derrière le mur.</p>
+    <p>Depuis l’accueil, compose <b>ton deck</b> : cinq types de soldats. Seuls eux sortent au recrutement, et seules leurs bénédictions te sont proposées. Glisse une carte sur un emplacement pour l’échanger.</p>
     <p>Fais-le <b>glisser sur l’herbe</b> pour le poster. Seuls les soldats sur le terrain se battent.</p>
     <p>Tes recrues s’aguerrissent : elles arrivent au niveau 2 dès la vague 6, puis 3, 4 et 5 aux vagues 14, 24 et 36. Elles coûtent un peu plus cher, mais bien moins que les fusions qu’elles t’épargnent.</p>
     <p>Lâche un soldat sur un soldat <b>du même type mais d’un autre niveau</b> : le plus faible est absorbé et le plus fort gagne de l’expérience. Quand sa jauge bleue est pleine, il monte d’un niveau.</p>
@@ -176,6 +178,18 @@
   <div class="stars" id="winStars"></div>
   <p class="lead" id="winSub"></p>
   <div class="stack"><button class="btn main" id="winNext">Monde suivant</button><button class="btn" id="winMap">Carte des mondes</button><button class="btn" data-act="again">Retour à l’accueil</button></div>
+</div></div>
+
+<div class="ov" id="ovDeck"><div class="win plank deck-win">
+  <h2>Mon deck</h2>
+  <div class="deck-slots" id="deckSlots"></div>
+  <p class="deck-info" id="deckInfo"></p>
+  <div class="scroll">
+    <h3 class="cx-h">Collection <small id="deckCount"></small></h3>
+    <div class="deck-coll" id="deckColl"></div>
+    <p class="cx-note" id="deckNote"></p>
+  </div>
+  <div class="close-row"><button class="btn" data-close>Fermer</button></div>
 </div></div>
 
 <div class="ov" id="ovStory"><div class="win plank">

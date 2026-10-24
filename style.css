@@ -304,3 +304,43 @@ html{background:#1c1610}
 .mode.size1{background:#4a3a24}
 .mode.size2{background:#5a2f24}
 @media (prefers-reduced-motion:reduce){#sheet,#toast{transition:none}}
+/* deck : cartes de soldats */
+.home-deck{min-height:58px;justify-content:flex-start;gap:10px;padding:0 10px;background:#2f4a52;text-align:left}
+.hd-cards{display:flex;gap:4px;flex:none}
+.hd-cards img{width:32px;height:30px;border:2px solid var(--edge);display:block}
+.hd-lbl b{display:block;font-size:19px;line-height:1.05}
+.hd-lbl small{display:block;font-size:12.5px;font-weight:600;color:#bfe0e4}
+.deck-win{max-height:100%}
+.deck-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:7px;margin-top:6px;background:#1c1610;border:3px solid var(--edge);box-shadow:inset 0 4px 0 rgba(0,0,0,.45)}
+.dslot{min-width:0}
+.deck-info{min-height:56px;margin:8px 0 2px;font-size:14.5px;line-height:1.3;color:var(--ink)}
+.deck-info .dim{color:var(--dim)}
+.deck-coll{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-bottom:4px}
+.cx-h small{font-size:16px;color:var(--dim);margin-left:4px}
+.card{position:relative;display:flex;flex-direction:column;align-items:stretch;padding:4px 4px 5px;min-width:0;
+  background:linear-gradient(#3b2b1e 0 60%,#2a1e14 60%);border:3px solid var(--edge);touch-action:none;cursor:grab;
+  box-shadow:inset 0 0 0 2px var(--cc),inset 0 -6px 0 rgba(0,0,0,.35)}
+.card-art{width:100%;aspect-ratio:26/24;height:auto;display:block;border:2px solid var(--edge);background:#1c1610}
+.card-role{position:absolute;left:1px;top:1px;padding:1px 5px 2px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:#fff;background:var(--cc);border:2px solid var(--edge);box-shadow:inset 0 -2px 0 rgba(0,0,0,.3)}
+.card-name{display:block;margin-top:4px;font-size:15px;line-height:1.05;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-pips{display:flex;justify-content:center;gap:2px;margin-top:4px}
+.card-pips i{width:5px;height:5px;background:#1c1610;border:1px solid var(--edge)}
+.card-pips i.on{background:var(--gold)}
+.dslot .card{padding:3px 3px 4px}
+.dslot .card-name{font-size:11.5px;margin-top:3px}
+.card.in{opacity:.45}
+.card.in::after{content:'Dans le deck';position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) rotate(-8deg);white-space:nowrap;
+  font-size:11px;font-weight:800;padding:2px 5px;background:var(--gold);color:#2a1e14;border:2px solid var(--edge)}
+.card.sel{box-shadow:inset 0 0 0 2px var(--cc),0 0 0 3px var(--gold);transform:translateY(-3px)}
+.card.lock{cursor:default}
+.card.lock .card-art{filter:grayscale(1) brightness(.75)}
+.card.lock::before{content:'';position:absolute;left:50%;top:38%;width:14px;height:11px;transform:translate(-50%,-20%);z-index:1;
+  background:var(--gold);border:2px solid var(--edge);box-shadow:inset 0 -3px 0 #a86d16}
+.card.lock::after{content:'';position:absolute;left:50%;top:38%;width:6px;height:8px;transform:translate(-50%,-110%);border:3px solid var(--edge);border-bottom:0}
+.card.lifted{opacity:.25}
+.card.ghost{position:fixed;left:0;top:0;z-index:60;pointer-events:none;margin:0;
+  box-shadow:inset 0 0 0 2px var(--cc),0 0 0 3px var(--gold),6px 10px 0 rgba(0,0,0,.4)}
+.dslot.hot .card{box-shadow:inset 0 0 0 2px var(--cc),0 0 0 3px var(--gold);transform:scale(1.06)}
+.dslot.pop .card{animation:cardPop .36s steps(3)}
+@keyframes cardPop{0%{transform:scale(1.18)}50%{transform:scale(.94)}100%{transform:scale(1)}}

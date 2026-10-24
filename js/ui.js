@@ -338,8 +338,8 @@ function openShop(){
     `<h3 class="cx-h">Pièges</h3><p class="cx-note">${S.trapBuys ? 'Déjà ' + S.trapBuys + ' posé' + (S.trapBuys > 1 ? 's' : '') + ' pour cette vague : chaque piège rend le suivant 25 % plus cher.' : 'Leur prix suit la vague. Chaque piège posé rend le suivant 25 % plus cher, jusqu’à la fin de la vague.'}</p>` +
     TRAP_ORDER.map(k => row('trap', k, TRAP_URL[k], TRAPS[k].name, TRAPS[k].desc)).join('') +
     `<h3 class="cx-h">Recrutement ciblé</h3><p class="cx-note">Choisis le type de ta recrue, pour deux fois le prix d’une recrue au hasard. Elle arrive dans ta réserve.</p>` +
-    TYPES.map((ty,t) => {
-      const lv = recruitLevel(), price = recruitPrice()*2, free = S.bench.some(x => !x);
+    deckTypes().map(t => {
+      const ty = TYPES[t], lv = recruitLevel(), price = recruitPrice()*2, free = S.bench.some(x => !x);
       const why = !free ? 'Réserve pleine' : S.gold < price ? 'Il te manque ' + (price - Math.floor(S.gold)) + ' or' : '';
       return `<button class="shop-item${why ? ' off' : ''}" data-kind="hire" data-id="${t}" data-why="${why}">
         <img class="px" src="${URL_[t][lv-1]}" alt=""><div><b>${ty.name}, niveau ${lv}</b><span>${t === WARD_T ? 'Se poste sur la route et bloque les monstres' : 'Dégâts ' + DT_NAME[TYPE_DT[t]].split(' (')[0] + (canHitAir(t) ? ', touche les volants' : '')}.</span>${why ? `<small>${why}</small>` : ''}</div>
@@ -480,9 +480,10 @@ function recruit(){
     }
     S.legendPity++;
   }
-  const w = TYPES.map((_,t) => (t === WARD_T ? WARD.recruit : 1) + MODS.school[t]);
-  let r = Math.random() * w.reduce((a,b) => a+b, 0), t = 0;
-  for (; t<TYPES.length-1; t++){ r -= w[t]; if (r <= 0) break; }
+  const dk = deckTypes(), w = dk.map(t => (t === WARD_T ? WARD.recruit : 1) + MODS.school[t]);
+  let r = Math.random() * w.reduce((a,b) => a+b, 0), n = 0;
+  for (; n<dk.length-1; n++){ r -= w[n]; if (r <= 0) break; }
+  const t = dk[n];
   const vet = MODS.vet && Math.random() < MODS.vet, lvl = base + (vet ? 1 : 0);
   S.bench[i] = mk(t, lvl); markSeen(t, lvl);
   burst(i + .5, BENCH_Y/T + .5, TYPES[t].col, lvl > 1 ? 18 : 10, 2.5);

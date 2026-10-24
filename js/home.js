@@ -261,6 +261,7 @@ function refreshHome(){
   $('hSiegeRec').textContent = 'Monde ' + Math.min(story.unlocked, WORLDS.length) + ' sur ' + WORLDS.length + ', ★ ' + stN + '/' + WORLDS.length*3;
   $('hSoundBtn').textContent = prefs.sound ? 'Son : oui' : 'Son : non';
   $('hMusicBtn').textContent = prefs.music ? 'Musique : oui' : 'Musique : non';
+  $('hDeckCards').innerHTML = fixDeck().map(t => `<img class="px" src="${cardArt(t, Math.max(1, cardBest(t)), false)}" alt="">`).join('');
 }
 function showHome(){
   closeSheet(); stopPlacing(); drag = null;
@@ -398,7 +399,112 @@ document.querySelectorAll('[data-hact]').forEach(b => b.addEventListener('click'
   const a = b.dataset.hact;
   if (a === 'codex'){ buildCodex(); show('ovCodex'); }
   else if (a === 'help') show('ovHelp');
+  else if (a === 'deck') openDeck();
   else if (a === 'sound'){ prefs.sound = !prefs.sound; persist(); refreshHome(); }
   else if (a === 'music'){ prefs.music = !prefs.music; persist(); refreshHome(); }
 }));
 window.addEventListener('resize', () => { hBG = null; });
+
+/* =========================================================
+   Deck : cinq soldats choisis pour la bataille
+   ========================================================= */
+const DECK_N = 5;
+const CARD_ROLE = ['Mêlée','Distance','Zone','Contrôle','Chaîne','Bloqueur'];
+const CARD_LOCK = [null, null, null, null, null,
+  { test:() => best >= 10 || story.unlocked >= 2, txt:'Atteins la vague 10 en Sans fin, ou termine la Forêt sombre.' }];
+const cardBest = t => { let b = 0; for (let l=1;l<=MAXL;l++) if (seen.has(t*MAXL + l - 1)) b = l; return b; };
+const cardOpen = t => !CARD_LOCK[t] || CARD_LOCK[t].test() || cardBest(t) > 0;
+const deckTypes = () => S && S.deck ? S.deck : TYPES.map((_,t) => t);
+/* Deck valide : cinq types distincts et débloqués, complété dans l'ordre si besoin. */
+function fixDeck(){
+  const ok = [];
+  for (const t of (Array.isArray(profile.deck) ? profile.deck : [])) if (TYPES[t] && cardOpen(t) && !ok.includes(t)) ok.push(t);
+  for (let t=0; ok.length < DECK_N && t < TYPES.length; t++) if (cardOpen(t) && !ok.includes(t)) ok.push(t);
+  profile.deck = ok.slice(0, DECK_N);
+  return profile.deck;
+}
+/* Illustration de carte : le meilleur rang atteint, sur un fond aux couleurs du type. */
+const CARD_ART = {};
+function cardArt(t, l, lock){
+  const key = t + ':' + l + ':' + (lock ? 1 : 0); if (CARD_ART[key]) return CARD_ART[key];
+  const c = document.createElement('canvas'); c.width = 26; c.height = 24;
+  const x = c.getContext('2d'), col = lock ? '#5a5048' : TYPES[t].col;
+  for (let y=0;y<24;y++) for (let i=0;i<26;i++){
+    const ground = y >= 19, k = ground ? .3 : y < 8 ? .58 : y < 14 ? ((i + y) % 2 ? .5 : .46) : .42;
+    x.fillStyle = shade(col, ground && y === 19 ? .48 : k); x.fillRect(i, y, 1, 1);
+    if (!ground && hash(i, y, 70 + t) > .965){ x.fillStyle = shade(col, 1.35); x.fillRect(i, y, 1, 1); }
+  }
+  x.drawImage(lock ? SIL[t][0] : SPR[t][Math.max(1, l) - 1], 3, 3);
+  return CARD_ART[key] = c.toDataURL();
+}
+function cardHTML(t, cls = '', mini = false){
+  const open = cardOpen(t), lb = Math.max(1, cardBest(t)), ty = TYPES[t];
+  const pips = Array.from({length:MAXL}, (_,k) => `<i class="${k < cardBest(t) ? 'on' : ''}"></i>`).join('');
+  return `<div class="card${open ? '' : ' lock'} ${cls}" data-t="${t}" style="--cc:${open ? ty.col : '#5a5048'}">
+    <img class="px card-art" src="${cardArt(t, lb, !open)}" alt="" draggable="false">
+    ${mini ? '' : `<span class="card-role">${open ? CARD_ROLE[t] : 'Verrouillée'}</span>`}
+    <b class="card-name">${open ? ty.name : '???'}</b>
+    ${mini ? '' : `<span class="card-pips">${pips}</span>`}
+  </div>`;
+}
+let deckSel = -1, deckDrag = null;
+function deckInfo(t){
+  const el = $('deckInfo');
+  if (t < 0){ el.innerHTML = '<span class="dim">Touche une carte pour la lire, puis un emplacement pour l’y poser. Ou fais-la glisser.</span>'; return; }
+  const ty = TYPES[t], open = cardOpen(t), b = cardBest(t);
+  el.innerHTML = open
+    ? `<b style="color:${ty.col}">${ty.name}</b> · ${CARD_ROLE[t]}<br>${ty.desc} <span class="dim">${b ? 'Meilleur rang : ' + ty.ranks[b-1] + '.' : 'Pas encore recruté.'}</span>`
+    : `<b>Carte verrouillée</b><br>${CARD_LOCK[t].txt}`;
+}
+function renderDeck(){
+  const d = fixDeck();
+  $('deckSlots').innerHTML = d.map((t,k) => `<div class="dslot" data-k="${k}">${cardHTML(t, deckSel === t ? 'sel' : '', true)}</div>`).join('');
+  $('deckColl').innerHTML = TYPES.map((_,t) => cardHTML(t, (d.includes(t) ? 'in' : '') + (deckSel === t ? ' sel' : ''))).join('');
+  const nOpen = TYPES.filter((_,t) => cardOpen(t)).length;
+  $('deckCount').textContent = nOpen + '/' + TYPES.length;
+  $('deckNote').textContent = hasGame ? 'Ta partie en cours garde son deck. Le nouveau servira à la prochaine partie.' : 'Seuls les soldats du deck sortent au recrutement, et seules leurs bénédictions te sont proposées.';
+  deckInfo(deckSel);
+}
+function deckPut(t, from, k){
+  const d = profile.deck;
+  if (from >= 0){ [d[from], d[k]] = [d[k], d[from]]; }
+  else { const j = d.indexOf(t); if (j >= 0) [d[j], d[k]] = [d[k], d[j]]; else d[k] = t; }
+  deckSel = -1; persist(); renderDeck(); refreshHome(); sfx('recruit');
+  const s = $('deckSlots').children[k]; if (s){ s.classList.add('pop'); }
+}
+function openDeck(){ deckSel = -1; renderDeck(); show('ovDeck'); }
+function deckTap(t, slot){
+  if (!cardOpen(t)){ deckSel = -1; renderDeck(); deckInfo(t); sfx('bad'); return; }
+  if (slot >= 0 && deckSel >= 0 && deckSel !== t){ deckPut(deckSel, profile.deck.indexOf(deckSel), slot); return; }
+  deckSel = deckSel === t ? -1 : t; renderDeck(); sfx('arrow');
+}
+$('ovDeck').addEventListener('pointerdown', e => {
+  const card = e.target.closest('.card'); if (!card || deckDrag) return;
+  const slotEl = card.closest('.dslot');
+  deckDrag = { t:+card.dataset.t, from: slotEl ? +slotEl.dataset.k : -1, el:card, sx:e.clientX, sy:e.clientY, ghost:null, over:null, id:e.pointerId };
+});
+window.addEventListener('pointermove', e => {
+  const d = deckDrag; if (!d || e.pointerId !== d.id) return;
+  if (!d.ghost){
+    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 8 || !cardOpen(d.t)) return;
+    const r = d.el.getBoundingClientRect();
+    d.ghost = d.el.cloneNode(true); d.ghost.classList.add('ghost'); d.ghost.classList.remove('sel','in');
+    Object.assign(d.ghost.style, { width:r.width + 'px', height:r.height + 'px' });
+    d.dx = e.clientX - r.left; d.dy = e.clientY - r.top;
+    document.body.appendChild(d.ghost); d.el.classList.add('lifted');
+  }
+  d.ghost.style.transform = `translate(${e.clientX - d.dx}px,${e.clientY - d.dy}px) rotate(-4deg) scale(1.08)`;
+  const hit = document.elementFromPoint(e.clientX, e.clientY), slot = hit && hit.closest('.dslot');
+  if (d.over && d.over !== slot) d.over.classList.remove('hot');
+  d.over = slot; if (slot) slot.classList.add('hot');
+});
+function endDeckDrag(e, cancel){
+  const d = deckDrag; if (!d || e.pointerId !== d.id) return;
+  deckDrag = null;
+  if (!d.ghost){ if (!cancel) deckTap(d.t, d.from); return; }
+  d.ghost.remove(); d.el.classList.remove('lifted');
+  if (d.over) d.over.classList.remove('hot');
+  if (!cancel && d.over && +d.over.dataset.k !== d.from) deckPut(d.t, d.from, +d.over.dataset.k);
+}
+window.addEventListener('pointerup', e => endDeckDrag(e, false));
+window.addEventListener('pointercancel', e => endDeckDrag(e, true));
