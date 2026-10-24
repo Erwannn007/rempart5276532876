@@ -81,6 +81,7 @@ function musStep(c, tr, step, t, key){
 }
 function musicWanted(){
   if (!prefs.music) return null;
+  if (homeOn && hStage === 'title') return null;
   if (homeOn || !hasGame) return 'home';
   if (over) return null;
   if (inWave) return (enemies.some(e => EN[e.k].boss) || queue.some(k => EN[k].boss)) ? 'boss' : 'battle';

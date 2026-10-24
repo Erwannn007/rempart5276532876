@@ -124,7 +124,7 @@ function titleURL(word){
 }
 
 /* ---------- scène animée ---------- */
-let homeOn = false, hcv = null, hctx = null, hP = 3, hAW = 0, hAH = 0, hBG = null, hFG = null, hLay = null;
+let homeOn = false, hStage = 'title', hMB = null, hGlow = null, hcv = null, hctx = null, hP = 3, hAW = 0, hAH = 0, hBG = null, hFG = null, hLay = null;
 const FLIES = Array.from({ length:9 }, () => ({ x:Math.random(), y:.6 + Math.random()*.35, p:Math.random()*6.28, s:.4 + Math.random()*.6 }));
 function buildHome(){
   hcv = $('homeCv'); hctx = hcv.getContext('2d');
@@ -213,10 +213,69 @@ function buildHome(){
   };
   merlons(wallY, 0, cx-tw2-1); merlons(wallY, cx+tw2+1, aw-1); merlons(towerTop, cx-tw2, cx+tw2);
   B.x.putImageData(B.id, 0, 0); F.x.putImageData(F.id, 0, 0);
-  hBG = B.c; hFG = F.c;
+  hBG = B.c; hFG = F.c; hMB = null;
+}
+/* Fond du menu : l'intérieur du château (mur de pierre, bannières, torches, plancher). */
+function buildMenuBG(){
+  const aw = hAW, ah = hAH, c = document.createElement('canvas'); c.width = aw; c.height = ah;
+  const x = c.getContext('2d'), id = x.createImageData(aw, ah), cache = {};
+  const put = (px, py, col) => { px |= 0; py |= 0; if (px<0||py<0||px>=aw||py>=ah) return; const v = cache[col] || (cache[col] = hex2(col)); const i = (py*aw + px)*4; id.data[i]=v[0]; id.data[i+1]=v[1]; id.data[i+2]=v[2]; id.data[i+3]=255; };
+  const floorY = Math.round(ah*.8);
+  for (let y=0;y<floorY;y++){
+    const row = (y/5)|0, off = row%2 ? 5 : 0;
+    for (let px=0;px<aw;px++){
+      const mortar = (px+off)%10 === 0 || y%5 === 4, n = hash(((px+off)/10)|0, row, 41);
+      let col = mortar ? '#16121c' : n > .8 ? '#352c3e' : n < .15 ? '#241e2c' : '#2c2534';
+      if (!mortar && y%5 === 0) col = shade(col, 1.12);
+      put(px, y, col);
+    }
+  }
+  for (let y=floorY;y<ah;y++) for (let px=0;px<aw;px++){
+    const seam = y === floorY || (y - floorY)%4 === 3 || (px + ((y - floorY)>>2)*7)%23 === 0;
+    put(px, y, y === floorY ? '#1a1208' : seam ? '#2a1d12' : hash(px, y, 43) > .9 ? '#4a3524' : '#3b2b1e');
+  }
+  const banner = (bx) => {
+    for (let y=0;y<Math.round(ah*.3);y++) for (let k=0;k<11;k++){
+      const edge = k === 0 || k === 10, tip = y > ah*.3 - 5 && Math.abs(k - 5) < (y - (ah*.3 - 5)) + 1;
+      if (tip) continue;
+      put(bx + k, y, edge ? '#e0a93a' : '#8a2a3a');
+    }
+    const ty = Math.round(ah*.12);
+    for (const [dx,dy] of [[3,0],[5,0],[7,0],[3,1],[4,1],[5,1],[6,1],[7,1],[4,2],[5,2],[6,2],[4,3],[5,3],[6,3],[4,4],[6,4]]) put(bx + dx, ty + dy, '#f2c14e');
+  };
+  banner(Math.round(aw*.2) - 5); banner(Math.round(aw*.8) - 5);
+  for (let y=0;y<ah;y++) for (let px=0;px<aw;px++){
+    const dx = (px - aw/2)/(aw/2), dy = (y - ah*.45)/(ah*.6), v = dx*dx + dy*dy;
+    if (v > .55 && (px + y)%2 === 0 || v > .9){ const i = (y*aw + px)*4; id.data[i] *= .7; id.data[i+1] *= .7; id.data[i+2] *= .7; }
+  }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+/* Halo de torche tramé, un pixel sur deux. */
+function buildGlow(R){
+  const c = document.createElement('canvas'); c.width = c.height = 2*R + 1;
+  const x = c.getContext('2d'); x.fillStyle = '#ffb347';
+  for (let dy=-R;dy<=R;dy++) for (let dx=-R;dx<=R;dx++){ const d = dx*dx + dy*dy; if (d <= R*R && ((dx + dy) % 2 === 0 || d < R*R*.3)) x.fillRect(dx + R, dy + R, 1, 1); }
+  return c;
+}
+function drawMenu(){
+  if (!hMB){ hMB = buildMenuBG(); hGlow = [buildGlow(14), buildGlow(15)]; }
+  const g = hctx, P_ = hP, t = performance.now()/1000;
+  g.drawImage(hMB, 0, 0, hAW*P_, hAH*P_);
+  for (const fx2 of [.06, .94]){
+    const tx = Math.round(hAW*fx2), ty = Math.round(hAH*.42);
+    g.fillStyle = '#4a3020'; g.fillRect((tx-1)*P_, ty*P_, 3*P_, 5*P_); g.fillStyle = '#6b6b78'; g.fillRect((tx-2)*P_, (ty+4)*P_, 5*P_, P_);
+    const f = Math.floor(t*8 + fx2*10) % 3;
+    const gl = hGlow[f === 1 ? 1 : 0], R = (gl.width - 1)/2;
+    g.globalAlpha = .1 + .03*f; g.drawImage(gl, (tx - R)*P_, (ty - 2 - R)*P_, gl.width*P_, gl.height*P_); g.globalAlpha = 1;
+    g.fillStyle = '#ff8a2a'; g.fillRect((tx-1)*P_, (ty-3)*P_, 3*P_, 3*P_);
+    g.fillStyle = '#ffd23f'; g.fillRect(tx*P_, (ty-4 - (f === 1 ? 1 : 0))*P_, P_, 3*P_);
+    g.fillStyle = '#fff3b0'; g.fillRect(tx*P_, (ty-2)*P_, P_, P_);
+  }
 }
 function drawHome(dt){
   if (!hBG) buildHome();
+  if (hStage === 'menu'){ hctx.imageSmoothingEnabled = false; drawMenu(); return; }
   const g = hctx, P_ = hP, { wallY, cx, towerTop, horizon } = hLay;
   g.imageSmoothingEnabled = false;
   g.drawImage(hBG, 0, 0, hAW*P_, hAH*P_);
@@ -265,7 +324,8 @@ function refreshHome(){
   renderChestSlots();
   const d0 = fixDeck()[0]; $('htDeck').src = cardArt(d0, Math.max(1, cardBest(d0)), false);
 }
-function showHome(){
+function showHome(stage = 'menu'){
+  hStage = stage; $('ovHome').classList.toggle('titled', stage === 'title'); $('ovHome').classList.remove('leaving');
   closeSheet(); stopPlacing(); drag = null;
   ['ovMenu','ovOver','ovWin','ovBless','ovLegend','ovShop'].forEach(hide);
   if (hasGame && !inWave) save(); else persist();
@@ -593,6 +653,7 @@ function homeTab(n){
   hTab = Math.max(0, Math.min(2, n));
   $('hTrack').style.transform = `translateX(${-hTab*100/3}%)`;
   document.querySelectorAll('.htab').forEach(b => b.classList.toggle('on', +b.dataset.tab === hTab));
+  document.querySelectorAll('.hpage').forEach((pg, k) => pg.classList.toggle('cur', k === hTab));
   if (hTab === 0){ deckSel = -1; renderDeck(); }
 }
 $('htPlay').src = BI.sword; $('htMore').src = BI.star;
@@ -619,3 +680,27 @@ function renderChestSlots(){
   $('hChests').innerHTML = h + (n > CHEST_SLOTS ? `<em class="cslot-more">+${n - CHEST_SLOTS} en réserve</em>` : '');
 }
 $('hChests').addEventListener('click', e => { if (e.target.closest('.cslot.full')){ audio(); openChest(); } });
+
+/* ---------- écran titre ---------- */
+function fanfare(){
+  if (!prefs.sound && !prefs.music) return;
+  const c = audio(); if (!c) return;
+  const g = c.createGain(); g.gain.value = .5; g.connect(c.destination);
+  const t0 = c.currentTime + .05;
+  const n = (s, m, d, type, v) => { const o = c.createOscillator(), e = c.createGain(); o.type = type; o.frequency.value = MIDI(m);
+    e.gain.setValueAtTime(.0001, t0 + s); e.gain.exponentialRampToValueAtTime(v, t0 + s + .01); e.gain.exponentialRampToValueAtTime(.0001, t0 + s + d);
+    o.connect(e).connect(g); o.start(t0 + s); o.stop(t0 + s + d + .05); };
+  [[0,67,.14],[.15,72,.14],[.3,76,.14],[.45,79,.3],[.78,76,.12],[.92,79,.7]].forEach(([s,m,d]) => { n(s, m, d, 'square', .06); n(s, m - 12, d, 'triangle', .08); });
+  [[0,48,.4],[.45,55,.3],[.92,48,.8]].forEach(([s,m,d]) => n(s, m, d, 'triangle', .1));
+}
+function enterMenu(){
+  if (hStage !== 'title' || $('ovHome').classList.contains('leaving')) return;
+  fanfare();
+  $('ovHome').classList.add('leaving');
+  setTimeout(() => {
+    showHome('menu');
+    if (!prefs.helped) show('ovHelp');
+  }, 900);
+}
+$('hLogo').src = titleURL('REMPART');
+$('hTitleScr').addEventListener('click', enterMenu);

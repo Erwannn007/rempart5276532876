@@ -30,8 +30,7 @@ if (hasGame && !S.nextQ) S.nextQ = makeWave(S.wave + 1);
 snap(); persist();
 hud();
 checkAch(true);
-showHome();
-if (!prefs.helped) show('ovHelp');
+showHome('title');
 requestAnimationFrame(t => { last = t; frame(t); });
 
 if ('serviceWorker' in navigator){
